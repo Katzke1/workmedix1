@@ -52,12 +52,19 @@ router.post('/book', (req, res) => {
     success
   });
 
+  const validServices = ['Pre-employment Medicals','Occupational Health Screenings','Drug & Alcohol Testing','Fitness for Duty Assessments'];
   if (!service_type || !preferred_date)
     return render('Please select a service and preferred date.', null);
+  if (!validServices.includes(service_type))
+    return render('Please select a valid service type.', null);
+  if (new Date(preferred_date) < new Date(new Date().toDateString()))
+    return render('Please select a future date.', null);
+  if (notes && notes.length > 500)
+    return render('Notes may not exceed 500 characters.', null);
 
   db.prepare(
     `INSERT INTO bookings (user_id, service_type, preferred_date, notes) VALUES (?,?,?,?)`
-  ).run(req.session.user.id, service_type, preferred_date, notes || null);
+  ).run(req.session.user.id, service_type, preferred_date, notes ? notes.trim() : null);
 
   render(null, 'Your booking request has been submitted. We will confirm your appointment shortly.');
 });

@@ -47,11 +47,14 @@
               <span class="upload-hint">We will confirm the exact appointment date and time by email.</span>
             </div>
             <div class="form-group">
-              <label class="form-label" for="notes">Additional Notes</label>
-              <textarea id="notes" name="notes" class="form-control" rows="4"
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <label class="form-label" for="notes" style="margin-bottom:0;">Additional Notes</label>
+                <span id="notes-counter" style="font-size:.78rem;color:var(--mid-grey);">0 / 500</span>
+              </div>
+              <textarea id="notes" name="notes" class="form-control" rows="4" maxlength="500"
                         placeholder="Number of employees, specific requirements, location preferences…"></textarea>
             </div>
-            <button type="submit" class="btn btn-primary">Submit Booking Request →</button>
+            <button type="submit" class="btn btn-primary" id="book-btn">Submit Booking Request →</button>
           </form>
         </div>
       </div>

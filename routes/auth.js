@@ -81,10 +81,16 @@ router.post('/register', (req, res) => {
 
   if (!name || !email || !password || !confirm_password)
     return render('All fields are required.');
+  if (name.trim().length < 2)
+    return render('Please enter your full name (at least 2 characters).');
+  if (!/^[a-zA-Z\s\-'\.]+$/.test(name.trim()))
+    return render('Name may only contain letters, spaces, hyphens, and apostrophes.');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim()))
+    return render('Please enter a valid email address.');
+  if (password.length < 8)
+    return render('Password must be at least 8 characters.');
   if (password !== confirm_password)
     return render('Passwords do not match.');
-  if (password.length < 6)
-    return render('Password must be at least 6 characters.');
 
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email.toLowerCase().trim());
   if (existing) return render('An account with this email already exists.');

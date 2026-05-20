@@ -1411,6 +1411,75 @@ tbody tr:hover td { background: #f9fbff; }
 ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
 
+/* ── Password show/hide ───────────────────────────────────── */
+.input-password-wrap {
+  position: relative;
+}
+.input-password-wrap .form-control {
+  padding-right: 2.75rem;
+}
+.password-toggle {
+  position: absolute;
+  right: .75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--mid-grey);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  transition: color .2s;
+}
+.password-toggle:hover { color: var(--primary); }
+
+/* ── Password strength ────────────────────────────────────── */
+.password-strength {
+  margin-top: .5rem;
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+}
+.strength-bar {
+  flex: 1;
+  height: 5px;
+  background: var(--light-grey);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.strength-fill {
+  height: 100%;
+  border-radius: 99px;
+  width: 0%;
+  transition: width .3s ease, background .3s ease;
+}
+.strength-label {
+  font-size: .75rem;
+  font-weight: 600;
+  min-width: 44px;
+  text-align: right;
+}
+.strength-weak   .strength-fill { width: 25%; background: #ef4444; }
+.strength-fair   .strength-fill { width: 50%; background: #f97316; }
+.strength-good   .strength-fill { width: 75%; background: #eab308; }
+.strength-strong .strength-fill { width: 100%; background: #22c55e; }
+.strength-weak   .strength-label { color: #ef4444; }
+.strength-fair   .strength-label { color: #f97316; }
+.strength-good   .strength-label { color: #eab308; }
+.strength-strong .strength-label { color: #22c55e; }
+
+/* ── Password match hint ──────────────────────────────────── */
+.match-hint {
+  display: block;
+  font-size: .78rem;
+  margin-top: .3rem;
+  min-height: 1rem;
+  font-weight: 500;
+}
+.match-hint.match   { color: #22c55e; }
+.match-hint.no-match { color: #ef4444; }
+
 /* ── Scroll reveal animations ─────────────────────────────── */
 .scroll-reveal {
   opacity: 0;

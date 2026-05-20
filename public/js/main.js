@@ -131,6 +131,93 @@ setTimeout(() => {
   });
 }, 5000);
 
+// ── Show / hide password ─────────────────────────────────────────────────────
+document.querySelectorAll('.password-toggle').forEach(btn => {
+  btn.addEventListener('click', function () {
+    const input = document.getElementById(this.dataset.target);
+    const isHidden = input.type === 'password';
+    input.type = isHidden ? 'text' : 'password';
+    this.querySelector('.eye-show').style.display = isHidden ? 'none'  : '';
+    this.querySelector('.eye-hide').style.display = isHidden ? ''      : 'none';
+  });
+});
+
+// ── Password strength meter ───────────────────────────────────────────────────
+(function () {
+  const pw       = document.getElementById('password');
+  const wrap     = document.getElementById('password-strength');
+  const fill     = document.getElementById('strength-fill');
+  const label    = document.getElementById('strength-label');
+  if (!pw || !wrap) return;
+
+  function score(val) {
+    let s = 0;
+    if (val.length >= 8)               s++;
+    if (val.length >= 12)              s++;
+    if (/[A-Z]/.test(val))             s++;
+    if (/[0-9]/.test(val))             s++;
+    if (/[^A-Za-z0-9]/.test(val))      s++;
+    return s;
+  }
+
+  const levels = [
+    { cls: 'strength-weak',   text: 'Weak'   },
+    { cls: 'strength-weak',   text: 'Weak'   },
+    { cls: 'strength-fair',   text: 'Fair'   },
+    { cls: 'strength-good',   text: 'Good'   },
+    { cls: 'strength-strong', text: 'Strong' },
+    { cls: 'strength-strong', text: 'Strong' },
+  ];
+
+  pw.addEventListener('input', function () {
+    const val = this.value;
+    if (!val) { wrap.style.display = 'none'; return; }
+    wrap.style.display = 'flex';
+    const lvl = levels[score(val)];
+    wrap.className = 'password-strength ' + lvl.cls;
+    label.textContent = lvl.text;
+  });
+})();
+
+// ── Confirm password match ────────────────────────────────────────────────────
+(function () {
+  const pw      = document.getElementById('password');
+  const confirm = document.getElementById('confirm_password');
+  const hint    = document.getElementById('confirm-hint');
+  if (!pw || !confirm || !hint) return;
+
+  function check() {
+    if (!confirm.value) { hint.textContent = ''; hint.className = 'match-hint'; return; }
+    const ok = pw.value === confirm.value;
+    hint.textContent = ok ? '✓ Passwords match' : '✗ Passwords do not match';
+    hint.className   = 'match-hint ' + (ok ? 'match' : 'no-match');
+  }
+  confirm.addEventListener('input', check);
+  pw.addEventListener('input', check);
+})();
+
+// ── Loading state on form submit ──────────────────────────────────────────────
+['login-btn', 'register-btn', 'book-btn'].forEach(id => {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  btn.closest('form').addEventListener('submit', function () {
+    btn.disabled     = true;
+    btn.textContent  = 'Please wait…';
+  });
+});
+
+// ── Notes character counter ───────────────────────────────────────────────────
+(function () {
+  const notes   = document.getElementById('notes');
+  const counter = document.getElementById('notes-counter');
+  if (!notes || !counter) return;
+  notes.addEventListener('input', function () {
+    const len = this.value.length;
+    counter.textContent = len + ' / 500';
+    counter.style.color = len > 450 ? '#ef4444' : 'var(--mid-grey)';
+  });
+})();
+
 // ── Hero: rotating words ──────────────────────────────────────────────────────
 (function () {
   const el = document.getElementById('hero-rotating-word');
