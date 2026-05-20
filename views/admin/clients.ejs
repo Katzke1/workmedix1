@@ -1,0 +1,72 @@
+<%- include('../partials/head') %>
+<body>
+<div class="app-body">
+<%- include('../partials/admin-sidebar') %>
+<main class="app-main">
+  <div class="app-topbar">
+    <div class="app-topbar-title">
+      <h2>Manage Clients</h2>
+      <p>All registered client accounts</p>
+    </div>
+  </div>
+
+  <div class="app-content">
+    <div class="card">
+      <div class="card-header">
+        <h3>Client Directory</h3>
+        <span style="font-size:.85rem;color:var(--mid-grey);"><%= clients.length %> registered</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Company</th>
+              <th>Email</th>
+              <th>Bookings</th>
+              <th>Results</th>
+              <th>Certs</th>
+              <th>Registered</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (clients.length === 0) { %>
+              <tr><td class="table-empty" colspan="8">No clients registered yet.</td></tr>
+            <% } else { clients.forEach(c => { %>
+              <tr>
+                <td>
+                  <div style="display:flex;align-items:center;gap:.65rem;">
+                    <div style="width:32px;height:32px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.82rem;color:white;flex-shrink:0;">
+                      <%= c.name.charAt(0).toUpperCase() %>
+                    </div>
+                    <strong><%= c.name %></strong>
+                  </div>
+                </td>
+                <td style="color:var(--text-light);font-size:.88rem;"><%= c.company_name || '—' %></td>
+                <td style="font-size:.88rem;"><%= c.email %></td>
+                <td style="text-align:center;">
+                  <span class="badge badge-<%= c.booking_count > 0 ? 'confirmed' : 'pending' %>">
+                    <%= c.booking_count %>
+                  </span>
+                </td>
+                <td style="text-align:center;font-size:.88rem;color:var(--text-light);"><%= c.result_count %></td>
+                <td style="text-align:center;font-size:.88rem;color:var(--text-light);"><%= c.cert_count %></td>
+                <td style="color:var(--mid-grey);font-size:.82rem;white-space:nowrap;">
+                  <%= new Date(c.created_at).toLocaleDateString('en-ZA') %>
+                </td>
+                <td>
+                  <a href="/admin/clients/<%= c.id %>" class="btn btn-outline-dark btn-sm">View →</a>
+                </td>
+              </tr>
+            <% }) } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+<script src="/js/main.js"></script>
+</body>
+</html>

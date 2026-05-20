@@ -1,0 +1,86 @@
+<%- include('../partials/head') %>
+<body>
+<div class="app-body">
+<%- include('../partials/portal-sidebar') %>
+<main class="app-main">
+  <div class="app-topbar">
+    <div class="app-topbar-title">
+      <h2>My Bookings</h2>
+      <p>All your screening appointments</p>
+    </div>
+    <div class="topbar-actions">
+      <a href="/portal/book" class="btn btn-primary btn-sm">+ New Booking</a>
+    </div>
+  </div>
+
+  <div class="app-content">
+    <div class="card">
+      <div class="card-header">
+        <h3>Appointment History</h3>
+        <span style="font-size:.85rem;color:var(--mid-grey);"><%= bookings.length %> booking<%= bookings.length !== 1 ? 's' : '' %></span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Service</th>
+              <th>Preferred Date</th>
+              <th>Status</th>
+              <th>Notes</th>
+              <th>Submitted</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (bookings.length === 0) { %>
+              <tr>
+                <td class="table-empty" colspan="6">
+                  No bookings found.
+                  <a href="/portal/book">Request your first screening →</a>
+                </td>
+              </tr>
+            <% } else { bookings.forEach((b, i) => { %>
+              <tr>
+                <td style="color:var(--mid-grey);font-size:.85rem;"><%= bookings.length - i %></td>
+                <td><strong><%= b.service_type %></strong></td>
+                <td><%= b.preferred_date %></td>
+                <td><span class="badge badge-<%= b.status %>"><%= b.status %></span></td>
+                <td style="color:var(--text-light);font-size:.88rem;max-width:200px;">
+                  <%= b.notes ? b.notes.substring(0, 60) + (b.notes.length > 60 ? '…' : '') : '—' %>
+                </td>
+                <td style="color:var(--mid-grey);font-size:.85rem;white-space:nowrap;">
+                  <%= new Date(b.created_at).toLocaleDateString('en-ZA') %>
+                </td>
+              </tr>
+            <% }) } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Status legend -->
+    <div class="card" style="margin-top:1.5rem;">
+      <div class="card-body">
+        <h4 style="color:var(--primary);margin-bottom:1rem;">Booking Status Guide</h4>
+        <div style="display:flex;gap:2rem;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:.6rem;">
+            <span class="badge badge-pending">pending</span>
+            <span style="font-size:.88rem;color:var(--text-light);">Awaiting confirmation from Workmedix</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:.6rem;">
+            <span class="badge badge-confirmed">confirmed</span>
+            <span style="font-size:.88rem;color:var(--text-light);">Appointment confirmed — check your email</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:.6rem;">
+            <span class="badge badge-completed">completed</span>
+            <span style="font-size:.88rem;color:var(--text-light);">Screening done — results being processed</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+<script src="/js/main.js"></script>
+</body>
+</html>

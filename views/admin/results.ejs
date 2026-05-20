@@ -1,0 +1,75 @@
+<%- include('../partials/head') %>
+<body>
+<div class="app-body">
+<%- include('../partials/admin-sidebar') %>
+<main class="app-main">
+  <div class="app-topbar">
+    <div class="app-topbar-title">
+      <h2>Upload Results</h2>
+      <p>Attach screening documents to client accounts</p>
+    </div>
+  </div>
+
+  <div class="app-content">
+    <div style="max-width:680px;">
+      <% if (error) { %>
+        <div class="alert alert-danger"><%= error %></div>
+      <% } %>
+      <% if (success) { %>
+        <div class="alert alert-success" data-autodismiss><%= success %></div>
+      <% } %>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Upload Result Document</h3>
+        </div>
+        <div class="card-body">
+          <form method="POST" action="/admin/results" enctype="multipart/form-data">
+            <div class="form-group">
+              <label class="form-label" for="client-select">Client *</label>
+              <select id="client-select" name="user_id" class="form-control" required>
+                <option value="">— Select client —</option>
+                <% clients.forEach(c => { %>
+                  <option value="<%= c.id %>">
+                    <%= c.name %><% if (c.company_name) { %> – <%= c.company_name %><% } %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="booking-select">Link to Booking</label>
+              <select id="booking-select" name="booking_id" class="form-control">
+                <option value="">— select client first —</option>
+              </select>
+              <span class="upload-hint">Optional — links this result to a specific appointment.</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="title">Document Title *</label>
+              <input type="text" id="title" name="title" class="form-control"
+                     placeholder="e.g. Pre-employment Medical Report – June 2025" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="file">File *</label>
+              <input type="file" id="file" name="file" class="form-control"
+                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required>
+              <span class="upload-hint">Accepted: PDF, Word (.doc/.docx), JPG, PNG — max 10 MB</span>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Upload Result →</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="alert alert-info" style="margin-top:1.25rem;">
+        The uploaded document will immediately appear in the client's <strong>My Results</strong> section of their portal.
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+<script src="/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<%- include('../partials/head') %>
+<body>
+<div class="app-body">
+<%- include('../partials/portal-sidebar') %>
+<main class="app-main">
+  <div class="app-topbar">
+    <div class="app-topbar-title">
+      <h2>My Results</h2>
+      <p>Screening results uploaded by Workmedix</p>
+    </div>
+  </div>
+
+  <div class="app-content">
+    <div class="card">
+      <div class="card-header">
+        <h3>Available Results</h3>
+        <span style="font-size:.85rem;color:var(--mid-grey);"><%= results.length %> document<%= results.length !== 1 ? 's' : '' %></span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Document Title</th>
+              <th>Linked Service</th>
+              <th>Uploaded</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (results.length === 0) { %>
+              <tr>
+                <td class="table-empty" colspan="4">
+                  No results available yet.<br>
+                  <span style="font-size:.85rem;">Results will appear here after your screening is completed and reviewed.</span>
+                </td>
+              </tr>
+            <% } else { results.forEach(r => { %>
+              <tr>
+                <td>
+                  <div style="display:flex;align-items:center;gap:.75rem;">
+                    <div style="width:34px;height:34px;background:linear-gradient(135deg,var(--primary),var(--accent));border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    </div>
+                    <strong><%= r.title %></strong>
+                  </div>
+                </td>
+                <td style="color:var(--text-light);font-size:.88rem;">
+                  <%= r.service_type || '—' %>
+                </td>
+                <td style="color:var(--mid-grey);font-size:.85rem;white-space:nowrap;">
+                  <%= new Date(r.uploaded_at).toLocaleDateString('en-ZA') %>
+                </td>
+                <td>
+                  <a href="/portal/results/<%= r.id %>/download"
+                     class="btn btn-outline-dark btn-sm">
+                    ↓ Download
+                  </a>
+                </td>
+              </tr>
+            <% }) } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="alert alert-info" style="margin-top:1.5rem;">
+      <strong>Privacy notice:</strong> All medical documents are confidential and only accessible by you. If you have questions about any of your results, please contact Workmedix directly.
+    </div>
+  </div>
+</main>
+</div>
+<script src="/js/main.js"></script>
+</body>
+</html>

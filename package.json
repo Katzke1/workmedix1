@@ -1,0 +1,25 @@
+{
+  "name": "workmedix",
+  "version": "1.0.0",
+  "description": "Workmedix – Professional Workplace Health Screening Platform",
+  "main": "server.js",
+  "scripts": {
+    "start": "node db/setup.js && node server.js",
+    "setup": "node db/setup.js",
+    "dev": "npx nodemon server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^12.0.0",
+    "ejs": "^3.1.10",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}

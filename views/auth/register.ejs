@@ -1,0 +1,89 @@
+<%- include('../partials/head') %>
+<body>
+<div class="auth-page">
+  <!-- Left panel -->
+  <div class="auth-left">
+    <div class="auth-left-content">
+      <a href="/" class="auth-logo">
+        <img src="/images/logo.jpg" alt="Workmedix" onerror="this.style.display='none'">
+        <span>Workmedix</span>
+      </a>
+      <h2>Get started today.</h2>
+      <p>Create your free Workmedix account to book screenings, receive results, and manage your occupational health certificates — all in one place.</p>
+      <ul style="margin-top:2rem;display:flex;flex-direction:column;gap:.75rem;">
+        <% [
+          'Book screenings online 24/7',
+          'Download results & certificates',
+          'Track appointment status in real time',
+          'Secure, confidential health portal'
+        ].forEach(f => { %>
+          <li style="display:flex;gap:.7rem;align-items:center;color:rgba(255,255,255,.8);font-size:.9rem;">
+            <span style="width:20px;height:20px;background:rgba(46,134,222,.35);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </span>
+            <%= f %>
+          </li>
+        <% }) %>
+      </ul>
+    </div>
+    <div class="auth-left-footer">&copy; 2025 Workmedix. All rights reserved.</div>
+  </div>
+
+  <!-- Right panel -->
+  <div class="auth-right">
+    <div class="auth-card">
+      <h2>Create Account</h2>
+      <p class="sub">Fill in your details to register.</p>
+
+      <% if (error) { %>
+        <div class="alert alert-danger"><%= error %></div>
+      <% } %>
+
+      <form method="POST" action="/register" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="name">Full Name *</label>
+          <input type="text" id="name" name="name" class="form-control"
+                 value="<%= formData.name || '' %>"
+                 placeholder="Jane Smith" required autocomplete="name">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="company_name">Company Name</label>
+          <input type="text" id="company_name" name="company_name" class="form-control"
+                 value="<%= formData.company_name || '' %>"
+                 placeholder="Your organisation" autocomplete="organization">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address *</label>
+          <input type="email" id="email" name="email" class="form-control"
+                 value="<%= formData.email || '' %>"
+                 placeholder="you@company.co.za" required autocomplete="email">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="password">Password *</label>
+            <input type="password" id="password" name="password" class="form-control"
+                   placeholder="Min. 6 characters" required autocomplete="new-password">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="confirm_password">Confirm Password *</label>
+            <input type="password" id="confirm_password" name="confirm_password" class="form-control"
+                   placeholder="Repeat password" required autocomplete="new-password">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top:.25rem;">
+          Create Account →
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        Already have an account? <a href="/login">Sign in here</a>
+      </div>
+      <div style="text-align:center;margin-top:.75rem;">
+        <a href="/" style="font-size:.82rem;color:var(--mid-grey);">&larr; Back to website</a>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="/js/main.js"></script>
+</body>
+</html>

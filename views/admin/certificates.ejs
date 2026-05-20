@@ -1,0 +1,67 @@
+<%- include('../partials/head') %>
+<body>
+<div class="app-body">
+<%- include('../partials/admin-sidebar') %>
+<main class="app-main">
+  <div class="app-topbar">
+    <div class="app-topbar-title">
+      <h2>Issue Certificates</h2>
+      <p>Upload occupational health certificates to client accounts</p>
+    </div>
+  </div>
+
+  <div class="app-content">
+    <div style="max-width:680px;">
+      <% if (error) { %>
+        <div class="alert alert-danger"><%= error %></div>
+      <% } %>
+      <% if (success) { %>
+        <div class="alert alert-success" data-autodismiss><%= success %></div>
+      <% } %>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Issue New Certificate</h3>
+        </div>
+        <div class="card-body">
+          <form method="POST" action="/admin/certificates" enctype="multipart/form-data">
+            <div class="form-group">
+              <label class="form-label" for="user_id">Client *</label>
+              <select id="user_id" name="user_id" class="form-control" required>
+                <option value="">— Select client —</option>
+                <% clients.forEach(c => { %>
+                  <option value="<%= c.id %>">
+                    <%= c.name %><% if (c.company_name) { %> – <%= c.company_name %><% } %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="title">Certificate Title *</label>
+              <input type="text" id="title" name="title" class="form-control"
+                     placeholder="e.g. Certificate of Fitness – J. Smith – June 2025" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="file">Certificate File *</label>
+              <input type="file" id="file" name="file" class="form-control"
+                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required>
+              <span class="upload-hint">Accepted: PDF, Word (.doc/.docx), JPG, PNG — max 10 MB</span>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Issue Certificate →</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="alert alert-info" style="margin-top:1.25rem;">
+        The certificate will immediately appear in the client's <strong>My Certificates</strong> section. The issue date is set automatically.
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+<script src="/js/main.js"></script>
+</body>
+</html>

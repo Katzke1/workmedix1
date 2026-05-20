@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 40" fill="none">
+  <!-- Medical cross icon -->
+  <rect x="4" y="13" width="6" height="14" rx="2" fill="#2e86de"/>
+  <rect x="0" y="17" width="14" height="6" rx="2" fill="#2e86de"/>
+  <!-- Wordmark -->
+  <text x="22" y="28" font-family="Inter,sans-serif" font-weight="800" font-size="18" fill="white">Workmedix</text>
+</svg>

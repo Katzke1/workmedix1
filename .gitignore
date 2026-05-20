@@ -1,0 +1,8 @@
+node_modules/
+uploads/
+db/workmedix.db
+.env
+*.db-journal
+*.db-wal
+*.db-shm
+*.log
