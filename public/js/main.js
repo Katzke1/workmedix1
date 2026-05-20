@@ -130,3 +130,77 @@ setTimeout(() => {
     setTimeout(() => el.remove(), 500);
   });
 }, 5000);
+
+// ── Scroll reveal animations ──────────────────────────────────────────────────
+(function () {
+  if (!('IntersectionObserver' in window)) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  // Elements that fade + slide up (with sibling stagger)
+  const staggerGroups = [
+    '.services-grid',
+    '.why-grid',
+    '.serve-grid',
+    '.quick-action-grid',
+  ];
+
+  // Individual elements that animate on their own
+  const soloSelectors = [
+    '.section-label',
+    '.section-title',
+    '.section-desc',
+    '.about-grid > *',
+    '.hero-stats > *',
+    '.contact-form-wrap',
+    '.map-placeholder',
+  ];
+
+  // Left/right pair for the about section
+  const leftSelectors  = ['.hero-inner'];
+  const rightSelectors = ['.hero-image-wrap'];
+
+  function applyClass(el, cls) {
+    if (!el.classList.contains('scroll-reveal') &&
+        !el.classList.contains('scroll-reveal-left') &&
+        !el.classList.contains('scroll-reveal-right')) {
+      el.classList.add(cls);
+    }
+  }
+
+  // Staggered children
+  staggerGroups.forEach(sel => {
+    const parent = document.querySelector(sel);
+    if (!parent) return;
+    Array.from(parent.children).forEach((child, i) => {
+      applyClass(child, 'scroll-reveal');
+      child.style.transitionDelay = (i * 0.1) + 's';
+    });
+  });
+
+  // Solo elements
+  soloSelectors.forEach(sel => {
+    document.querySelectorAll(sel).forEach(el => applyClass(el, 'scroll-reveal'));
+  });
+
+  // Directional
+  leftSelectors.forEach(sel => {
+    document.querySelectorAll(sel).forEach(el => applyClass(el, 'scroll-reveal-left'));
+  });
+  rightSelectors.forEach(sel => {
+    document.querySelectorAll(sel).forEach(el => applyClass(el, 'scroll-reveal-right'));
+  });
+
+  // Observe all
+  const allReveal = document.querySelectorAll('.scroll-reveal, .scroll-reveal-left, .scroll-reveal-right');
+
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('revealed');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+
+  allReveal.forEach(el => io.observe(el));
+})();
