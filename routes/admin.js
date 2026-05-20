@@ -2,10 +2,11 @@
 
 const express         = require('express');
 const router          = express.Router();
-const multer           = require('multer');
-const path             = require('path');
-const db               = require('../db');
-const { requireAdmin } = require('../middleware/auth');
+const multer                      = require('multer');
+const path                        = require('path');
+const db                          = require('../db');
+const { requireAdmin }            = require('../middleware/auth');
+const { sendTestEmail }           = require('../lib/mailer');
 
 const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, '../uploads');
 
@@ -29,6 +30,17 @@ const uploadResults = makeUploader(path.join(UPLOADS_DIR, 'results'));
 const uploadCerts   = makeUploader(path.join(UPLOADS_DIR, 'certificates'));
 
 router.use(requireAdmin);
+
+// ── Test email ────────────────────────────────────────────────────────────────
+router.get('/test-email', async (req, res) => {
+  const to = req.query.to || req.session.user.email;
+  try {
+    await sendTestEmail(to);
+    res.send(`✅ Test email sent to <strong>${to}</strong>. Check your inbox.`);
+  } catch (err) {
+    res.send(`❌ Email failed: <pre>${err.message}</pre><br>Check your SMTP_ environment variables in Railway.`);
+  }
+});
 
 // ── Admin dashboard ────────────────────────────────────────────────────────────
 router.get('/', (req, res) => {
