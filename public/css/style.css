@@ -306,7 +306,8 @@ select.form-control { cursor: pointer; }
 
 /* ── 10. Hero ────────────────────────────────────────────── */
 .hero {
-  min-height: 100vh;
+  height: 100vh;
+  min-height: 600px;
   padding-top: var(--nav-h);
   display: flex;
   align-items: center;
@@ -318,20 +319,21 @@ select.form-control { cursor: pointer; }
   position: absolute;
   inset: 0;
   background: linear-gradient(
-    135deg,
-    rgba(7,24,64,.94)  0%,
-    rgba(12,36,97,.88) 45%,
-    rgba(0,0,0,.72)    100%
+    160deg,
+    rgba(7,24,64,.82)  0%,
+    rgba(12,36,97,.70) 50%,
+    rgba(0,0,0,.55)    100%
   );
   z-index: 0;
 }
 .hero-center {
   position: relative;
   z-index: 1;
-  max-width: 820px;
+  width: 100%;
+  max-width: 860px;
   margin: 0 auto;
   text-align: center;
-  padding: 5rem 0 4rem;
+  padding: 3rem 1rem;
 }
 
 /* Location tag */
@@ -411,35 +413,18 @@ select.form-control { cursor: pointer; }
   font-size: clamp(2.6rem, 6vw, 4.2rem);
   font-weight: 800;
   color: var(--white);
-  line-height: 1.15;
+  line-height: 1.2;
   margin-bottom: 1.5rem;
   letter-spacing: -.02em;
 }
-.hero-word-wrap {
-  display: inline-block;
-  position: relative;
-  height: 1.2em;
-  overflow: hidden;
-  vertical-align: bottom;
-  min-width: 260px;
-}
 .hero-word {
-  position: absolute;
-  left: 0; right: 0;
-  text-align: center;
   color: var(--accent-light);
-  opacity: 0;
-  transform: translateY(110%);
-  transition: opacity .55s cubic-bezier(.22,1,.36,1),
-              transform .55s cubic-bezier(.22,1,.36,1);
+  display: inline-block;
+  transition: opacity .3s ease, transform .3s ease;
 }
-.hero-word.is-active {
-  opacity: 1;
-  transform: translateY(0);
-}
-.hero-word.is-exit {
+.hero-word.is-changing {
   opacity: 0;
-  transform: translateY(-110%);
+  transform: translateY(-10px);
 }
 .hero-sub {
   font-size: 1.12rem;

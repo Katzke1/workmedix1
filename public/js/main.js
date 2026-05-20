@@ -133,18 +133,19 @@ setTimeout(() => {
 
 // ── Hero: rotating words ──────────────────────────────────────────────────────
 (function () {
-  const words = document.querySelectorAll('.hero-word');
-  if (!words.length) return;
-  let current = 0;
+  const el = document.getElementById('hero-rotating-word');
+  if (!el) return;
+  const words = ['trusted', 'certified', 'healthy', 'protected', 'compliant'];
+  let i = 0;
 
   setInterval(() => {
-    words[current].classList.remove('is-active');
-    words[current].classList.add('is-exit');
-    const prev = current;
-    setTimeout(() => words[prev].classList.remove('is-exit'), 600);
-    current = (current + 1) % words.length;
-    words[current].classList.add('is-active');
-  }, 2400);
+    el.classList.add('is-changing');
+    setTimeout(() => {
+      i = (i + 1) % words.length;
+      el.textContent = words[i];
+      el.classList.remove('is-changing');
+    }, 320);
+  }, 2600);
 })();
 
 // ── Hero: location tag live clock ────────────────────────────────────────────
