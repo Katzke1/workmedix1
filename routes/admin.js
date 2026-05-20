@@ -34,11 +34,12 @@ router.use(requireAdmin);
 // ── Test email ────────────────────────────────────────────────────────────────
 router.get('/test-email', async (req, res) => {
   const to = req.query.to || req.session.user.email;
+  res.setTimeout(20000, () => res.send('❌ Timed out after 20s — SMTP server unreachable from Railway.'));
   try {
     await sendTestEmail(to);
-    res.send(`✅ Test email sent to <strong>${to}</strong>. Check your inbox.`);
+    res.send(`✅ Test email sent to <strong>${to}</strong>. Check your inbox.<br><small>Sent via ${process.env.SMTP_HOST}:${process.env.SMTP_PORT} as ${process.env.SMTP_USER}</small>`);
   } catch (err) {
-    res.send(`❌ Email failed: <pre>${err.message}</pre><br>Check your SMTP_ environment variables in Railway.`);
+    res.send(`❌ Email failed:<br><pre style="background:#fee;padding:1rem;border-radius:6px;">${err.message}</pre><br><strong>Current settings:</strong><pre>SMTP_HOST=${process.env.SMTP_HOST}\nSMTP_PORT=${process.env.SMTP_PORT}\nSMTP_USER=${process.env.SMTP_USER}\nSMTP_FROM=${process.env.SMTP_FROM}</pre>`);
   }
 });
 
