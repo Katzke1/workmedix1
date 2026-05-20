@@ -43,7 +43,7 @@
   --radius-xl : 20px;
 
   --sidebar-w  : 260px;
-  --nav-h      : 82px;
+  --nav-h      : 110px;
   --transition : .22s ease;
 }
 
@@ -248,9 +248,9 @@ select.form-control { cursor: pointer; }
   text-decoration: none;
 }
 .nav-brand img {
-  height: calc(var(--nav-h) - 14px);
+  height: calc(var(--nav-h) - 8px);
   width: auto;
-  max-width: 220px;
+  max-width: 320px;
   object-fit: contain;
   object-position: left center;
 }
@@ -1081,15 +1081,13 @@ tbody tr:hover td { background: #f9fbff; }
    Glassmorphism · Gradient text · Glow cards · Micro-motion
    ============================================================ */
 
-/* ── Glassmorphism navbar ─────────────────────────────────── */
+/* ── Solid white navbar ───────────────────────────────────── */
 .navbar {
-  background  : rgba(255,255,255,0.88) !important;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid rgba(12,36,97,.08) !important;
+  background  : #ffffff !important;
+  border-bottom: 1px solid rgba(12,36,97,.10) !important;
 }
 .navbar.scrolled {
-  box-shadow: 0 1px 40px rgba(12,36,97,.10) !important;
+  box-shadow: 0 2px 20px rgba(12,36,97,.10) !important;
 }
 
 /* ── Gradient hero heading ────────────────────────────────── */
