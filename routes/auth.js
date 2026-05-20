@@ -3,8 +3,10 @@
 const express  = require('express');
 const router   = express.Router();
 const bcrypt   = require('bcryptjs');
-const db   = require('../db');
-const path = require('path');
+const crypto   = require('crypto');
+const db       = require('../db');
+const path     = require('path');
+const { sendVerificationEmail } = require('../lib/mailer');
 
 // ── Public home ───────────────────────────────────────────────────────────────
 router.get('/', (req, res) => {
@@ -42,6 +44,10 @@ router.post('/login', (req, res) => {
   const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase().trim());
   if (!user || !bcrypt.compareSync(password, user.password_hash)) {
     return render('Invalid email or password.');
+  }
+
+  if (!user.email_verified) {
+    return render('Please verify your email address before logging in. Check your inbox for the verification link.');
   }
 
   req.session.user = {
@@ -87,21 +93,44 @@ router.post('/register', (req, res) => {
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email.toLowerCase().trim());
   if (existing) return render('An account with this email already exists.');
 
-  const hash   = bcrypt.hashSync(password, 12);
-  const result = db.prepare(`
-    INSERT INTO users (name, email, password_hash, role, company_name)
-    VALUES (?, ?, ?, 'client', ?)
-  `).run(name.trim(), email.toLowerCase().trim(), hash, company_name ? company_name.trim() : null);
+  const hash  = bcrypt.hashSync(password, 12);
+  const token = crypto.randomBytes(32).toString('hex');
 
-  req.session.user = {
-    id           : result.lastInsertRowid,
-    name         : name.trim(),
-    email        : email.toLowerCase().trim(),
-    role         : 'client',
-    company_name : company_name ? company_name.trim() : null
-  };
+  db.prepare(`
+    INSERT INTO users (name, email, password_hash, role, company_name, email_verified, verify_token)
+    VALUES (?, ?, ?, 'client', ?, 0, ?)
+  `).run(name.trim(), email.toLowerCase().trim(), hash, company_name ? company_name.trim() : null, token);
 
-  res.redirect('/portal');
+  // Send verification email (non-blocking — don't fail registration if email fails)
+  sendVerificationEmail(email.toLowerCase().trim(), name.trim(), token)
+    .catch(err => console.error('Verification email error:', err));
+
+  res.render('auth/verify-sent', {
+    title      : 'Check Your Email | Workmedix',
+    description: 'Verify your email to activate your Workmedix account.',
+    email      : email.toLowerCase().trim()
+  });
+});
+
+// ── GET /verify/:token ────────────────────────────────────────────────────────
+router.get('/verify/:token', (req, res) => {
+  const user = db.prepare('SELECT * FROM users WHERE verify_token = ?').get(req.params.token);
+
+  if (!user) {
+    return res.render('auth/login', {
+      title      : 'Login | Workmedix',
+      description: 'Login to your Workmedix client portal.',
+      error      : 'Verification link is invalid or has already been used.'
+    });
+  }
+
+  db.prepare('UPDATE users SET email_verified = 1, verify_token = NULL WHERE id = ?').run(user.id);
+
+  res.render('auth/verified', {
+    title      : 'Email Verified | Workmedix',
+    description: 'Your Workmedix account is now active.',
+    name       : user.name
+  });
 });
 
 // ── GET /logout ───────────────────────────────────────────────────────────────

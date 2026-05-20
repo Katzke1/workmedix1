@@ -1,0 +1,22 @@
+<%- include('../partials/head') %>
+<body style="background:var(--off-white);min-height:100vh;display:flex;align-items:center;justify-content:center;">
+  <div style="max-width:480px;width:100%;margin:2rem auto;padding:0 1rem;">
+    <div class="card" style="text-align:center;padding:3rem 2.5rem;">
+      <div style="width:72px;height:72px;background:linear-gradient(135deg,#0b6e4f,#00b894);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="32" height="32">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <h2 style="color:var(--primary);margin-bottom:.75rem;">You're verified, <%= name %>!</h2>
+      <p style="color:var(--text-light);line-height:1.7;margin-bottom:2rem;">
+        Your email address has been confirmed. You can now log in to your Workmedix client portal.
+      </p>
+      <a href="/login" class="btn btn-primary" style="display:inline-flex;">Login to your portal →</a>
+    </div>
+    <p style="text-align:center;margin-top:1.5rem;">
+      <a href="/" style="font-size:.85rem;color:var(--mid-grey);">← Back to Workmedix</a>
+    </p>
+  </div>
+<script src="/js/main.js"></script>
+</body>
+</html>

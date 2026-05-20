@@ -64,6 +64,16 @@ db.exec(`
 
 console.log('✓ Tables created');
 
+// ── Migrations (add columns to existing DBs) ──────────────────────────────────
+const migrations = [
+  `ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE users ADD COLUMN verify_token   TEXT`
+];
+migrations.forEach(sql => {
+  try { db.exec(sql); } catch (e) { /* column already exists — safe to ignore */ }
+});
+console.log('✓ Migrations applied');
+
 // ── Seed admin ────────────────────────────────────────────────────────────────
 const ADMIN_EMAIL = 'admin@workmedix.co.za';
 const existing    = db.prepare('SELECT id FROM users WHERE email = ?').get(ADMIN_EMAIL);
@@ -71,8 +81,8 @@ const existing    = db.prepare('SELECT id FROM users WHERE email = ?').get(ADMIN
 if (!existing) {
   const hash = bcrypt.hashSync('admin123', 12);
   db.prepare(`
-    INSERT INTO users (name, email, password_hash, role, company_name)
-    VALUES (?, ?, ?, 'admin', 'Workmedix')
+    INSERT INTO users (name, email, password_hash, role, company_name, email_verified)
+    VALUES (?, ?, ?, 'admin', 'Workmedix', 1)
   `).run('Workmedix Admin', ADMIN_EMAIL, hash);
   console.log(`✓ Admin created  →  ${ADMIN_EMAIL}  /  admin123`);
 } else {

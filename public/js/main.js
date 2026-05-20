@@ -131,6 +131,37 @@ setTimeout(() => {
   });
 }, 5000);
 
+// ── Hero: rotating words ──────────────────────────────────────────────────────
+(function () {
+  const words = document.querySelectorAll('.hero-word');
+  if (!words.length) return;
+  let current = 0;
+
+  setInterval(() => {
+    words[current].classList.remove('is-active');
+    words[current].classList.add('is-exit');
+    const prev = current;
+    setTimeout(() => words[prev].classList.remove('is-exit'), 600);
+    current = (current + 1) % words.length;
+    words[current].classList.add('is-active');
+  }, 2400);
+})();
+
+// ── Hero: location tag live clock ────────────────────────────────────────────
+(function () {
+  const timeEl = document.querySelector('.location-time');
+  if (!timeEl) return;
+
+  function tick() {
+    timeEl.textContent = new Date().toLocaleTimeString('en-ZA', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false, timeZone: 'Africa/Johannesburg'
+    }) + ' SAST';
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+
 // ── Scroll reveal animations ──────────────────────────────────────────────────
 (function () {
   if (!('IntersectionObserver' in window)) return;

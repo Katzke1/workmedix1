@@ -1,0 +1,27 @@
+<%- include('../partials/head') %>
+<body style="background:var(--off-white);min-height:100vh;display:flex;align-items:center;justify-content:center;">
+  <div style="max-width:480px;width:100%;margin:2rem auto;padding:0 1rem;">
+    <div class="card" style="text-align:center;padding:3rem 2.5rem;">
+      <div style="width:72px;height:72px;background:linear-gradient(135deg,#0c2461,#2e86de);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="32" height="32">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+          <polyline points="22,6 12,13 2,6"/>
+        </svg>
+      </div>
+      <h2 style="color:var(--primary);margin-bottom:.75rem;">Check your inbox</h2>
+      <p style="color:var(--text-light);margin-bottom:.5rem;line-height:1.7;">
+        We've sent a verification link to:
+      </p>
+      <p style="font-weight:700;color:var(--primary);margin-bottom:1.5rem;"><%= email %></p>
+      <p style="color:var(--text-light);font-size:.9rem;line-height:1.7;margin-bottom:2rem;">
+        Click the link in that email to activate your account. If you don't see it, check your spam folder.
+      </p>
+      <a href="/login" style="font-size:.9rem;color:var(--accent);">← Back to login</a>
+    </div>
+    <p style="text-align:center;margin-top:1.5rem;">
+      <a href="/" style="font-size:.85rem;color:var(--mid-grey);">← Back to Workmedix</a>
+    </p>
+  </div>
+<script src="/js/main.js"></script>
+</body>
+</html>

@@ -6,59 +6,63 @@
      HERO
 ════════════════════════════════════════════════════════ -->
 <section class="hero" id="home">
+  <div class="hero-overlay"></div>
   <div class="container">
-    <div class="hero-layout">
-      <!-- Left: text content -->
-      <div class="hero-inner">
-        <div class="hero-eyebrow">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><circle cx="6" cy="6" r="6"/></svg>
-          Johannesburg, South Africa
+    <div class="hero-center">
+
+      <!-- Location tag -->
+      <div class="location-tag" id="location-tag">
+        <span class="location-pulse"></span>
+        <span class="location-text">Johannesburg, South Africa</span>
+        <span class="location-time"></span>
+        <svg class="location-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25"/></svg>
+      </div>
+
+      <!-- Headline with rotating word -->
+      <h1 class="hero-title">
+        Keeping your workforce<br>
+        <span class="hero-word-wrap" aria-live="polite">
+          <span class="hero-word is-active">trusted</span>
+          <span class="hero-word">certified</span>
+          <span class="hero-word">healthy</span>
+          <span class="hero-word">protected</span>
+          <span class="hero-word">compliant</span>
+        </span>
+      </h1>
+
+      <p class="hero-sub">
+        Workmedix delivers comprehensive occupational health screenings for corporate,
+        mining, and construction businesses across Johannesburg — fast, compliant, and
+        professional every step of the way.
+      </p>
+
+      <div class="hero-actions">
+        <a href="#contact" class="btn btn-primary btn-lg">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Book a Screening
+        </a>
+        <a href="#services" class="btn btn-outline-white btn-lg">Our Services &darr;</a>
+      </div>
+
+      <div class="hero-stats">
+        <div>
+          <span class="hero-stat-num">HPCSA</span>
+          <span class="hero-stat-lbl">Compliant Practitioners</span>
         </div>
-        <h1>Workplace Health Screening,<br><span>Done Right.</span></h1>
-        <p class="hero-sub">
-          Workmedix delivers comprehensive occupational health screenings for corporate,
-          mining, and construction businesses across Johannesburg — fast, compliant, and
-          professional every step of the way.
-        </p>
-        <div class="hero-actions">
-          <a href="#contact" class="btn btn-primary">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            Book a Screening
-          </a>
-          <a href="#services" class="btn btn-outline">
-            Our Services &darr;
-          </a>
+        <div>
+          <span class="hero-stat-num">24h</span>
+          <span class="hero-stat-lbl">Report Turnaround</span>
         </div>
-        <div class="hero-stats">
-          <div>
-            <span class="hero-stat-num">HPCSA</span>
-            <span class="hero-stat-lbl">Compliant Practitioners</span>
-          </div>
-          <div>
-            <span class="hero-stat-num">24h</span>
-            <span class="hero-stat-lbl">Report Turnaround</span>
-          </div>
-          <div>
-            <span class="hero-stat-num">JHB</span>
-            <span class="hero-stat-lbl">Wide Coverage</span>
-          </div>
-          <div>
-            <span class="hero-stat-num">4+</span>
-            <span class="hero-stat-lbl">Specialist Services</span>
-          </div>
+        <div>
+          <span class="hero-stat-num">JHB</span>
+          <span class="hero-stat-lbl">Wide Coverage</span>
+        </div>
+        <div>
+          <span class="hero-stat-num">4+</span>
+          <span class="hero-stat-lbl">Specialist Services</span>
         </div>
       </div>
 
-      <!-- Right: hero photo -->
-      <div class="hero-image-wrap">
-        <div class="hero-image-frame">
-          <img src="/images/hero-bg.jpg" alt="Occupational health screening — doctor with patient" class="hero-photo">
-          <div class="hero-image-badge">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            HPCSA Certified
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </section>
