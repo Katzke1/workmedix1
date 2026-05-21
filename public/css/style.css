@@ -1193,9 +1193,9 @@ tbody tr:hover td { background: #f9fbff; }
   /* Logo — don't overflow navbar on mobile */
   .nav-brand img { height: calc(var(--nav-h) - 8px); max-width: 260px; }
 
-  /* Hero — extra top space so text clears the navbar fully */
-  .hero          { min-height: 100svh; padding-top: calc(var(--nav-h) + 2rem); }
-  .hero-center   { padding: 1.5rem .75rem; }
+  /* Hero — stack from top so tall content never clips behind navbar */
+  .hero          { min-height: 100svh; height: auto; align-items: flex-start; padding-top: calc(var(--nav-h) + 1.5rem); }
+  .hero-center   { padding: 1rem .75rem 3rem; width: 100%; }
   .hero-title    { font-size: clamp(2rem, 8vw, 3rem); }
   .hero-sub      { font-size: 1rem; }
   .hero-actions  { flex-direction: column; align-items: center; gap: .75rem; }
