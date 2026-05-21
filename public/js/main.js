@@ -250,21 +250,6 @@ document.querySelectorAll('.password-toggle').forEach(btn => {
   }, 2600);
 })();
 
-// ── Hero: location tag live clock ────────────────────────────────────────────
-(function () {
-  const timeEl = document.querySelector('.location-time');
-  if (!timeEl) return;
-
-  function tick() {
-    timeEl.textContent = new Date().toLocaleTimeString('en-ZA', {
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
-      hour12: false, timeZone: 'Africa/Johannesburg'
-    }) + ' SAST';
-  }
-  tick();
-  setInterval(tick, 1000);
-})();
-
 // ── Scroll reveal animations ──────────────────────────────────────────────────
 (function () {
   if (!('IntersectionObserver' in window)) return;
