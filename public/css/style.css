@@ -234,6 +234,7 @@ select.form-control { cursor: pointer; }
   align-items: center;
   z-index: 999;
   transition: box-shadow var(--transition);
+  overflow: visible;
 }
 .navbar.scrolled { box-shadow: 0 2px 16px rgba(12,36,97,.1); }
 .navbar .container {
@@ -248,9 +249,9 @@ select.form-control { cursor: pointer; }
   text-decoration: none;
 }
 .nav-brand img {
-  height: calc(var(--nav-h) - 10px);
+  height: calc(var(--nav-h) + 40px);
   width: auto;
-  max-width: 520px;
+  max-width: 560px;
   object-fit: contain;
   object-position: left center;
 }
