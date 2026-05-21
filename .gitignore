@@ -1,8 +1,30 @@
+# Dependencies
 node_modules/
-uploads/
+
+# Database
 db/workmedix.db
+db/workmedix.db-shm
+db/workmedix.db-wal
+db/*.db-journal
+*.db
+
+# Environment secrets
 .env
-*.db-journal
-*.db-wal
-*.db-shm
+.env.local
+.env.production
+
+# Uploaded user files
+uploads/
+
+# Logs
 *.log
+server-err.txt
+server-out.txt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
