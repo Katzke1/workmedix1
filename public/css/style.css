@@ -250,7 +250,7 @@ select.form-control { cursor: pointer; }
 .nav-brand img {
   height: calc(var(--nav-h) - 10px);
   width: auto;
-  max-width: 470px;
+  max-width: 520px;
   object-fit: contain;
   object-position: left center;
 }
