@@ -1,0 +1,142 @@
+<%- include('../partials/head') %>
+<body class="app-body">
+<%- include('../partials/admin-sidebar') %>
+<div class="app-main">
+  <div class="app-topbar">
+    <div class="app-topbar-title"><h2>Admin Users</h2><p>Manage administrator accounts</p></div>
+  </div>
+  <div class="app-content">
+
+    <% if (success) { %><div class="alert alert-success" style="margin-bottom:1.25rem"><%= success %></div><% } %>
+    <% if (error)   { %><div class="alert alert-danger"  style="margin-bottom:1.25rem"><%= error %></div><% } %>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start">
+
+      <!-- Left: Admin list + Add admin -->
+      <div>
+
+        <!-- Current admins -->
+        <div class="card" style="margin-bottom:1.25rem">
+          <div class="card-header"><h3>Administrator Accounts</h3></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Name</th><th>Email</th><th>Created</th><th></th></tr></thead>
+              <tbody>
+              <% admins.forEach(a => { %>
+                <tr>
+                  <td style="font-weight:600">
+                    <%= a.name %>
+                    <% if (a.id === user.id) { %><span class="badge" style="background:#eff6ff;color:#1d4ed8;font-size:.65rem;margin-left:.4rem">You</span><% } %>
+                  </td>
+                  <td style="color:var(--text-light)"><%= a.email %></td>
+                  <td style="color:var(--text-light);font-size:.82rem;white-space:nowrap"><%= new Date(a.created_at).toLocaleDateString('en-ZA') %></td>
+                  <td>
+                    <% if (a.id !== user.id) { %>
+                      <form method="POST" action="/admin/users/<%= a.id %>/delete" style="display:inline">
+                        <button type="submit" class="btn btn-sm btn-danger"
+                          onclick="return confirm('Remove <%= a.name %> as admin?')">Remove</button>
+                      </form>
+                    <% } else { %>
+                      <span style="font-size:.78rem;color:var(--text-light)">—</span>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Add new admin -->
+        <div class="card">
+          <div class="card-header"><h3>Add New Administrator</h3></div>
+          <div class="card-body">
+            <form method="POST" action="/admin/users">
+              <div class="form-group">
+                <label class="form-label">Full Name *</label>
+                <input type="text" name="name" class="form-control" required placeholder="e.g. Jane Smith">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Email Address *</label>
+                <input type="email" name="email" class="form-control" required placeholder="jane@workmedix.co.za">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Temporary Password *</label>
+                <input type="password" name="password" class="form-control" required minlength="6" placeholder="Min. 6 characters">
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm">Create Admin Account</button>
+            </form>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right: Own account settings -->
+      <div>
+
+        <!-- Change email -->
+        <div class="card" style="margin-bottom:1.25rem">
+          <div class="card-header"><h3>Change Your Email</h3></div>
+          <div class="card-body">
+            <p style="font-size:.875rem;color:var(--text-light);margin-bottom:1rem">
+              Current email: <strong style="color:var(--text-dark)"><%= user.email %></strong>
+            </p>
+            <form method="POST" action="/admin/users/email">
+              <div class="form-group">
+                <label class="form-label">New Email Address *</label>
+                <input type="email" name="email" class="form-control" required placeholder="new@workmedix.co.za">
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm">Update Email</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Change password -->
+        <div class="card">
+          <div class="card-header"><h3>Change Your Password</h3></div>
+          <div class="card-body">
+            <form method="POST" action="/admin/users/password">
+              <div class="form-group">
+                <label class="form-label">Current Password *</label>
+                <input type="password" name="current_password" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">New Password *</label>
+                <input type="password" name="new_password" id="new-pw" class="form-control" required minlength="6">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Confirm New Password *</label>
+                <input type="password" name="confirm_password" id="confirm-pw" class="form-control" required minlength="6">
+                <small id="pw-match-msg" style="font-size:.8rem;margin-top:.25rem;display:block"></small>
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm" id="pw-submit">Update Password</button>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const newPw    = document.getElementById('new-pw');
+const confirmPw = document.getElementById('confirm-pw');
+const msg      = document.getElementById('pw-match-msg');
+const submitBtn = document.getElementById('pw-submit');
+
+function checkMatch() {
+  if (!confirmPw.value) { msg.textContent = ''; return; }
+  if (newPw.value === confirmPw.value) {
+    msg.textContent = '✓ Passwords match';
+    msg.style.color = '#20bf6b';
+    submitBtn.disabled = false;
+  } else {
+    msg.textContent = '✗ Passwords do not match';
+    msg.style.color = '#ef4444';
+    submitBtn.disabled = true;
+  }
+}
+newPw.addEventListener('input', checkMatch);
+confirmPw.addEventListener('input', checkMatch);
+</script>
+</body></html>

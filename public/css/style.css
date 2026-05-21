@@ -735,7 +735,7 @@ select.form-control { cursor: pointer; }
   gap: 2.5rem;
   padding-bottom: 3rem;
 }
-.footer-brand img { height: 34px; margin-bottom: 1rem; }
+.footer-brand img { height: auto; max-width: 200px; margin-bottom: 1rem; display: block; background: white; border-radius: 6px; padding: 5px 10px; object-fit: contain; }
 .footer-brand p   { font-size: .88rem; line-height: 1.7; max-width: 280px; }
 .footer-col h4 {
   font-size: .85rem;
@@ -808,12 +808,14 @@ select.form-control { cursor: pointer; }
   text-decoration: none;
 }
 .auth-logo img  {
-  height: 40px;
-  width: auto;
+  height: auto;
+  max-width: 200px;
+  width: 100%;
   background: white;
   border-radius: var(--radius);
-  padding: 2px 6px;
+  padding: 6px 12px;
   object-fit: contain;
+  display: block;
 }
 .auth-logo span { font-size: 1.3rem; font-weight: 800; color: var(--white); }
 .auth-left h2   { color: var(--white); margin-bottom: 1rem; }
@@ -858,27 +860,36 @@ select.form-control { cursor: pointer; }
 }
 .sidebar-logo {
   display: flex;
-  align-items: center;
-  gap: .7rem;
-  padding: 1.5rem 1.4rem 1rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .45rem;
+  padding: 1.2rem 1rem .9rem;
   text-decoration: none;
   border-bottom: 1px solid rgba(255,255,255,.1);
   flex-shrink: 0;
 }
 .sidebar-logo img  {
-  height: 54px;
-  width: auto;
+  height: auto;
+  width: 100%;
+  max-width: 190px;
   background: white;
-  border-radius: var(--radius);
-  padding: 3px 8px;
+  border-radius: 6px;
+  padding: 6px 10px;
   object-fit: contain;
+  display: block;
 }
-.sidebar-logo-text {
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: var(--white);
-  letter-spacing: -.01em;
+.sidebar-portal-tag {
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.55);
+  padding: .15rem .55rem;
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 9999px;
+  line-height: 1.4;
 }
+/* keep old selector harmless */
 .sidebar-logo-text small {
   display: block;
   font-size: .68rem;

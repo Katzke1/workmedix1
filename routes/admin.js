@@ -4,6 +4,7 @@ const express         = require('express');
 const router          = express.Router();
 const multer                      = require('multer');
 const path                        = require('path');
+const bcrypt                      = require('bcryptjs');
 const db                          = require('../db');
 const { requireAdmin }            = require('../middleware/auth');
 const { sendTestEmail }           = require('../lib/mailer');
@@ -197,6 +198,74 @@ router.get('/clients/:id', (req, res) => {
     results,
     certificates
   });
+});
+
+/* ── Admin User Management ───────────────────────────────────────────────────── */
+router.get('/users', (req, res) => {
+  const admins  = db.prepare(`SELECT id, name, email, created_at FROM users WHERE role='admin' ORDER BY created_at ASC`).all();
+  res.render('admin/users', {
+    title   : 'Admin Users | Workmedix',
+    page    : 'admin-users',
+    user    : req.session.user,
+    admins,
+    success : req.query.saved  ? 'Changes saved.' : null,
+    error   : req.query.err    ? decodeURIComponent(req.query.err) : null,
+  });
+});
+
+// Create new admin
+router.post('/users', (req, res) => {
+  const { name, email, password } = req.body;
+  if (!name?.trim() || !email?.trim() || !password?.trim()) {
+    return res.redirect('/admin/users?err=' + encodeURIComponent('Name, email and password are all required.'));
+  }
+  const exists = db.prepare('SELECT id FROM users WHERE email=?').get(email.trim().toLowerCase());
+  if (exists) {
+    return res.redirect('/admin/users?err=' + encodeURIComponent('An account with that email already exists.'));
+  }
+  const hash = bcrypt.hashSync(password, 12);
+  db.prepare(`INSERT INTO users (name, email, password_hash, role, email_verified) VALUES (?,?,?,'admin',1)`)
+    .run(name.trim(), email.trim().toLowerCase(), hash);
+  res.redirect('/admin/users?saved=1');
+});
+
+// Change own email
+router.post('/users/email', (req, res) => {
+  const { email } = req.body;
+  if (!email?.trim()) return res.redirect('/admin/users?err=' + encodeURIComponent('Email cannot be empty.'));
+  const conflict = db.prepare('SELECT id FROM users WHERE email=? AND id!=?').get(email.trim().toLowerCase(), req.session.user.id);
+  if (conflict) return res.redirect('/admin/users?err=' + encodeURIComponent('That email is already in use.'));
+  db.prepare('UPDATE users SET email=? WHERE id=?').run(email.trim().toLowerCase(), req.session.user.id);
+  req.session.user.email = email.trim().toLowerCase();
+  res.redirect('/admin/users?saved=1');
+});
+
+// Change own password
+router.post('/users/password', (req, res) => {
+  const { current_password, new_password, confirm_password } = req.body;
+  if (new_password !== confirm_password) {
+    return res.redirect('/admin/users?err=' + encodeURIComponent('New passwords do not match.'));
+  }
+  if (!new_password || new_password.length < 6) {
+    return res.redirect('/admin/users?err=' + encodeURIComponent('Password must be at least 6 characters.'));
+  }
+  const row = db.prepare('SELECT password_hash FROM users WHERE id=?').get(req.session.user.id);
+  if (!bcrypt.compareSync(current_password, row.password_hash)) {
+    return res.redirect('/admin/users?err=' + encodeURIComponent('Current password is incorrect.'));
+  }
+  const hash = bcrypt.hashSync(new_password, 12);
+  db.prepare('UPDATE users SET password_hash=? WHERE id=?').run(hash, req.session.user.id);
+  res.redirect('/admin/users?saved=1');
+});
+
+// Delete admin (cannot delete self)
+router.post('/users/:id/delete', (req, res) => {
+  const id = +req.params.id;
+  if (id === req.session.user.id) {
+    return res.redirect('/admin/users?err=' + encodeURIComponent('You cannot delete your own account.'));
+  }
+  db.prepare(`DELETE FROM users WHERE id=? AND role='admin'`).run(id);
+  res.redirect('/admin/users?saved=1');
 });
 
 module.exports = router;

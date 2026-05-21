@@ -1,10 +1,7 @@
 <aside class="sidebar" id="sidebar">
   <a href="/admin" class="sidebar-logo">
-    <img src="/images/logo.jpg" alt="Workmedix" onerror="this.style.display='none'">
-    <div class="sidebar-logo-text">
-      Workmedix
-      <small>Admin Panel</small>
-    </div>
+    <img src="/images/logo.png" alt="Workmedix" onerror="this.style.display='none'">
+    <span class="sidebar-portal-tag">Admin Panel</span>
   </a>
 
   <nav class="sidebar-nav">
@@ -35,6 +32,13 @@
         <circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
       </svg>
       Issue Certificates
+    </a>
+    <a href="/admin/users"         class="<%= page==='admin-users'  ? 'active' : '' %>">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
+      </svg>
+      Admin Users
     </a>
     <a href="/admin/clients"      class="<%= page==='clients'      ? 'active' : '' %>">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
