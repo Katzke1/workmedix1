@@ -221,33 +221,37 @@ select.form-control { cursor: pointer; }
 .badge-confirmed { background: var(--confirmed-bg); color: var(--confirmed-fg); }
 .badge-completed { background: var(--completed-bg); color: var(--completed-fg); }
 
-/* ── 9. Public Navbar ─────────────────────────────────────── */
+/* ── 9. Public Navbar — floating pill ────────────────────── */
 .navbar {
   position: fixed;
-  top: 0; left: 0; right: 0;
-  height: var(--nav-h);
-  background: #071840;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 40px);
+  max-width: 1220px;
+  height: 72px;
+  background: rgba(5,15,50,.88);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 100px;
   display: flex;
   align-items: center;
+  padding: 0 0.5rem 0 0.5rem;
   z-index: 999;
-  border-bottom: 1px solid rgba(255,255,255,.08);
-  box-shadow: 0 2px 24px rgba(0,0,0,.18);
-  transition: box-shadow .3s ease;
-}
-.navbar::before {
-  content: '';
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, #2e86de 0%, #54a0ff 50%, #a29bfe 100%);
+  box-shadow: 0 8px 40px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.07);
+  transition: background .35s ease, box-shadow .35s ease, border-color .35s ease;
 }
 .navbar.scrolled {
-  box-shadow: 0 4px 32px rgba(0,0,0,.28);
+  background: rgba(5,15,50,.97);
+  border-color: rgba(46,134,222,.3);
+  box-shadow: 0 16px 60px rgba(0,0,0,.5), 0 0 0 1px rgba(46,134,222,.1), inset 0 1px 0 rgba(255,255,255,.08);
 }
 .navbar .container {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 0 1.25rem;
 }
 
 /* Logo */
@@ -255,37 +259,56 @@ select.form-control { cursor: pointer; }
   display: flex;
   align-items: center;
   text-decoration: none;
+  flex-shrink: 0;
+  margin-right: .5rem;
 }
 .nav-brand img {
-  height: calc(var(--nav-h) - 16px);
+  height: 62px;
   width: auto;
-  max-width: 200px;
+  max-width: 240px;
   object-fit: contain;
   object-position: left center;
+  filter: drop-shadow(0 2px 12px rgba(84,160,255,.35));
+  transition: filter .3s ease, transform .3s ease;
+}
+.nav-brand:hover img {
+  filter: drop-shadow(0 4px 20px rgba(84,160,255,.55));
+  transform: scale(1.03);
 }
 
-/* Nav links */
+/* Separator */
 .nav-links {
   display: flex;
   align-items: center;
-  gap: .1rem;
+  gap: .05rem;
   list-style: none;
   margin: 0; padding: 0;
 }
+.nav-links::before {
+  content: '';
+  width: 1px;
+  height: 22px;
+  background: rgba(255,255,255,.18);
+  margin-right: .85rem;
+  flex-shrink: 0;
+}
+
+/* Links */
 .nav-links .nav-link {
   position: relative;
-  color: rgba(255,255,255,.72);
-  font-size: .88rem;
+  color: rgba(255,255,255,.7);
+  font-size: .875rem;
   font-weight: 500;
-  padding: .5rem 1rem;
-  border-radius: var(--radius);
+  padding: .45rem .9rem;
+  border-radius: 50px;
   letter-spacing: .01em;
   transition: color .25s ease, background .25s ease;
+  white-space: nowrap;
 }
 .nav-links .nav-link::after {
   content: '';
   position: absolute;
-  bottom: 4px; left: 1rem; right: 1rem;
+  bottom: 3px; left: .9rem; right: .9rem;
   height: 2px;
   background: #54a0ff;
   border-radius: 2px;
@@ -296,27 +319,28 @@ select.form-control { cursor: pointer; }
 .nav-links .nav-link:hover,
 .nav-links .nav-link.active {
   color: #ffffff;
-  background: rgba(255,255,255,.08);
+  background: rgba(255,255,255,.09);
 }
 .nav-links .nav-link:hover::after,
 .nav-links .nav-link.active::after { transform: scaleX(1); }
 
-/* Login button */
+/* Login CTA */
 .nav-links .btn-login {
-  margin-left: .75rem;
+  margin-left: .6rem;
   background: linear-gradient(135deg, #2e86de 0%, #54a0ff 100%);
   color: #ffffff !important;
-  padding: .5rem 1.4rem;
+  padding: .52rem 1.4rem;
   border-radius: 50px;
-  font-weight: 600;
-  font-size: .88rem;
-  box-shadow: 0 4px 16px rgba(46,134,222,.4);
+  font-weight: 700;
+  font-size: .875rem;
+  letter-spacing: .01em;
+  box-shadow: 0 4px 18px rgba(46,134,222,.45);
   transition: transform .25s ease, box-shadow .25s ease !important;
 }
 .nav-links .btn-login::after { display: none !important; }
 .nav-links .btn-login:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(46,134,222,.55) !important;
+  box-shadow: 0 8px 28px rgba(46,134,222,.6) !important;
   color: #ffffff !important;
 }
 
@@ -329,21 +353,27 @@ select.form-control { cursor: pointer; }
   padding: .5rem;
   background: none;
   border: none;
+  margin-left: auto;
 }
 .nav-hamburger span {
   width: 24px;
   height: 2px;
   background: rgba(255,255,255,.85);
   border-radius: 2px;
-  transition: all var(--transition);
+  transition: transform .3s ease, opacity .3s ease, background .3s ease;
   display: block;
+  transform-origin: center;
 }
+/* Animate into × when active */
+.nav-hamburger.active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav-hamburger.active span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.nav-hamburger.active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
 /* ── 10. Hero ────────────────────────────────────────────── */
 .hero {
   height: 100vh;
   min-height: 600px;
-  padding-top: var(--nav-h);
+  padding-top: calc(var(--nav-h) + 56px);
   display: flex;
   align-items: center;
   position: relative;
@@ -1204,22 +1234,26 @@ tbody tr:hover td { background: #f9fbff; }
 @media (max-width: 768px) {
   section { padding: 60px 0; }
 
-  /* Nav */
+  /* Nav — mobile pill dropdown */
   .nav-links {
     display: none;
     flex-direction: column;
     position: absolute;
-    top: var(--nav-h);
+    top: calc(100% + 10px);
     left: 0; right: 0;
-    background: #071840;
-    border-bottom: 1px solid rgba(255,255,255,.08);
-    box-shadow: 0 16px 40px rgba(0,0,0,.3);
-    padding: .75rem 1rem 1.25rem;
+    background: rgba(5,15,50,.97);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255,255,255,.13);
+    border-radius: 20px;
+    box-shadow: 0 16px 48px rgba(0,0,0,.45);
+    padding: .75rem .75rem 1rem;
     gap: .2rem;
     z-index: 998;
   }
+  .nav-links::before { display: none; }
   .nav-links.open  { display: flex; }
-  .nav-links .nav-link { padding: .65rem .9rem; font-size: .95rem; }
+  .nav-links .nav-link { padding: .65rem .9rem; font-size: .95rem; color: rgba(255,255,255,.85); }
   .nav-links .btn-login { margin: .5rem 0 0; text-align: center; justify-content: center; border-radius: 10px !important; }
   .nav-hamburger   { display: flex; }
   .navbar .container { position: relative; }
@@ -1227,8 +1261,8 @@ tbody tr:hover td { background: #f9fbff; }
   /* Logo — mobile */
   .nav-brand img { height: calc(var(--nav-h) - 14px); max-width: 150px; }
 
-  /* Hero — stack from top so tall content never clips behind navbar */
-  .hero          { min-height: 100svh; height: auto; align-items: flex-start; padding-top: calc(var(--nav-h) + 1.5rem); }
+  /* Hero — stack from top so tall content never clips behind pill navbar */
+  .hero          { min-height: 100svh; height: auto; align-items: flex-start; padding-top: calc(var(--nav-h) + 80px); }
   .hero-center   { padding: 1rem .75rem 3rem; width: 100%; }
   .hero-title    { font-size: clamp(2rem, 8vw, 3rem); }
   .hero-sub      { font-size: 1rem; }
@@ -1270,14 +1304,8 @@ tbody tr:hover td { background: #f9fbff; }
    Glassmorphism · Gradient text · Glow cards · Micro-motion
    ============================================================ */
 
-/* ── Solid white navbar ───────────────────────────────────── */
-.navbar {
-  background  : #ffffff !important;
-  border-bottom: 1px solid rgba(12,36,97,.10) !important;
-}
-.navbar.scrolled {
-  box-shadow: 0 2px 20px rgba(12,36,97,.10) !important;
-}
+/* ── Floating pill navbar — keep dark glass, no override ────── */
+/* (All navbar styles live in section 9 above) */
 
 /* ── Gradient hero heading ────────────────────────────────── */
 .hero h1 span {
