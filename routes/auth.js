@@ -11,9 +11,10 @@ const { sendVerificationEmail, sendContactNotification, sendContactConfirmation 
 // ── Public home ───────────────────────────────────────────────────────────────
 router.get('/', (req, res) => {
   res.render('index', {
-    title       : 'Workmedix | Workplace Health Screening Johannesburg',
-    description : 'Professional workplace health screening services in Johannesburg. Pre-employment medicals, occupational health, drug testing and fitness-for-duty assessments.',
-    page        : 'home'
+    title        : 'Workmedix | Workplace Health Screening Johannesburg',
+    description  : 'Professional workplace health screening services in Johannesburg. Pre-employment medicals, occupational health, drug testing and fitness-for-duty assessments.',
+    page         : 'home',
+    canonicalPath: '/'
   });
 });
 
@@ -148,6 +149,16 @@ router.post('/contact', async (req, res) => {
     // Still redirect — don't break the user flow if email fails
   }
   res.redirect('/login?msg=contact');
+});
+
+// ── GET /privacy ──────────────────────────────────────────────────────────────
+router.get('/privacy', (req, res) => {
+  res.render('privacy', {
+    title        : 'Privacy Policy | Workmedix',
+    description  : 'Workmedix Privacy Policy — how we collect, use, and protect your personal information in compliance with POPIA.',
+    canonicalPath: '/privacy',
+    page         : 'privacy'
+  });
 });
 
 // ── GET /logout ───────────────────────────────────────────────────────────────

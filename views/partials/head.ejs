@@ -1,40 +1,119 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-ZA">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
-  <!-- Primary SEO -->
+  <!-- ── Primary SEO ──────────────────────────────────────── -->
   <title><%= title %></title>
-  <meta name="description" content="<%= locals.description || '' %>">
-  <meta name="robots" content="index, follow">
-  <meta name="author" content="Workmedix">
-  <meta name="keywords" content="workplace health screening, occupational health, pre-employment medical, drug testing, fitness for duty, Johannesburg, South Africa">
+  <meta name="description"  content="<%= locals.description || '' %>">
+  <meta name="author"       content="Workmedix">
+  <meta name="robots"       content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <meta name="keywords"     content="workplace health screening, occupational health, pre-employment medical, drug testing, fitness for duty, HPCSA, Johannesburg, South Africa">
+  <meta name="theme-color"  content="#0c2461">
 
-  <!-- Open Graph -->
-  <meta property="og:type"        content="website">
-  <meta property="og:title"       content="<%= title %>">
-  <meta property="og:description" content="<%= locals.description || '' %>">
-  <meta property="og:site_name"   content="Workmedix">
-  <meta property="og:locale"      content="en_ZA">
+  <!-- ── Canonical ────────────────────────────────────────── -->
+  <link rel="canonical" href="<%= (locals.APP_URL || 'https://www.workmedix.com') + (locals.canonicalPath || '') %>">
 
-  <!-- Twitter Card -->
-  <meta name="twitter:card"        content="summary">
+  <!-- ── Open Graph ───────────────────────────────────────── -->
+  <meta property="og:type"         content="<%= locals.ogType || 'website' %>">
+  <meta property="og:title"        content="<%= title %>">
+  <meta property="og:description"  content="<%= locals.description || '' %>">
+  <meta property="og:url"          content="<%= (locals.APP_URL || 'https://www.workmedix.com') + (locals.canonicalPath || '') %>">
+  <meta property="og:site_name"    content="Workmedix">
+  <meta property="og:locale"       content="en_ZA">
+  <meta property="og:image"        content="<%= locals.APP_URL || 'https://www.workmedix.com' %>/images/og-image.png">
+  <meta property="og:image:width"  content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt"    content="Workmedix – Occupational Health Screening">
+
+  <!-- ── Twitter Card ─────────────────────────────────────── -->
+  <meta name="twitter:card"        content="summary_large_image">
   <meta name="twitter:title"       content="<%= title %>">
   <meta name="twitter:description" content="<%= locals.description || '' %>">
+  <meta name="twitter:image"       content="<%= locals.APP_URL || 'https://www.workmedix.com' %>/images/og-image.png">
 
-  <!-- Geo -->
-  <meta name="geo.region"   content="ZA-GP">
-  <meta name="geo.placename" content="Johannesburg, South Africa">
+  <!-- ── Geo / Local ──────────────────────────────────────── -->
+  <meta name="geo.region"      content="ZA-GP">
+  <meta name="geo.placename"   content="Johannesburg, South Africa">
+  <meta name="geo.position"    content="-26.2041;28.0473">
+  <meta name="ICBM"            content="-26.2041, 28.0473">
 
-  <!-- Google Fonts -->
+  <!-- ── PWA / App ─────────────────────────────────────────── -->
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="apple-touch-icon"              href="/images/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16.png">
+  <link rel="icon" type="image/x-icon"            href="/images/favicon.ico">
+  <meta name="apple-mobile-web-app-capable"        content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title"          content="Workmedix">
+  <meta name="application-name"                    content="Workmedix">
+  <meta name="msapplication-TileColor"             content="#0c2461">
+
+  <!-- ── Performance hints ─────────────────────────────────── -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload"    href="/css/style.css" as="style">
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+
+  <!-- ── Fonts ─────────────────────────────────────────────── -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- Stylesheet -->
+  <!-- ── Stylesheet ────────────────────────────────────────── -->
   <link rel="stylesheet" href="/css/style.css">
 
-  <!-- Favicon placeholder -->
-  <link rel="icon" type="image/png" href="/images/favicon.png">
+  <!-- ── JSON-LD Structured Data (homepage only) ───────────── -->
+  <% if (locals.page === 'home') { %>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "MedicalOrganization",
+    "name": "Workmedix",
+    "alternateName": "Workmedix Occupational Health",
+    "url": "https://www.workmedix.com",
+    "logo": "https://www.workmedix.com/images/logo.png",
+    "image": "https://www.workmedix.com/images/og-image.png",
+    "description": "Professional workplace health screening services in Johannesburg. Pre-employment medicals, occupational health, drug testing and fitness-for-duty assessments.",
+    "telephone": "+27747163079",
+    "email": "info@workmedix.co.za",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Johannesburg",
+      "addressRegion": "Gauteng",
+      "addressCountry": "ZA"
+    },
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": -26.2041,
+      "longitude": 28.0473
+    },
+    "areaServed": {
+      "@type": "Country",
+      "name": "South Africa"
+    },
+    "priceRange": "$$",
+    "openingHoursSpecification": {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"],
+      "opens": "08:00",
+      "closes": "17:00"
+    },
+    "sameAs": [],
+    "hasCredential": {
+      "@type": "EducationalOccupationalCredential",
+      "credentialCategory": "certification",
+      "name": "HPCSA Certified Practitioners"
+    },
+    "serviceType": [
+      "Pre-Employment Medical Screening",
+      "Occupational Health Assessments",
+      "Drug and Alcohol Testing",
+      "Fitness for Duty Evaluations",
+      "Periodic Medical Examinations"
+    ]
+  }
+  </script>
+  <% } %>
 </head>

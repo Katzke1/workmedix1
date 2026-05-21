@@ -1,0 +1,15 @@
+{
+  "name": "Workmedix",
+  "short_name": "Workmedix",
+  "description": "Professional workplace health screening services across South Africa.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0c2461",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/images/favicon-32.png",  "sizes": "32x32",   "type": "image/png" },
+    { "src": "/images/apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "apple touch icon" },
+    { "src": "/images/logo.png",        "sizes": "any",     "type": "image/png", "purpose": "maskable any" }
+  ]
+}

@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /portal/
+Disallow: /uploads/
+Disallow: /api/
+
+Sitemap: https://www.workmedix.com/sitemap.xml
