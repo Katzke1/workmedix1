@@ -42,8 +42,8 @@
   --radius-lg : 14px;
   --radius-xl : 20px;
 
-  --sidebar-w  : 260px;
-  --nav-h      : 110px;
+  --sidebar-w  : 270px;
+  --nav-h      : 130px;
   --transition : .22s ease;
 }
 
@@ -248,9 +248,9 @@ select.form-control { cursor: pointer; }
   text-decoration: none;
 }
 .nav-brand img {
-  height: calc(var(--nav-h) - 6px);
+  height: calc(var(--nav-h) - 20px);
   width: auto;
-  max-width: 340px;
+  max-width: 460px;
   object-fit: contain;
   object-position: left center;
 }
@@ -809,7 +809,7 @@ select.form-control { cursor: pointer; }
 .auth-logo img {
   height: auto;
   width: 100%;
-  max-width: 300px;
+  max-width: 320px;
   object-fit: contain;
   display: block;
 }
@@ -866,7 +866,7 @@ select.form-control { cursor: pointer; }
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: .9rem 1.25rem 1rem;
+  padding: 1.1rem 1rem 1.1rem;
   text-decoration: none;
   border-bottom: 1px solid rgba(255,255,255,.12);
   flex-shrink: 0;
@@ -874,7 +874,7 @@ select.form-control { cursor: pointer; }
 .sidebar-logo img  {
   height: auto;
   width: 100%;
-  max-width: 210px;
+  max-width: 230px;
   object-fit: contain;
   display: block;
 }
@@ -1129,10 +1129,10 @@ tbody tr:hover td { background: #f9fbff; }
 
 /* Responsive navbar height */
 @media (max-width: 1200px) {
-  :root { --nav-h: 88px; }
+  :root { --nav-h: 100px; }
 }
 @media (max-width: 768px) {
-  :root { --nav-h: 66px; }
+  :root { --nav-h: 74px; }
 }
 
 /* Hamburger → X animation */
@@ -1649,7 +1649,7 @@ tbody tr:hover td { background: #f9fbff; }
 }
 .dash-welcome-logo img {
   height: auto;
-  width: 200px;
+  width: 230px;
   object-fit: contain;
   display: block;
 }
