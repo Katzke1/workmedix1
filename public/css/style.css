@@ -233,19 +233,30 @@ select.form-control { cursor: pointer; }
   background: rgba(255,255,255,.95);
   backdrop-filter: blur(32px) saturate(180%);
   -webkit-backdrop-filter: blur(32px) saturate(180%);
-  border: 1px solid rgba(200,220,245,.70);
+  /* Glassy bezel: bright border + outer ring + soft atmospheric glow */
+  border: 1px solid rgba(210,228,252,.80);
   border-radius: 100px;
   display: flex;
   align-items: center;
   padding: 0 0.5rem;
   z-index: 999;
-  box-shadow: 0 2px 8px rgba(0,0,0,.05), 0 8px 32px rgba(0,0,0,.09),
-              inset 0 1px 0 rgba(255,255,255,1);
+  box-shadow:
+    0 0 0 1px  rgba(255,255,255,.90),          /* bright inner ring  */
+    0 0 0 3px  rgba(190,215,248,.40),           /* outer glassy halo  */
+    0 0 18px   rgba(140,185,255,.12),           /* soft blue glow     */
+    0 4px 12px rgba(0,0,0,.06),
+    0 10px 36px rgba(0,0,0,.09),
+    inset 0 1px 0 rgba(255,255,255,1);
   transition: box-shadow .35s ease, transform .4s cubic-bezier(.4,0,.2,1);
 }
 .navbar.scrolled {
-  box-shadow: 0 4px 16px rgba(0,0,0,.08), 0 16px 48px rgba(0,0,0,.12),
-              inset 0 1px 0 rgba(255,255,255,1);
+  box-shadow:
+    0 0 0 1px  rgba(255,255,255,.95),
+    0 0 0 3px  rgba(180,210,248,.50),
+    0 0 24px   rgba(100,160,255,.14),
+    0 6px 20px rgba(0,0,0,.09),
+    0 16px 52px rgba(0,0,0,.12),
+    inset 0 1px 0 rgba(255,255,255,1);
 }
 .navbar.nav-hidden {
   transform: translateX(-50%) translateY(calc(-100% - 24px));
@@ -267,9 +278,9 @@ select.form-control { cursor: pointer; }
   margin-right: .75rem;
 }
 .nav-brand img {
-  height: 130px;
+  height: 148px;
   width: auto;
-  max-width: 360px;
+  max-width: 380px;
   object-fit: contain;
   object-position: left center;
   transition: transform .3s ease, opacity .3s ease;
@@ -573,27 +584,25 @@ select.form-control { cursor: pointer; }
 
 /* HPCSA badge */
 .hero-badge {
-  position: absolute;
-  top: calc(var(--nav-h) + 1.25rem);
-  right: 2rem;
   display: inline-flex;
   align-items: center;
   gap: .45rem;
-  background: rgba(255,255,255,.09);
-  border: 1px solid rgba(255,255,255,.22);
+  background: rgba(255,255,255,.10);
+  border: 1px solid rgba(255,255,255,.28);
   border-radius: 999px;
-  padding: .4rem 1rem;
+  padding: .42rem 1.1rem;
   font-size: .76rem;
   font-weight: 600;
-  color: rgba(255,255,255,.88);
+  color: rgba(255,255,255,.90);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  letter-spacing: .03em;
-  z-index: 3;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
   pointer-events: none;
   white-space: nowrap;
 }
-.hero-badge svg { stroke: #22c55e; flex-shrink: 0; }
+.hero-badge svg { stroke: #4ade80; flex-shrink: 0; }
 
 /* ── 11. Section backgrounds ─────────────────────────────── */
 .bg-white    { background: var(--white);     }
@@ -1226,7 +1235,7 @@ tbody tr:hover td { background: #f9fbff; }
   .form-row     { grid-template-columns: 1fr; }
 }
 @media (max-width: 960px) {
-  .hero-badge { display: none; }
+  .hero-badge { margin-bottom: 1rem; font-size: .72rem; }
   .hero-stats { gap: 1.75rem; margin-top: 3rem; padding-top: 2rem; }
 }
 
@@ -1248,8 +1257,8 @@ tbody tr:hover td { background: #f9fbff; }
 
   /* Logo */
   .nav-brand img {
-    height: 60px !important;
-    max-width: 210px !important;
+    height: 68px !important;
+    max-width: 220px !important;
     filter: none !important;
     opacity: 1 !important;
   }
