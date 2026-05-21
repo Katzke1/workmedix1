@@ -1,24 +1,29 @@
 'use strict';
 
-// ── Navbar: scroll shadow + auto-hide on scroll-down ─────────────────────────
+// ── Navbar: transparent → glass on scroll + auto-hide on scroll-down ─────────
 (function () {
   const nav = document.querySelector('.navbar');
   if (!nav) return;
 
-  let lastY    = window.scrollY;
-  let ticking  = false;
+  let lastY   = window.scrollY;
+  let ticking = false;
+  const isMobile = () => window.innerWidth <= 768;
 
   function update() {
     const y     = window.scrollY;
     const delta = y - lastY;
 
-    // Scrolled state (glass deepens after 40px)
-    nav.classList.toggle('scrolled', y > 40);
+    // Trigger glass pill after 10px
+    nav.classList.toggle('scrolled', y > 10);
 
-    // Hide when scrolling down past 120px, reveal on scroll up
-    if (y > 120) {
-      if (delta > 6)  nav.classList.add('nav-hidden');     // going down
-      if (delta < -6) nav.classList.remove('nav-hidden');  // going up
+    // Auto-hide only on desktop when scrolling down past 120px
+    if (!isMobile()) {
+      if (y > 120) {
+        if (delta > 6)  nav.classList.add('nav-hidden');
+        if (delta < -6) nav.classList.remove('nav-hidden');
+      } else {
+        nav.classList.remove('nav-hidden');
+      }
     } else {
       nav.classList.remove('nav-hidden');
     }
