@@ -254,12 +254,12 @@ select.form-control { cursor: pointer; }
   border-bottom: 1px solid rgba(12,36,97,.1);
 }
 
-/* ── Homepage only: transparent over dark hero ── */
+/* ── Homepage only: dark glass over hero ── */
 .has-hero .navbar {
-  background: rgba(7,24,64,.1);
-  backdrop-filter: blur(0px);
-  -webkit-backdrop-filter: blur(0px);
-  border-bottom: 1px solid rgba(255,255,255,0);
+  background: rgba(7,24,64,.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255,255,255,.08);
   box-shadow: none;
 }
 .has-hero .navbar::before { opacity: 0; transition: opacity .45s ease; }
