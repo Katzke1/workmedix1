@@ -248,9 +248,9 @@ select.form-control { cursor: pointer; }
   text-decoration: none;
 }
 .nav-brand img {
-  height: calc(var(--nav-h) - 20px);
+  height: calc(var(--nav-h) - 10px);
   width: auto;
-  max-width: 460px;
+  max-width: 470px;
   object-fit: contain;
   object-position: left center;
 }
@@ -809,7 +809,7 @@ select.form-control { cursor: pointer; }
 .auth-logo img {
   height: auto;
   width: 100%;
-  max-width: 320px;
+  max-width: 330px;
   object-fit: contain;
   display: block;
 }
@@ -874,7 +874,7 @@ select.form-control { cursor: pointer; }
 .sidebar-logo img  {
   height: auto;
   width: 100%;
-  max-width: 230px;
+  max-width: 240px;
   object-fit: contain;
   display: block;
 }
@@ -1649,7 +1649,7 @@ tbody tr:hover td { background: #f9fbff; }
 }
 .dash-welcome-logo img {
   height: auto;
-  width: 230px;
+  width: 240px;
   object-fit: contain;
   display: block;
 }
