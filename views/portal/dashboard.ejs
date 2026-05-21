@@ -15,14 +15,14 @@
 
   <div class="app-content">
     <!-- Welcome banner -->
-    <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));border-radius:var(--radius-xl);padding:2rem 2.5rem;margin-bottom:2rem;color:white;">
-      <h3 style="color:white;margin-bottom:.35rem;">Good day, <%= user.name.split(' ')[0] %>!</h3>
-      <p style="color:rgba(255,255,255,.75);margin:0;">
-        <% if (user.company_name) { %>
-          <%= user.company_name %> &bull;
-        <% } %>
-        Workmedix Client Portal
-      </p>
+    <div class="dash-welcome-banner">
+      <div class="dash-welcome-logo">
+        <img src="/images/logo.png" alt="Workmedix">
+      </div>
+      <div class="dash-welcome-text">
+        <h3>Good day, <%= user.name.split(' ')[0] %>!</h3>
+        <p><% if (user.company_name) { %><%= user.company_name %> &nbsp;·&nbsp; <% } %>Workmedix Client Portal</p>
+      </div>
     </div>
 
     <!-- Stats -->

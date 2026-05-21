@@ -55,7 +55,7 @@
                 <td><%= j.num_people %></td>
                 <td style="font-weight:600;color:var(--primary)"><%- fmt(j.rev) %></td>
                 <td style="color:#ef4444"><%- fmt(j.unit_cost*j.num_people + j.travel_cost) %></td>
-                <td style="color:<%= j.profit>=0?'#20bf6b':'#ef4444';font-weight:600 %>"><%- fmt(j.profit) %></td>
+                <td style="font-weight:600;color:<%= j.profit>=0?'#20bf6b':'#ef4444' %>"><%- fmt(j.profit) %></td>
                 <td><%= j.rev > 0 ? pct(j.profit,j.rev)+'%' : '—' %></td>
                 <td><%= j.staff_name||'—' %></td>
                 <td>

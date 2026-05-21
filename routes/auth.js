@@ -6,7 +6,7 @@ const bcrypt   = require('bcryptjs');
 const crypto   = require('crypto');
 const db       = require('../db');
 const path     = require('path');
-const { sendVerificationEmail } = require('../lib/mailer');
+const { sendVerificationEmail, sendContactNotification, sendContactConfirmation } = require('../lib/mailer');
 
 // ── Public home ───────────────────────────────────────────────────────────────
 router.get('/', (req, res) => {
@@ -25,7 +25,8 @@ router.get('/login', (req, res) => {
   res.render('auth/login', {
     title       : 'Login | Workmedix',
     description : 'Login to your Workmedix client portal or admin dashboard.',
-    error       : null
+    error       : null,
+    msg         : req.query.msg || null
   });
 });
 
@@ -131,6 +132,22 @@ router.get('/verify/:token', (req, res) => {
     description: 'Your Workmedix account is now active.',
     name       : user.name
   });
+});
+
+// ── POST /contact ─────────────────────────────────────────────────────────────
+router.post('/contact', async (req, res) => {
+  const { name, company, email, phone, service, message } = req.body;
+  if (!name?.trim() || !email?.trim() || !phone?.trim() || !message?.trim()) {
+    return res.redirect('/?err=contact#contact');
+  }
+  try {
+    await sendContactNotification({ name: name.trim(), company: company?.trim() || '', email: email.trim(), phone: phone.trim(), service: service || 'Not specified', message: message.trim() });
+    await sendContactConfirmation({ name: name.trim(), email: email.trim(), service: service || 'our services' });
+  } catch (e) {
+    console.error('Contact email error:', e.message);
+    // Still redirect — don't break the user flow if email fails
+  }
+  res.redirect('/login?msg=contact');
 });
 
 // ── GET /logout ───────────────────────────────────────────────────────────────

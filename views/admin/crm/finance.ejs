@@ -54,7 +54,7 @@
               <td><%= m.jobs %></td>
               <td style="color:var(--primary);font-weight:600"><%- fmt(m.rev) %></td>
               <td style="color:#ef4444"><%- fmt(m.cost) %></td>
-              <td style="color:<%= m.profit>=0?'#20bf6b':'#ef4444';font-weight:600 %>"><%- fmt(m.profit) %></td>
+              <td style="font-weight:600;color:<%= m.profit>=0?'#20bf6b':'#ef4444' %>"><%- fmt(m.profit) %></td>
               <td><%= m.rev > 0 ? pct(m.profit,m.rev)+'%' : '—' %></td>
             </tr>
           <% }); %>

@@ -16,6 +16,17 @@
   </div>
 
   <div class="app-content">
+    <!-- Welcome banner -->
+    <div class="dash-welcome-banner">
+      <div class="dash-welcome-logo">
+        <img src="/images/logo.png" alt="Workmedix">
+      </div>
+      <div class="dash-welcome-text">
+        <h3>Welcome back, <%= user.name.split(' ')[0] %></h3>
+        <p>Workmedix Admin Panel &nbsp;·&nbsp; <%= new Date().toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) %></p>
+      </div>
+    </div>
+
     <!-- Stats -->
     <div class="stats-grid">
       <div class="stat-card">
