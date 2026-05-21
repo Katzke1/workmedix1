@@ -1,23 +1,21 @@
 'use strict';
 
-// ── Navbar: transparent → glass on scroll + auto-hide on scroll-down ─────────
+// ── Navbar: scroll glow + auto-hide on scroll-down ───────────────────────────
 (function () {
   const nav = document.querySelector('.navbar');
   if (!nav) return;
 
   let lastY   = window.scrollY;
   let ticking = false;
-  const isMobile = () => window.innerWidth <= 768;
 
   function update() {
     const y     = window.scrollY;
     const delta = y - lastY;
 
-    // Trigger glass pill after 10px
-    nav.classList.toggle('scrolled', y > 10);
+    nav.classList.toggle('scrolled', y > 30);
 
-    // Auto-hide only on desktop when scrolling down past 120px
-    if (!isMobile()) {
+    // Hide on scroll-down past 120px (desktop only)
+    if (window.innerWidth > 768) {
       if (y > 120) {
         if (delta > 6)  nav.classList.add('nav-hidden');
         if (delta < -6) nav.classList.remove('nav-hidden');
