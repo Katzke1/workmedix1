@@ -1,0 +1,110 @@
+<%- include('../../partials/head') %>
+<body class="app-body">
+<%- include('../../partials/admin-sidebar') %>
+<div class="app-main">
+  <div class="app-topbar">
+    <div class="app-topbar-title"><h2>Rates &amp; Settings</h2><p>Default service prices and costs</p></div>
+  </div>
+  <div class="app-content">
+
+    <% if (success) { %><div class="alert alert-success" style="margin-bottom:1rem"><%= success %></div><% } %>
+
+    <div class="crm-detail-grid">
+
+      <!-- Edit existing rates -->
+      <div class="card" style="grid-column:1/-1;max-width:820px">
+        <div class="card-header"><h3>Service Rate Table</h3></div>
+        <div class="card-body">
+          <p style="color:var(--text-light);font-size:.875rem;margin-bottom:1.25rem">
+            These defaults auto-fill when you create a new job. Revenue uses <strong>Price</strong>; Cost uses <strong>Cost</strong>.
+            All prices are per person.
+          </p>
+          <form method="POST" action="/admin/crm/settings">
+            <div class="table-wrap" style="margin:-1rem -1.25rem;margin-bottom:.75rem">
+              <table>
+                <thead><tr><th>Service Name</th><th>Default Price (excl VAT)</th><th>Default Cost (incl VAT)</th><th>Margin</th><th></th></tr></thead>
+                <tbody>
+                <% rates.forEach(r => { %>
+                  <% const margin = r.default_price > 0 ? (((r.default_price - r.default_cost)/r.default_price)*100).toFixed(1) : '—'; %>
+                  <tr>
+                    <td>
+                      <input type="hidden" name="id" value="<%= r.id %>">
+                      <input type="text" name="service_name" class="form-control form-control-sm" value="<%= r.service_name %>" required style="min-width:200px">
+                    </td>
+                    <td>
+                      <div class="input-group-prefix" style="min-width:130px">
+                        <span>R</span>
+                        <input type="number" name="default_price" class="form-control form-control-sm" min="0" step="0.01" value="<%= r.default_price %>"
+                               oninput="calcMargin(this)" data-row="<%= r.id %>">
+                      </div>
+                    </td>
+                    <td>
+                      <div class="input-group-prefix" style="min-width:130px">
+                        <span>R</span>
+                        <input type="number" name="default_cost" class="form-control form-control-sm" min="0" step="0.01" value="<%= r.default_cost %>"
+                               oninput="calcMargin(this)" data-row="<%= r.id %>">
+                      </div>
+                    </td>
+                    <td id="margin-<%= r.id %>" style="font-weight:600;color:<%= typeof margin==='string'&&margin!=='—'&&parseFloat(margin)>=0?'#20bf6b':'#ef4444' %>">
+                      <%= margin !== '—' ? margin+'%' : '—' %>
+                    </td>
+                    <td>
+                      <button type="submit" form="del-rate-<%= r.id %>" class="btn btn-sm btn-danger">×</button>
+                    </td>
+                  </tr>
+                <% }); %>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Add new rate row -->
+            <div style="background:var(--off-white);border-radius:.5rem;padding:1rem;margin-bottom:1rem">
+              <div style="font-size:.8rem;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.75rem">Add New Service</div>
+              <div class="form-row" style="align-items:flex-end">
+                <div class="form-group">
+                  <label class="form-label">Service Name</label>
+                  <input type="text" name="new_name" class="form-control" placeholder="e.g. Audiometry">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Price (excl VAT)</label>
+                  <div class="input-group-prefix"><span>R</span><input type="number" name="new_price" class="form-control" min="0" step="0.01" value="0"></div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Cost (incl VAT)</label>
+                  <div class="input-group-prefix"><span>R</span><input type="number" name="new_cost" class="form-control" min="0" step="0.01" value="0"></div>
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save All Rates</button>
+          </form>
+
+          <!-- Delete forms (outside main form) -->
+          <% rates.forEach(r => { %>
+            <form id="del-rate-<%= r.id %>" method="POST" action="/admin/crm/settings/delete/<%= r.id %>" style="display:none"></form>
+          <% }); %>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<script>
+function calcMargin(input) {
+  const row   = input.dataset.row;
+  const cells = input.closest('tr').querySelectorAll('[type=number]');
+  const price = +cells[0].value || 0;
+  const cost  = +cells[1].value || 0;
+  const el    = document.getElementById('margin-' + row);
+  if (!el) return;
+  if (price > 0) {
+    const m = ((price - cost) / price * 100).toFixed(1);
+    el.textContent = m + '%';
+    el.style.color = parseFloat(m) >= 0 ? '#20bf6b' : '#ef4444';
+  } else {
+    el.textContent = '—';
+    el.style.color = '';
+  }
+}
+</script>
+</body></html>

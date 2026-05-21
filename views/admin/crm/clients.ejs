@@ -1,0 +1,65 @@
+<%- include('../../partials/head') %>
+<body class="app-body">
+<%- include('../../partials/admin-sidebar') %>
+<div class="app-main">
+  <div class="app-topbar">
+    <div class="app-topbar-title"><h2>CRM Companies</h2><p><%= clients.length %> client<%= clients.length!==1?'s':'' %> found</p></div>
+    <div class="topbar-actions">
+      <a href="/admin/crm/clients/new" class="btn btn-primary btn-sm">+ Add Client</a>
+    </div>
+  </div>
+  <div class="app-content">
+
+    <!-- Search / Filter -->
+    <form method="GET" class="crm-filter-bar">
+      <input type="text" name="q" value="<%= search %>" class="form-control" placeholder="Search company, contact, email…" style="max-width:300px">
+      <select name="type" class="form-control" style="max-width:180px">
+        <option value="">All Contract Types</option>
+        <% ['ad-hoc','retainer','contract'].forEach(t => { %>
+          <option value="<%= t %>" <%= type===t?'selected':'' %>><%= t.charAt(0).toUpperCase()+t.slice(1) %></option>
+        <% }); %>
+      </select>
+      <button type="submit" class="btn btn-outline-dark btn-sm">Filter</button>
+      <a href="/admin/crm/clients" class="btn btn-sm" style="color:var(--text-light)">Clear</a>
+    </form>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Company</th><th>Contact</th><th>Phone</th>
+            <th>Industry</th><th>Contract</th>
+            <th>Jobs</th><th>Total Revenue</th><th>Actions</th>
+          </tr></thead>
+          <tbody>
+          <% if (clients.length === 0) { %>
+            <tr><td colspan="8" class="table-empty">No clients yet — <a href="/admin/crm/clients/new">add your first client</a></td></tr>
+          <% } else { clients.forEach(c => { %>
+            <tr>
+              <td>
+                <a href="/admin/crm/clients/<%= c.id %>" style="font-weight:600;color:var(--primary)"><%= c.company_name %></a>
+                <% if (!c.active) { %><span class="badge" style="background:#fee;color:#b71c1c;font-size:.65rem;margin-left:.4rem">Inactive</span><% } %>
+              </td>
+              <td><%= c.contact_name || '—' %></td>
+              <td><%= c.contact_phone || '—' %></td>
+              <td><%= c.industry || '—' %></td>
+              <td><span class="crm-contract-badge crm-contract-<%= c.contract_type %>"><%= c.contract_type %></span></td>
+              <td><%= c.job_count %></td>
+              <td style="font-weight:600;color:var(--primary)"><%- fmt(c.total_rev) %></td>
+              <td>
+                <div style="display:flex;gap:.4rem">
+                  <a href="/admin/crm/clients/<%= c.id %>" class="btn btn-sm btn-outline-dark">View</a>
+                  <a href="/admin/crm/clients/<%= c.id %>?edit=1" class="btn btn-sm" style="background:var(--info-bg);color:var(--info-color)">Edit</a>
+                  <a href="/admin/crm/jobs/new?client=<%= c.id %>" class="btn btn-sm btn-primary">+ Job</a>
+                </div>
+              </td>
+            </tr>
+          <% }); } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body></html>

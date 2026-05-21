@@ -1,0 +1,120 @@
+<%- include('../../partials/head') %>
+<body class="app-body">
+<%- include('../../partials/admin-sidebar') %>
+<div class="app-main">
+  <div class="app-topbar">
+    <div class="app-topbar-title"><h2>Staff</h2><p>Practitioners and team members</p></div>
+  </div>
+  <div class="app-content">
+
+    <% if (success) { %><div class="alert alert-success" style="margin-bottom:1rem"><%= success %></div><% } %>
+    <% if (error)   { %><div class="alert alert-danger"  style="margin-bottom:1rem"><%= error %></div><% } %>
+
+    <div class="crm-detail-grid">
+
+      <!-- Add staff form -->
+      <div class="card" style="align-self:start">
+        <div class="card-header"><h3>Add Staff Member</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/crm/staff">
+            <div class="form-group">
+              <label class="form-label">Full Name *</label>
+              <input type="text" name="name" class="form-control" required placeholder="e.g. Dr. Jane Smith">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Role</label>
+              <input type="text" name="role" class="form-control" value="Practitioner" placeholder="e.g. Practitioner">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-control">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Phone</label>
+                <input type="tel" name="phone" class="form-control">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Daily Rate (cost, excl VAT)</label>
+              <div class="input-group-prefix"><span>R</span>
+                <input type="number" name="daily_rate" class="form-control" min="0" step="0.01" value="0">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Add Staff</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Staff list -->
+      <div>
+        <% if (staff.length === 0) { %>
+          <div class="card"><div class="card-body" style="text-align:center;color:var(--text-light);padding:2rem">
+            No staff members yet. Add one on the left.
+          </div></div>
+        <% } else { staff.forEach(s => { %>
+          <div class="card" style="margin-bottom:1rem">
+            <div class="card-body">
+              <form method="POST" action="/admin/crm/staff/<%= s.id %>">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap;margin-bottom:1rem">
+                  <div>
+                    <div style="font-size:1.1rem;font-weight:700;color:var(--text-dark)"><%= s.name %></div>
+                    <div style="font-size:.85rem;color:var(--text-light)"><%= s.role %></div>
+                  </div>
+                  <div style="display:flex;gap:.5rem;align-items:center">
+                    <span class="badge" style="background:<%= s.active?'#e8f8f0':'#fee' %>;color:<%= s.active?'#20bf6b':'#b71c1c' %>">
+                      <%= s.active ? 'Active' : 'Inactive' %>
+                    </span>
+                    <div style="text-align:right;font-size:.85rem;color:var(--text-light)">
+                      <div><strong style="color:var(--text-dark)"><%= s.job_count %></strong> jobs</div>
+                      <div><%- fmt(s.total_rev) %> revenue</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">Name</label>
+                    <input type="text" name="name" class="form-control" value="<%= s.name %>" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Role</label>
+                    <input type="text" name="role" class="form-control" value="<%= s.role||'' %>">
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="email" class="form-control" value="<%= s.email||'' %>">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Phone</label>
+                    <input type="tel" name="phone" class="form-control" value="<%= s.phone||'' %>">
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">Daily Rate</label>
+                    <div class="input-group-prefix"><span>R</span>
+                      <input type="number" name="daily_rate" class="form-control" min="0" step="0.01" value="<%= s.daily_rate||0 %>">
+                    </div>
+                  </div>
+                  <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:.25rem;gap:.6rem">
+                    <input type="checkbox" name="active" id="active-<%= s.id %>" value="1" <%= s.active?'checked':'' %>>
+                    <label for="active-<%= s.id %>" style="font-weight:500;cursor:pointer;font-size:.9rem">Active</label>
+                  </div>
+                </div>
+                <div style="display:flex;gap:.5rem">
+                  <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                  <button type="submit" form="del-<%= s.id %>" class="btn btn-danger btn-sm">Remove</button>
+                </div>
+              </form>
+              <form id="del-<%= s.id %>" method="POST" action="/admin/crm/staff/<%= s.id %>/delete" style="display:none"></form>
+            </div>
+          </div>
+        <% }); } %>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body></html>

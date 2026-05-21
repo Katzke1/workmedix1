@@ -1,0 +1,94 @@
+<%- include('../../partials/head') %>
+<body class="app-body">
+<%- include('../../partials/admin-sidebar') %>
+<div class="app-main">
+  <div class="app-topbar">
+    <div class="app-topbar-title"><h2>Jobs</h2><p><%= jobs.length %> job<%= jobs.length!==1?'s':'' %> shown</p></div>
+    <div class="topbar-actions"><a href="/admin/crm/jobs/new" class="btn btn-primary btn-sm">+ New Job</a></div>
+  </div>
+  <div class="app-content">
+
+    <!-- Status tabs -->
+    <div class="crm-tabs">
+      <a href="/admin/crm/jobs" class="crm-tab <%= !filters.status?'active':'' %>">All <span class="crm-tab-count"><%= counts.all %></span></a>
+      <% STATUS_ORDER.forEach(s => { %>
+        <a href="/admin/crm/jobs?status=<%= s %>" class="crm-tab <%= filters.status===s?'active':'' %>">
+          <%= STATUS_LABELS[s] %> <span class="crm-tab-count"><%= counts[s]||0 %></span>
+        </a>
+      <% }); %>
+    </div>
+
+    <!-- Filters -->
+    <form method="GET" class="crm-filter-bar">
+      <input type="hidden" name="status" value="<%= filters.status %>">
+      <select name="client" class="form-control" style="max-width:220px">
+        <option value="">All Clients</option>
+        <% clients.forEach(c => { %><option value="<%= c.id %>" <%= filters.clientId==c.id?'selected':'' %>><%= c.company_name %></option><% }); %>
+      </select>
+      <input type="date" name="from" value="<%= filters.from %>" class="form-control" style="max-width:150px">
+      <span style="color:var(--mid-grey);align-self:center">to</span>
+      <input type="date" name="to" value="<%= filters.to %>" class="form-control" style="max-width:150px">
+      <button type="submit" class="btn btn-outline-dark btn-sm">Filter</button>
+      <a href="/admin/crm/jobs<%= filters.status?'?status='+filters.status:'' %>" class="btn btn-sm" style="color:var(--text-light)">Clear</a>
+    </form>
+
+    <!-- Table -->
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Date</th><th>Client</th><th>Service</th><th>People</th>
+            <th>Revenue</th><th>Cost</th><th>Profit</th><th>Margin</th>
+            <th>Staff</th><th>Status</th><th>Actions</th>
+          </tr></thead>
+          <tbody>
+          <% if (jobs.length===0) { %>
+            <tr><td colspan="11" class="table-empty">No jobs match your filters. <a href="/admin/crm/jobs/new">Add a job</a>.</td></tr>
+          <% } else { %>
+            <% const totRev  = jobs.filter(j=>j.status!=='cancelled').reduce((a,j)=>a+j.rev,0); %>
+            <% const totProf = jobs.filter(j=>j.status!=='cancelled').reduce((a,j)=>a+j.profit,0); %>
+            <% jobs.forEach(j => { %>
+              <tr>
+                <td style="white-space:nowrap"><%= j.job_date %></td>
+                <td><a href="/admin/crm/clients/<%= j.client_id %>" style="font-weight:600;color:var(--primary)"><%= j.company_name %></a></td>
+                <td style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><%= j.service_type %></td>
+                <td><%= j.num_people %></td>
+                <td style="font-weight:600;color:var(--primary)"><%- fmt(j.rev) %></td>
+                <td style="color:#ef4444"><%- fmt(j.unit_cost*j.num_people + j.travel_cost) %></td>
+                <td style="color:<%= j.profit>=0?'#20bf6b':'#ef4444';font-weight:600 %>"><%- fmt(j.profit) %></td>
+                <td><%= j.rev > 0 ? pct(j.profit,j.rev)+'%' : '—' %></td>
+                <td><%= j.staff_name||'—' %></td>
+                <td>
+                  <form method="POST" action="/admin/crm/jobs/<%= j.id %>/status" style="display:inline">
+                    <select name="status" onchange="this.form.submit()" class="crm-status-select crm-status-select-<%= j.status %>">
+                      <% STATUS_ORDER.forEach(s => { %><option value="<%= s %>" <%= j.status===s?'selected':'' %>><%= STATUS_LABELS[s] %></option><% }); %>
+                    </select>
+                  </form>
+                </td>
+                <td>
+                  <div style="display:flex;gap:.3rem">
+                    <a href="/admin/crm/jobs/<%= j.id %>" class="btn btn-sm btn-outline-dark">View</a>
+                    <form method="POST" action="/admin/crm/jobs/<%= j.id %>/delete" style="display:inline">
+                      <button type="submit" class="btn btn-sm btn-danger" data-confirm="Delete this job?">×</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            <% }); %>
+            <tr style="background:var(--off-white);font-weight:700">
+              <td colspan="4" style="text-align:right;color:var(--mid-grey)">TOTALS</td>
+              <td style="color:var(--primary)"><%- fmt(totRev) %></td>
+              <td></td>
+              <td style="color:var(--success-color)"><%- fmt(totProf) %></td>
+              <td><%= totRev>0?pct(totProf,totRev)+'%':'—' %></td>
+              <td colspan="3"></td>
+            </tr>
+          <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body></html>

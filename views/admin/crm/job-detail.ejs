@@ -1,0 +1,217 @@
+<%- include('../../partials/head') %>
+<body class="app-body">
+<%- include('../../partials/admin-sidebar') %>
+<div class="app-main">
+  <div class="app-topbar">
+    <div class="app-topbar-title">
+      <h2>Job #<%= job.id %></h2>
+      <p><%= job.company_name %> · <%= job.service_type %></p>
+    </div>
+    <div class="topbar-actions">
+      <a href="/admin/crm/clients/<%= job.client_id %>" class="btn btn-outline-dark btn-sm">Client</a>
+      <a href="/admin/crm/jobs" class="btn btn-outline-dark btn-sm">← Jobs</a>
+    </div>
+  </div>
+  <div class="app-content">
+
+    <% if (success) { %><div class="alert alert-success" style="margin-bottom:1rem"><%= success %></div><% } %>
+    <% if (error)   { %><div class="alert alert-danger"  style="margin-bottom:1rem"><%= error %></div><% } %>
+
+    <!-- KPI row -->
+    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:1.5rem">
+      <div class="stat-card">
+        <div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+        <div><div class="stat-num"><%- fmt(job.rev) %></div><div class="stat-label">Revenue</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+        <div><div class="stat-num" style="color:#ef4444"><%- fmt(job.unit_cost * job.num_people + job.travel_cost) %></div><div class="stat-label">Total Cost</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+        <div><div class="stat-num" style="color:<%= job.profit>=0?'#20bf6b':'#ef4444' %>"><%- fmt(job.profit) %></div><div class="stat-label">Profit</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <div><div class="stat-num"><%= job.rev > 0 ? pct(job.profit, job.rev)+'%' : '—' %></div><div class="stat-label">Margin</div></div>
+      </div>
+    </div>
+
+    <div class="crm-detail-grid">
+
+      <!-- Edit form -->
+      <div class="card">
+        <div class="card-header"><h3>Job Details</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/admin/crm/jobs/<%= job.id %>">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Client *</label>
+                <select name="client_id" class="form-control" required>
+                  <% clients.forEach(c => { %><option value="<%= c.id %>" <%= job.client_id==c.id?'selected':'' %>><%= c.company_name %></option><% }); %>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Assigned Staff</label>
+                <select name="staff_id" class="form-control">
+                  <option value="">— none —</option>
+                  <% staff.forEach(s => { %><option value="<%= s.id %>" <%= job.staff_id==s.id?'selected':'' %>><%= s.name %></option><% }); %>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Service Type *</label>
+                <select name="service_type" id="service-select" class="form-control" required>
+                  <% rates.forEach(r => { %><option value="<%= r.service_name %>" <%= job.service_type===r.service_name?'selected':'' %>><%= r.service_name %></option><% }); %>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Job Date *</label>
+                <input type="date" name="job_date" class="form-control" required value="<%= job.job_date %>">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Number of People</label>
+                <input type="number" name="num_people" id="num-people" class="form-control" min="1" value="<%= job.num_people %>" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-control">
+                  <% STATUS_ORDER.forEach(s => { %>
+                    <option value="<%= s %>" <%= job.status===s?'selected':'' %>>
+                      <%= STATUS_LABELS[s] %>
+                    </option>
+                  <% }); %>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Unit Price (per person, excl VAT)</label>
+                <div class="input-group-prefix"><span>R</span>
+                  <input type="number" name="unit_price" id="unit-price" class="form-control" min="0" step="0.01" value="<%= job.unit_price %>">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Unit Cost (per person, incl VAT)</label>
+                <div class="input-group-prefix"><span>R</span>
+                  <input type="number" name="unit_cost" id="unit-cost" class="form-control" min="0" step="0.01" value="<%= job.unit_cost %>">
+                </div>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Travel Cost (flat fee)</label>
+                <div class="input-group-prefix"><span>R</span>
+                  <input type="number" name="travel_cost" class="form-control" min="0" step="0.01" value="<%= job.travel_cost %>">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Invoice Number</label>
+                <input type="text" name="invoice_number" class="form-control" value="<%= job.invoice_number||'' %>" placeholder="e.g. INV-001">
+              </div>
+            </div>
+
+            <!-- Live profit preview -->
+            <div class="crm-profit-preview" id="profit-preview">
+              <div><span>Revenue</span><strong id="prev-rev">R 0</strong></div>
+              <div><span>Cost</span><strong id="prev-cost" style="color:#ef4444">R 0</strong></div>
+              <div style="border-top:1px solid rgba(255,255,255,.3);padding-top:.5rem"><span>Profit</span><strong id="prev-profit" style="color:#26de81">R 0</strong></div>
+              <div><span>Margin</span><strong id="prev-margin" style="color:#26de81">0%</strong></div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Notes</label>
+              <textarea name="notes" class="form-control" rows="2"><%= job.notes||'' %></textarea>
+            </div>
+            <div style="display:flex;gap:.75rem">
+              <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Summary panel -->
+      <div>
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-header"><h3>Client Info</h3></div>
+          <div class="card-body">
+            <dl class="crm-dl">
+              <dt>Company</dt><dd><a href="/admin/crm/clients/<%= job.client_id %>" style="color:var(--primary);font-weight:600"><%= job.company_name %></a></dd>
+              <% if (job.contact_name) { %><dt>Contact</dt><dd><%= job.contact_name %></dd><% } %>
+              <% if (job.contact_phone) { %><dt>Phone</dt><dd><%= job.contact_phone %></dd><% } %>
+              <dt>Staff</dt><dd><%= job.staff_name || '—' %></dd>
+            </dl>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-header"><h3>Financials</h3></div>
+          <div class="card-body">
+            <dl class="crm-dl">
+              <dt>Unit Price</dt><dd><%- fmt(job.unit_price) %></dd>
+              <dt>Unit Cost</dt><dd><%- fmt(job.unit_cost) %></dd>
+              <dt>People</dt><dd><%= job.num_people %></dd>
+              <dt>Travel Cost</dt><dd><%- fmt(job.travel_cost) %></dd>
+              <dt>Revenue</dt><dd style="font-weight:700;color:var(--primary)"><%- fmt(job.rev) %></dd>
+              <dt>Total Cost</dt><dd style="color:#ef4444"><%- fmt(job.unit_cost * job.num_people + job.travel_cost) %></dd>
+              <dt>Profit</dt><dd style="font-weight:700;color:<%= job.profit>=0?'#20bf6b':'#ef4444' %>"><%- fmt(job.profit) %></dd>
+              <% if (job.invoice_number) { %><dt>Invoice #</dt><dd><%= job.invoice_number %></dd><% } %>
+            </dl>
+          </div>
+        </div>
+
+        <div class="card" style="border-color:#fee">
+          <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+            <div>
+              <strong style="color:#b71c1c">Delete Job</strong>
+              <p style="margin:0;font-size:.85rem">This cannot be undone.</p>
+            </div>
+            <form method="POST" action="/admin/crm/jobs/<%= job.id %>/delete">
+              <button type="submit" class="btn btn-danger btn-sm" data-confirm="Delete this job?">Delete</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<script>
+const rateMap = {};
+<% rates.forEach(r => { %>rateMap["<%= r.service_name.replace(/"/g,'&quot;') %>"] = { price: <%= r.default_price %>, cost: <%= r.default_cost %> };<% }); %>
+
+const svcSel  = document.getElementById('service-select');
+const priceIn = document.getElementById('unit-price');
+const costIn  = document.getElementById('unit-cost');
+const numIn   = document.getElementById('num-people');
+const travelIn = document.querySelector('[name=travel_cost]');
+const preview = document.getElementById('profit-preview');
+
+function updatePreview() {
+  const n = +numIn.value||1;
+  const p = +priceIn.value||0;
+  const c = +costIn.value||0;
+  const t = +travelIn.value||0;
+  const rev  = p * n;
+  const cost = c * n + t;
+  const prof = rev - cost;
+  document.getElementById('prev-rev').textContent    = 'R ' + rev.toLocaleString('en-ZA',{minimumFractionDigits:2});
+  document.getElementById('prev-cost').textContent   = 'R ' + cost.toLocaleString('en-ZA',{minimumFractionDigits:2});
+  document.getElementById('prev-profit').textContent = 'R ' + prof.toLocaleString('en-ZA',{minimumFractionDigits:2});
+  document.getElementById('prev-margin').textContent = rev > 0 ? (prof/rev*100).toFixed(1)+'%' : '—';
+  document.getElementById('prev-profit').style.color = prof >= 0 ? '#26de81' : '#ef4444';
+  document.getElementById('prev-margin').style.color = prof >= 0 ? '#26de81' : '#ef4444';
+}
+
+svcSel.addEventListener('change', function() {
+  const r = rateMap[this.value];
+  if (r) { priceIn.value = r.price; costIn.value = r.cost; }
+  updatePreview();
+});
+[priceIn, costIn, numIn, travelIn].forEach(el => el.addEventListener('input', updatePreview));
+updatePreview();
+</script>
+</body></html>

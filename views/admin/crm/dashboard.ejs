@@ -1,0 +1,222 @@
+<%- include('../../partials/head') %>
+<body class="app-body">
+<%- include('../../partials/admin-sidebar') %>
+<div class="app-main">
+  <div class="app-topbar">
+    <div class="app-topbar-title">
+      <h2>CRM Dashboard</h2>
+      <p>Business performance overview</p>
+    </div>
+    <div class="topbar-actions">
+      <a href="/admin/crm/jobs/new" class="btn btn-primary btn-sm">+ New Job</a>
+      <a href="/admin/crm/clients/new" class="btn btn-outline-dark btn-sm">+ New Client</a>
+    </div>
+  </div>
+
+  <div class="app-content">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- ── KPI Cards ─────────────────────────────────────────── -->
+    <div class="crm-kpi-grid">
+
+      <div class="crm-kpi-card">
+        <div class="crm-kpi-icon" style="background:linear-gradient(135deg,#2e86de,#54a0ff)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        </div>
+        <div class="crm-kpi-body">
+          <div class="crm-kpi-label">Revenue This Month</div>
+          <div class="crm-kpi-value"><%- fmt(kpi.revenue) %></div>
+          <% const revDiff = kpi.revLast > 0 ? ((kpi.revenue - kpi.revLast)/kpi.revLast*100).toFixed(1) : null; %>
+          <div class="crm-kpi-trend <%= revDiff >= 0 ? 'up' : 'down' %>">
+            <%= revDiff !== null ? (revDiff >= 0 ? '▲' : '▼') + ' ' + Math.abs(revDiff) + '% vs last month' : 'No prior data' %>
+          </div>
+        </div>
+      </div>
+
+      <div class="crm-kpi-card">
+        <div class="crm-kpi-icon" style="background:linear-gradient(135deg,#26de81,#20bf6b)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        </div>
+        <div class="crm-kpi-body">
+          <div class="crm-kpi-label">Profit This Month</div>
+          <div class="crm-kpi-value"><%- fmt(kpi.profit) %></div>
+          <% const margin = kpi.revenue > 0 ? (kpi.profit/kpi.revenue*100).toFixed(1) : 0; %>
+          <div class="crm-kpi-trend up"><%= margin %>% margin</div>
+        </div>
+      </div>
+
+      <div class="crm-kpi-card">
+        <div class="crm-kpi-icon" style="background:linear-gradient(135deg,#f7b731,#fa8231)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/></svg>
+        </div>
+        <div class="crm-kpi-body">
+          <div class="crm-kpi-label">Jobs This Month</div>
+          <div class="crm-kpi-value"><%= kpi.jobs %></div>
+          <% const jobDiff = kpi.jobsLast > 0 ? kpi.jobs - kpi.jobsLast : null; %>
+          <div class="crm-kpi-trend <%= jobDiff >= 0 ? 'up' : 'down' %>">
+            <%= jobDiff !== null ? (jobDiff >= 0 ? '+' : '') + jobDiff + ' vs last month' : 'First month' %>
+          </div>
+        </div>
+      </div>
+
+      <div class="crm-kpi-card">
+        <div class="crm-kpi-icon" style="background:linear-gradient(135deg,#a55eea,#8854d0)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        </div>
+        <div class="crm-kpi-body">
+          <div class="crm-kpi-label">Active Clients</div>
+          <div class="crm-kpi-value"><%= kpi.activeClients %></div>
+          <div class="crm-kpi-trend up"><%= kpi.totalClients %> total registered</div>
+        </div>
+      </div>
+
+    </div><!-- /kpi-grid -->
+
+    <!-- ── Charts row ─────────────────────────────────────────── -->
+    <div class="crm-charts-row">
+
+      <!-- Revenue / Cost / Profit bar chart -->
+      <div class="card crm-chart-card crm-chart-wide">
+        <div class="card-header">
+          <h3>Revenue vs Cost vs Profit — Last 6 Months</h3>
+        </div>
+        <div class="card-body">
+          <canvas id="chart-monthly" height="90"></canvas>
+        </div>
+      </div>
+
+      <!-- Status doughnut -->
+      <div class="card crm-chart-card">
+        <div class="card-header"><h3>Jobs by Status</h3></div>
+        <div class="card-body" style="display:flex;align-items:center;justify-content:center;">
+          <canvas id="chart-status" style="max-height:220px;max-width:220px"></canvas>
+        </div>
+        <div class="card-footer">
+          <% const statusColors = {Quoted:'#f7b731',Confirmed:'#2e86de','In Progress':'#a55eea',Completed:'#26de81',Invoiced:'#0abde3',Paid:'#20bf6b',Cancelled:'#8395a7'}; %>
+          <div style="display:flex;flex-wrap:wrap;gap:.5rem .9rem;justify-content:center;">
+            <% byStatus.forEach(s => { const lbl = STATUS_LABELS[s.status]||s.status; %>
+              <div style="display:flex;align-items:center;gap:.35rem;font-size:.78rem;">
+                <span style="width:10px;height:10px;border-radius:2px;background:<%= statusColors[lbl]||'#ccc' %>;flex-shrink:0;display:inline-block"></span>
+                <%= lbl %> (<%= s.cnt %>)
+              </div>
+            <% }); %>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Service breakdown + recent jobs ────────────────────── -->
+    <div class="crm-charts-row">
+
+      <!-- Service revenue bar -->
+      <div class="card crm-chart-card">
+        <div class="card-header"><h3>Revenue by Service</h3></div>
+        <div class="card-body">
+          <canvas id="chart-service" height="<%= Math.max(byService.length * 40, 120) %>"></canvas>
+        </div>
+      </div>
+
+      <!-- Recent jobs table -->
+      <div class="card crm-chart-card crm-chart-wide">
+        <div class="card-header">
+          <h3>Recent Jobs</h3>
+          <a href="/admin/crm/jobs" class="btn btn-outline-dark btn-sm">View All</a>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Date</th><th>Client</th><th>Service</th><th>People</th>
+              <th>Revenue</th><th>Profit</th><th>Status</th>
+            </tr></thead>
+            <tbody>
+            <% if (recentJobs.length === 0) { %>
+              <tr><td colspan="7" class="table-empty">No jobs yet — <a href="/admin/crm/jobs/new">add your first job</a></td></tr>
+            <% } else { recentJobs.forEach(j => { %>
+              <tr>
+                <td><%= j.job_date %></td>
+                <td><a href="/admin/crm/clients/<%= j.client_id %>"><%= j.company_name %></a></td>
+                <td style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><%= j.service_type %></td>
+                <td><%= j.num_people %></td>
+                <td style="font-weight:600;color:var(--primary)"><%- fmt(j.revenue) %></td>
+                <td style="color:<%= j.profit >= 0 ? '#20bf6b' : '#ef4444' %>"><%- fmt(j.profit) %></td>
+                <td><span class="crm-status crm-status-<%= j.status %>"><%= STATUS_LABELS[j.status]||j.status %></span></td>
+              </tr>
+            <% }); } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Top Clients ────────────────────────────────────────── -->
+    <% if (topClients.length > 0) { %>
+    <div class="card" style="margin-top:0">
+      <div class="card-header"><h3>Top Clients by Revenue</h3></div>
+      <div class="card-body">
+        <% const maxRev = Math.max(...topClients.map(c=>c.rev), 1); %>
+        <% topClients.forEach((c,i) => { %>
+          <div style="display:flex;align-items:center;gap:1rem;margin-bottom:.85rem;">
+            <div style="width:28px;height:28px;border-radius:50%;background:var(--accent);color:white;font-size:.78rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0"><%= i+1 %></div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;justify-content:space-between;margin-bottom:.3rem">
+                <a href="/admin/crm/clients/<%= c.id %>" style="font-weight:600;color:var(--primary);font-size:.9rem"><%= c.company_name %></a>
+                <span style="font-size:.88rem;font-weight:700;color:var(--primary)"><%- fmt(c.rev) %></span>
+              </div>
+              <div class="crm-progress-bar">
+                <div class="crm-progress-fill" style="width:<%= (c.rev/maxRev*100).toFixed(1) %>%"></div>
+              </div>
+            </div>
+            <div style="font-size:.78rem;color:var(--text-light);flex-shrink:0"><%= c.jobs %> job<%= c.jobs!==1?'s':'' %></div>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+    <% } %>
+
+  </div><!-- /app-content -->
+</div><!-- /app-main -->
+
+<script>
+Chart.defaults.font.family = "'Inter','Poppins',system-ui,sans-serif";
+Chart.defaults.color = '#636e72';
+
+// Monthly Revenue/Cost/Profit
+new Chart(document.getElementById('chart-monthly'), {
+  type: 'bar',
+  data: {
+    labels: <%- chartMonths %>,
+    datasets: [
+      { label:'Revenue', data: <%- chartRev %>, backgroundColor:'rgba(46,134,222,.85)', borderRadius:4 },
+      { label:'Cost',    data: <%- chartCost %>, backgroundColor:'rgba(255,107,107,.7)', borderRadius:4 },
+      { label:'Profit',  data: <%- chartProfit %>, backgroundColor:'rgba(38,222,129,.8)', borderRadius:4 },
+    ]
+  },
+  options: { responsive:true, plugins:{ legend:{ position:'top' } },
+    scales:{ y:{ beginAtZero:true, ticks:{ callback: v => 'R '+v.toLocaleString('en-ZA') } } } }
+});
+
+// Status doughnut
+const statusColors = ['#f7b731','#2e86de','#a55eea','#26de81','#0abde3','#20bf6b','#8395a7'];
+new Chart(document.getElementById('chart-status'), {
+  type: 'doughnut',
+  data: { labels: <%- chartStatusLabels %>, datasets:[{ data: <%- chartStatusData %>, backgroundColor: statusColors, borderWidth:2, borderColor:'#fff' }] },
+  options: { responsive:true, plugins:{ legend:{ display:false } }, cutout:'65%' }
+});
+
+// Service horizontal bar
+new Chart(document.getElementById('chart-service'), {
+  type: 'bar',
+  data: {
+    labels: <%- chartSvcLabels %>,
+    datasets: [
+      { label:'Revenue', data: <%- chartSvcRev %>, backgroundColor:'rgba(46,134,222,.85)', borderRadius:4 },
+      { label:'Cost',    data: <%- chartSvcCost %>, backgroundColor:'rgba(255,107,107,.7)', borderRadius:4 },
+    ]
+  },
+  options: { indexAxis:'y', responsive:true, plugins:{ legend:{ position:'top' } },
+    scales:{ x:{ beginAtZero:true, ticks:{ callback: v => 'R '+v.toLocaleString('en-ZA') } } } }
+});
+</script>
+</body></html>

@@ -1,0 +1,146 @@
+<%- include('../../partials/head') %>
+<body class="app-body">
+<%- include('../../partials/admin-sidebar') %>
+<div class="app-main">
+  <div class="app-topbar">
+    <div class="app-topbar-title">
+      <h2><%= client.company_name %></h2>
+      <p><%= client.industry||'Client' %> · <%= client.contract_type %></p>
+    </div>
+    <div class="topbar-actions">
+      <a href="/admin/crm/jobs/new?client=<%= client.id %>" class="btn btn-primary btn-sm">+ New Job</a>
+      <a href="/admin/crm/clients/<%= client.id %>?edit=<%= editing?'0':'1' %>" class="btn btn-outline-dark btn-sm"><%= editing?'Cancel Edit':'Edit Client' %></a>
+      <a href="/admin/crm/clients" class="btn btn-outline-dark btn-sm">← Clients</a>
+    </div>
+  </div>
+  <div class="app-content">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- ── Stats row ───────────────────────── -->
+    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="stat-card"><div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div><div><div class="stat-num"><%- fmt(stats.totalRevenue) %></div><div class="stat-label">Total Revenue</div></div></div>
+      <div class="stat-card"><div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div><div><div class="stat-num"><%- fmt(stats.totalProfit) %></div><div class="stat-label">Total Profit</div></div></div>
+      <div class="stat-card"><div class="stat-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/></svg></div><div><div class="stat-num"><%= stats.totalJobs %></div><div class="stat-label">Total Jobs</div></div></div>
+      <div class="stat-card"><div class="stat-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div><div class="stat-num"><%- fmt(stats.outstanding) %></div><div class="stat-label">Outstanding</div></div></div>
+    </div>
+
+    <div class="crm-detail-grid">
+
+      <!-- Info / Edit panel -->
+      <div class="card">
+        <div class="card-header"><h3>Client Details</h3></div>
+        <div class="card-body">
+          <% if (editing) { %>
+            <form method="POST" action="/admin/crm/clients/<%= client.id %>">
+              <div class="form-group"><label class="form-label">Company Name</label><input type="text" name="company_name" class="form-control" value="<%= client.company_name %>" required></div>
+              <div class="form-row">
+                <div class="form-group"><label class="form-label">Contact Name</label><input type="text" name="contact_name" class="form-control" value="<%= client.contact_name||'' %>"></div>
+                <div class="form-group"><label class="form-label">Phone</label><input type="tel" name="contact_phone" class="form-control" value="<%= client.contact_phone||'' %>"></div>
+              </div>
+              <div class="form-group"><label class="form-label">Email</label><input type="email" name="contact_email" class="form-control" value="<%= client.contact_email||'' %>"></div>
+              <div class="form-row">
+                <div class="form-group"><label class="form-label">Industry</label><input type="text" name="industry" class="form-control" value="<%= client.industry||'' %>"></div>
+                <div class="form-group"><label class="form-label">Contract Type</label>
+                  <select name="contract_type" class="form-control">
+                    <% ['ad-hoc','retainer','contract'].forEach(t => { %><option value="<%= t %>" <%= client.contract_type===t?'selected':'' %>><%= t %></option><% }); %>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group"><label class="form-label">Address</label><input type="text" name="address" class="form-control" value="<%= client.address||'' %>"></div>
+              <div class="form-group"><label class="form-label">Notes</label><textarea name="notes" class="form-control" rows="2"><%= client.notes||'' %></textarea></div>
+              <div class="form-group" style="display:flex;align-items:center;gap:.6rem">
+                <input type="checkbox" name="active" id="cb-active" value="1" <%= client.active?'checked':'' %>>
+                <label for="cb-active" style="font-weight:500;cursor:pointer">Active client</label>
+              </div>
+              <div style="display:flex;gap:.5rem">
+                <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+                <a href="/admin/crm/clients/<%= client.id %>" class="btn btn-sm btn-outline-dark">Cancel</a>
+              </div>
+            </form>
+          <% } else { %>
+            <% const rows = [
+              ['Contact', client.contact_name],
+              ['Phone',   client.contact_phone],
+              ['Email',   client.contact_email],
+              ['Industry',client.industry],
+              ['Contract',client.contract_type],
+              ['Address', client.address],
+              ['Notes',   client.notes],
+            ]; %>
+            <dl class="crm-dl">
+              <% rows.forEach(([l,v]) => { if (v) { %>
+                <dt><%= l %></dt><dd><%= v %></dd>
+              <% } }); %>
+            </dl>
+            <div style="margin-top:.5rem">
+              <span class="badge <%= client.active ? 'badge-completed' : 'badge-pending' %>"><%= client.active ? 'Active' : 'Inactive' %></span>
+            </div>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Revenue chart -->
+      <div class="card">
+        <div class="card-header"><h3>Revenue — Last 6 Months</h3></div>
+        <div class="card-body">
+          <canvas id="chart-client-rev" height="140"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Jobs table -->
+    <div class="card" style="margin-top:0">
+      <div class="card-header">
+        <h3>Job History (<%= jobs.length %>)</h3>
+        <a href="/admin/crm/jobs/new?client=<%= client.id %>" class="btn btn-primary btn-sm">+ Add Job</a>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Service</th><th>People</th><th>Revenue</th><th>Cost</th><th>Profit</th><th>Margin</th><th>Staff</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+          <% if (jobs.length===0) { %>
+            <tr><td colspan="10" class="table-empty">No jobs for this client yet.</td></tr>
+          <% } else { jobs.forEach(j => { %>
+            <tr>
+              <td><%= j.job_date %></td>
+              <td><%= j.service_type %></td>
+              <td><%= j.num_people %></td>
+              <td style="font-weight:600"><%- fmt(j.rev) %></td>
+              <td style="color:#ef4444"><%- fmt(j.unit_cost*j.num_people + j.travel_cost) %></td>
+              <td style="color:<%= j.profit>=0?'#20bf6b':'#ef4444' %>"><%- fmt(j.profit) %></td>
+              <td><%= j.rev > 0 ? pct(j.profit,j.rev)+'%' : '—' %></td>
+              <td><%= j.staff_name||'—' %></td>
+              <td><span class="crm-status crm-status-<%= j.status %>"><%= STATUS_LABELS[j.status]||j.status %></span></td>
+              <td><a href="/admin/crm/jobs/<%= j.id %>" class="btn btn-sm btn-outline-dark">View</a></td>
+            </tr>
+          <% }); } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Danger zone -->
+    <div class="card" style="border-color:#fee;margin-top:0">
+      <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+        <div>
+          <strong style="color:#b71c1c">Danger Zone</strong>
+          <p style="margin:0;font-size:.85rem">Permanently delete this client and all their jobs.</p>
+        </div>
+        <form method="POST" action="/admin/crm/clients/<%= client.id %>/delete">
+          <button type="submit" class="btn btn-danger btn-sm" data-confirm="Delete <%= client.company_name %> and ALL their jobs? This cannot be undone.">Delete Client</button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+<script>
+Chart.defaults.font.family = "'Inter','Poppins',system-ui,sans-serif";
+new Chart(document.getElementById('chart-client-rev'), {
+  type: 'bar',
+  data: { labels: <%- chartLabels %>, datasets:[{ label:'Revenue', data:<%- chartData %>, backgroundColor:'rgba(46,134,222,.8)', borderRadius:5 }] },
+  options: { responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true, ticks:{callback:v=>'R '+v.toLocaleString('en-ZA')}}} }
+});
+</script>
+</body></html>

@@ -46,9 +46,10 @@ app.use((req, res, next) => {
 });
 
 // ── Routes ──────────────────────────────────────────────────────────────────────
-app.use('/',       require('./routes/auth'));
-app.use('/portal', require('./routes/portal'));
-app.use('/admin',  require('./routes/admin'));
+app.use('/',          require('./routes/auth'));
+app.use('/portal',    require('./routes/portal'));
+app.use('/admin',     require('./routes/admin'));
+app.use('/admin/crm', require('./routes/crm'));
 
 // ── 404 ─────────────────────────────────────────────────────────────────────────
 app.use((req, res) => {

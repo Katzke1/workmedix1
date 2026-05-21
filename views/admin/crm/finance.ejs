@@ -1,0 +1,189 @@
+<%- include('../../partials/head') %>
+<body class="app-body">
+<%- include('../../partials/admin-sidebar') %>
+<div class="app-main">
+  <div class="app-topbar">
+    <div class="app-topbar-title"><h2>Finance</h2><p>Revenue, cost and profit overview</p></div>
+    <form method="GET" style="display:flex;gap:.5rem;align-items:center">
+      <select name="year" class="form-control" style="max-width:110px" onchange="this.form.submit()">
+        <% availYears.forEach(y => { %><option value="<%= y %>" <%= y===year?'selected':'' %>><%= y %></option><% }); %>
+      </select>
+    </form>
+  </div>
+  <div class="app-content">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- KPI summary row -->
+    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="stat-card">
+        <div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+        <div><div class="stat-num"><%- fmt(totals.rev) %></div><div class="stat-label">Total Revenue <%= year %></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+        <div><div class="stat-num" style="color:#ef4444"><%- fmt(totals.cost) %></div><div class="stat-label">Total Cost <%= year %></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+        <div><div class="stat-num" style="color:#20bf6b"><%- fmt(totals.profit) %></div><div class="stat-label">Total Profit <%= year %></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/></svg></div>
+        <div><div class="stat-num"><%- fmt(outstanding) %></div><div class="stat-label">Outstanding Invoices</div></div>
+      </div>
+    </div>
+
+    <!-- Main chart -->
+    <div class="card">
+      <div class="card-header"><h3>Monthly Revenue vs Cost vs Profit — <%= year %></h3></div>
+      <div class="card-body">
+        <canvas id="chart-fin-main" height="90"></canvas>
+      </div>
+    </div>
+
+    <!-- Monthly breakdown table -->
+    <div class="card">
+      <div class="card-header"><h3>Monthly Breakdown</h3></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Month</th><th>Jobs</th><th>Revenue</th><th>Cost</th><th>Profit</th><th>Margin</th></tr></thead>
+          <tbody>
+          <% monthly.forEach(m => { %>
+            <tr>
+              <td style="font-weight:600"><%= m.label %></td>
+              <td><%= m.jobs %></td>
+              <td style="color:var(--primary);font-weight:600"><%- fmt(m.rev) %></td>
+              <td style="color:#ef4444"><%- fmt(m.cost) %></td>
+              <td style="color:<%= m.profit>=0?'#20bf6b':'#ef4444';font-weight:600 %>"><%- fmt(m.profit) %></td>
+              <td><%= m.rev > 0 ? pct(m.profit,m.rev)+'%' : '—' %></td>
+            </tr>
+          <% }); %>
+          <tr style="background:var(--off-white);font-weight:700;border-top:2px solid var(--border)">
+            <td>TOTAL</td>
+            <td><%= totals.jobs %></td>
+            <td style="color:var(--primary)"><%- fmt(totals.rev) %></td>
+            <td style="color:#ef4444"><%- fmt(totals.cost) %></td>
+            <td style="color:#20bf6b"><%- fmt(totals.profit) %></td>
+            <td><%= totals.rev > 0 ? pct(totals.profit,totals.rev)+'%' : '—' %></td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="crm-detail-grid" style="margin-top:0">
+
+      <!-- Service profitability -->
+      <div class="card">
+        <div class="card-header"><h3>Service Profitability</h3></div>
+        <div class="card-body" style="padding-bottom:.5rem">
+          <canvas id="chart-svc" height="180" style="margin-bottom:1rem"></canvas>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Service</th><th>Jobs</th><th>Revenue</th><th>Cost</th><th>Profit</th><th>Margin</th></tr></thead>
+            <tbody>
+            <% if (byService.length===0) { %>
+              <tr><td colspan="6" class="table-empty">No data yet.</td></tr>
+            <% } else { byService.forEach(s => { %>
+              <tr>
+                <td style="font-weight:600;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><%= s.service_type %></td>
+                <td><%= s.jobs %></td>
+                <td style="color:var(--primary);font-weight:600"><%- fmt(s.rev) %></td>
+                <td style="color:#ef4444"><%- fmt(s.cost) %></td>
+                <td style="color:<%= (s.rev-s.cost)>=0?'#20bf6b':'#ef4444' %>"><%- fmt(s.rev-s.cost) %></td>
+                <td><%= s.rev > 0 ? pct(s.rev-s.cost,s.rev)+'%' : '—' %></td>
+              </tr>
+            <% }); } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Top clients -->
+      <div class="card">
+        <div class="card-header"><h3>Top Clients by Revenue</h3></div>
+        <div class="card-body" style="padding-bottom:.5rem">
+          <canvas id="chart-clients" height="180" style="margin-bottom:1rem"></canvas>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Client</th><th>Jobs</th><th>Revenue</th><th>Profit</th></tr></thead>
+            <tbody>
+            <% if (topClients.length===0) { %>
+              <tr><td colspan="4" class="table-empty">No data yet.</td></tr>
+            <% } else { topClients.forEach(c => { %>
+              <tr>
+                <td><a href="/admin/crm/clients/<%= c.id %>" style="font-weight:600;color:var(--primary)"><%= c.company_name %></a></td>
+                <td><%= c.jobs %></td>
+                <td style="font-weight:600;color:var(--primary)"><%- fmt(c.rev) %></td>
+                <td style="color:<%= c.profit>=0?'#20bf6b':'#ef4444' %>"><%- fmt(c.profit) %></td>
+              </tr>
+            <% }); } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<script>
+Chart.defaults.font.family = "'Inter','Poppins',system-ui,sans-serif";
+const months  = <%- chartMonths %>;
+const rev     = <%- chartRev %>;
+const cost    = <%- chartCost %>;
+const profit  = <%- chartProfit %>;
+const svcLbls = <%- chartSvcLabels %>;
+const svcRev  = <%- chartSvcRev %>;
+const svcCost = <%- chartSvcCost %>;
+const cliLbls = <%- chartClientLabels %>;
+const cliRev  = <%- chartClientRev %>;
+
+new Chart(document.getElementById('chart-fin-main'), {
+  type: 'bar',
+  data: {
+    labels: months,
+    datasets: [
+      { label:'Revenue', data:rev,    backgroundColor:'rgba(46,134,222,.8)', borderRadius:4 },
+      { label:'Cost',    data:cost,   backgroundColor:'rgba(239,68,68,.75)', borderRadius:4 },
+      { label:'Profit',  data:profit, backgroundColor:'rgba(38,222,129,.8)', borderRadius:4 },
+    ]
+  },
+  options: {
+    responsive:true,
+    plugins:{ legend:{ position:'top' } },
+    scales:{ y:{ beginAtZero:true, ticks:{ callback: v => 'R '+v.toLocaleString('en-ZA') } } }
+  }
+});
+
+new Chart(document.getElementById('chart-svc'), {
+  type: 'bar',
+  data: {
+    labels: svcLbls,
+    datasets: [
+      { label:'Revenue', data:svcRev,  backgroundColor:'rgba(46,134,222,.8)', borderRadius:4 },
+      { label:'Cost',    data:svcCost, backgroundColor:'rgba(239,68,68,.75)', borderRadius:4 },
+    ]
+  },
+  options: {
+    indexAxis:'y', responsive:true,
+    plugins:{ legend:{ position:'top' } },
+    scales:{ x:{ beginAtZero:true, ticks:{ callback: v => 'R '+v.toLocaleString('en-ZA') } } }
+  }
+});
+
+new Chart(document.getElementById('chart-clients'), {
+  type: 'bar',
+  data: {
+    labels: cliLbls,
+    datasets: [{ label:'Revenue', data:cliRev, backgroundColor:'rgba(100,130,220,.8)', borderRadius:4 }]
+  },
+  options: {
+    indexAxis:'y', responsive:true,
+    plugins:{ legend:{ display:false } },
+    scales:{ x:{ beginAtZero:true, ticks:{ callback: v => 'R '+v.toLocaleString('en-ZA') } } }
+  }
+});
+</script>
+</body></html>
