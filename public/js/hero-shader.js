@@ -48,25 +48,6 @@
       return smoothstep(hw + 0.015, hw, abs(pos - t));
     }
 
-    /* ── ECG / PQRST wave  (x in [0, 1] per beat) ──────── */
-    float ecg(float x) {
-      x = mod(x, 1.0);
-      /* P wave  — small rounded bump */
-      float pw = sin(clamp((x - 0.18) / 0.12 * PI, 0.0, PI)) * 0.22;
-      /* Q dip   — small negative gaussian */
-      float qd = (x - 0.41) * 22.0;
-      float qw = -0.11 * exp(-qd * qd);
-      /* R spike — the tall sharp spike (the heartbeat) */
-      float rd = (x - 0.47) * 13.0;
-      float rw =  1.00 * exp(-rd * rd);
-      /* S dip   — mirror of Q, just after R */
-      float sd = (x - 0.535) * 22.0;
-      float sw = -0.12 * exp(-sd * sd);
-      /* T wave  — medium rounded bump */
-      float tw = sin(clamp((x - 0.62) / 0.18 * PI, 0.0, PI)) * 0.30;
-      return pw + qw + rw + sw + tw;
-    }
-
     void main() {
       vec2 uv    = gl_FragCoord.xy / iRes;
       /* Aspect-corrected space coordinates:
@@ -107,42 +88,6 @@
                    + crisp(ly, hw * 0.2, ws.y);
         /* muted blue — keeps it subtle behind ECG lines */
         col += vec4(0.12, 0.35, 0.72, 1.0) * ln * r * 0.30;
-      }
-
-      /* ── ECG heartbeat lines ──────────────────────────── */
-      /*
-        Adaptive spacing: on tall (portrait) screens the lines spread out
-        so the ECG fills the full visible height on any device.
-      */
-      float yRange   = SCALE * iRes.y / iRes.x;
-      float lSpacing = max(1.4, yRange * 0.36);   /* spread to 72% of height */
-      float lAmp     = max(0.72, yRange * 0.13);  /* ~13 % of screen height  */
-
-      float ecgScale = 0.22;   /* beats per space unit (≈2 beats visible)    */
-      float ecgSpeed = 0.30;   /* beats per second (scroll speed)             */
-
-      const int ECG = 4;
-      for (int e = 0; e < ECG; e++) {
-        float fi   = float(e) / float(ECG - 1);          /* 0 → 1 top to bottom */
-        float yOff = (float(e) - float(ECG - 1) * 0.5) * lSpacing;
-        /* Stagger phase per line so spikes don't all fire at once */
-        float phase = space.x * ecgScale - iTime * ecgSpeed + fi * 0.22;
-        float ecgY  = ecg(phase) * lAmp * hf + yOff;
-
-        /* Line colour: brand blue at top → medical cyan at bottom */
-        vec4 lineCol = mix(
-          vec4(0.18, 0.52, 0.87, 1.0),   /* #2e86de  accent blue */
-          vec4(0.12, 0.82, 0.96, 1.0),   /* #1fd1f5  medical cyan */
-          fi
-        );
-
-        float glowVal = glow(ecgY,  0.12, space.y) * hf;
-        float coreVal = crisp(ecgY, 0.013, space.y);
-        float hotVal  = crisp(ecgY, 0.004, space.y);
-
-        col += lineCol * (glowVal * 0.40 + coreVal * 0.95) * hf;
-        /* Bright white-cyan hot centre — makes the line pop */
-        col += vec4(0.70, 0.96, 1.0, 1.0) * hotVal * hf * 0.55;
       }
 
       /* ── Vignette  (soft dark edges, brighter centre) ── */
