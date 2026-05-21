@@ -736,7 +736,7 @@ select.form-control { cursor: pointer; }
   gap: 2.5rem;
   padding-bottom: 3rem;
 }
-.footer-brand img { height: auto; max-width: 200px; margin-bottom: 1rem; display: block; background: #ffffff; border-radius: 4px; padding: 8px 14px; object-fit: contain; }
+.footer-brand img { height: auto; max-width: 280px; margin-bottom: 1.25rem; display: block; object-fit: contain; }
 .footer-brand p   { font-size: .88rem; line-height: 1.7; max-width: 280px; }
 .footer-col h4 {
   font-size: .85rem;
