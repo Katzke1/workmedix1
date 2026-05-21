@@ -6,7 +6,7 @@
 
   <!-- Primary SEO -->
   <title><%= title %></title>
-  <meta name="description" content="<%= description %>">
+  <meta name="description" content="<%= locals.description || '' %>">
   <meta name="robots" content="index, follow">
   <meta name="author" content="Workmedix">
   <meta name="keywords" content="workplace health screening, occupational health, pre-employment medical, drug testing, fitness for duty, Johannesburg, South Africa">
@@ -14,14 +14,14 @@
   <!-- Open Graph -->
   <meta property="og:type"        content="website">
   <meta property="og:title"       content="<%= title %>">
-  <meta property="og:description" content="<%= description %>">
+  <meta property="og:description" content="<%= locals.description || '' %>">
   <meta property="og:site_name"   content="Workmedix">
   <meta property="og:locale"      content="en_ZA">
 
   <!-- Twitter Card -->
   <meta name="twitter:card"        content="summary">
   <meta name="twitter:title"       content="<%= title %>">
-  <meta name="twitter:description" content="<%= description %>">
+  <meta name="twitter:description" content="<%= locals.description || '' %>">
 
   <!-- Geo -->
   <meta name="geo.region"   content="ZA-GP">
