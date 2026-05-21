@@ -1133,7 +1133,7 @@ tbody tr:hover td { background: #f9fbff; }
   :root { --nav-h: 100px; }
 }
 @media (max-width: 768px) {
-  :root { --nav-h: 74px; }
+  :root { --nav-h: 60px; }
 }
 
 /* Hamburger → X animation */
@@ -1190,9 +1190,12 @@ tbody tr:hover td { background: #f9fbff; }
   .nav-hamburger   { display: flex; }
   .navbar .container { position: relative; }
 
-  /* Hero */
-  .hero          { min-height: 100svh; }
-  .hero-center   { padding: 2rem .75rem; }
+  /* Logo — don't overflow navbar on mobile */
+  .nav-brand img { height: calc(var(--nav-h) - 8px); max-width: 260px; }
+
+  /* Hero — extra top space so text clears the navbar fully */
+  .hero          { min-height: 100svh; padding-top: calc(var(--nav-h) + 2rem); }
+  .hero-center   { padding: 1.5rem .75rem; }
   .hero-title    { font-size: clamp(2rem, 8vw, 3rem); }
   .hero-sub      { font-size: 1rem; }
   .hero-actions  { flex-direction: column; align-items: center; gap: .75rem; }
