@@ -222,6 +222,7 @@ select.form-control { cursor: pointer; }
 .badge-completed { background: var(--completed-bg); color: var(--completed-fg); }
 
 /* ── 9. Public Navbar — floating pill ────────────────────── */
+/* Transparent over hero → white glass on scroll */
 .navbar {
   position: fixed;
   top: 16px;
@@ -229,25 +230,31 @@ select.form-control { cursor: pointer; }
   transform: translateX(-50%) translateY(0);
   width: calc(100% - 40px);
   max-width: 1220px;
-  height: 76px;
-  background: rgba(5,15,50,.88);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255,255,255,.13);
+  height: 88px;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid transparent;
   border-radius: 100px;
   display: flex;
   align-items: center;
   padding: 0 0.5rem;
   z-index: 999;
-  box-shadow: 0 8px 40px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.07);
-  transition: background .35s ease, box-shadow .35s ease,
-              border-color .35s ease, transform .4s cubic-bezier(.4,0,.2,1);
+  box-shadow: none;
+  transition: background .4s cubic-bezier(.4,0,.2,1),
+              border-color .4s cubic-bezier(.4,0,.2,1),
+              box-shadow   .4s cubic-bezier(.4,0,.2,1),
+              height       .3s cubic-bezier(.4,0,.2,1),
+              transform    .4s cubic-bezier(.4,0,.2,1);
 }
 .navbar.scrolled {
-  background: rgba(5,15,50,.97);
-  border-color: rgba(46,134,222,.3);
-  box-shadow: 0 16px 60px rgba(0,0,0,.5), 0 0 0 1px rgba(46,134,222,.1),
-              inset 0 1px 0 rgba(255,255,255,.08);
+  height: 82px;
+  background: rgba(255,255,255,.97);
+  backdrop-filter: blur(40px) saturate(190%);
+  -webkit-backdrop-filter: blur(40px) saturate(190%);
+  border-color: rgba(200,220,245,.70);
+  box-shadow: 0 2px 8px rgba(0,0,0,.05), 0 8px 30px rgba(0,0,0,.09),
+              inset 0 1px 0 rgba(255,255,255,1), inset 0 0 0 1px rgba(255,255,255,.6);
 }
 .navbar.nav-hidden {
   transform: translateX(-50%) translateY(calc(-100% - 24px));
@@ -260,7 +267,7 @@ select.form-control { cursor: pointer; }
   padding: 0 1.5rem;
 }
 
-/* Logo */
+/* Logo — huge, white over hero / dark on scrolled */
 .nav-brand {
   display: flex;
   align-items: center;
@@ -269,18 +276,19 @@ select.form-control { cursor: pointer; }
   margin-right: .75rem;
 }
 .nav-brand img {
-  height: 72px;
+  height: 148px;
   width: auto;
-  max-width: 300px;
+  max-width: 380px;
   object-fit: contain;
   object-position: left center;
-  filter: drop-shadow(0 2px 10px rgba(84,160,255,.3));
-  transition: transform .3s ease, filter .3s ease;
+  filter: brightness(0) invert(1);   /* white over dark hero */
+  transition: filter .4s ease, height .3s ease, transform .3s ease;
 }
-.nav-brand:hover img {
-  transform: scale(1.03);
-  filter: drop-shadow(0 4px 16px rgba(84,160,255,.5));
+.navbar.scrolled .nav-brand img {
+  filter: none;                       /* dark logo on white glass */
+  height: 130px;
 }
+.nav-brand:hover img { transform: scale(1.03); }
 
 /* Separator */
 .nav-links {
@@ -294,63 +302,79 @@ select.form-control { cursor: pointer; }
   content: '';
   width: 1px;
   height: 20px;
-  background: rgba(255,255,255,.18);
+  background: rgba(255,255,255,.3);
   margin-right: 1rem;
   flex-shrink: 0;
+  transition: background .4s ease;
 }
+.navbar.scrolled .nav-links::before { background: rgba(12,36,97,.12); }
 
 /* Links */
 .nav-links .nav-link {
   position: relative;
-  color: rgba(255,255,255,.75);
+  color: rgba(255,255,255,.82);
   font-size: .875rem;
   font-weight: 500;
   padding: .48rem 1rem;
   border-radius: 50px;
   letter-spacing: .01em;
-  transition: color .22s ease, background .22s ease;
+  transition: color .25s ease, background .25s ease;
   white-space: nowrap;
 }
+.navbar.scrolled .nav-links .nav-link { color: rgba(12,36,97,.65); }
 .nav-links .nav-link::after {
   content: '';
   position: absolute;
   bottom: 4px; left: 1rem; right: 1rem;
   height: 1.5px;
-  background: #54a0ff;
+  background: rgba(255,255,255,.9);
   border-radius: 2px;
   transform: scaleX(0);
   transform-origin: center;
-  transition: transform .22s ease;
+  transition: transform .22s ease, background .4s ease;
 }
+.navbar.scrolled .nav-links .nav-link::after { background: #2e86de; }
 .nav-links .nav-link:hover,
-.nav-links .nav-link.active {
-  color: #ffffff;
-  background: rgba(255,255,255,.09);
-}
+.nav-links .nav-link.active { color: #fff; background: rgba(255,255,255,.13); }
+.navbar.scrolled .nav-links .nav-link:hover,
+.navbar.scrolled .nav-links .nav-link.active { color: #0c2461; background: rgba(12,36,97,.06); }
 .nav-links .nav-link:hover::after,
 .nav-links .nav-link.active::after { transform: scaleX(1); }
 
-/* Login CTA */
+/* CTA — ghost white over hero, solid navy on scrolled */
 .nav-links .btn-login {
   margin-left: .75rem;
-  background: linear-gradient(135deg, #2e86de 0%, #54a0ff 100%);
+  background: rgba(255,255,255,.12);
   color: #ffffff !important;
   padding: .52rem 1.45rem;
   border-radius: 50px;
-  font-weight: 700;
+  font-weight: 600;
   font-size: .875rem;
-  letter-spacing: .01em;
-  box-shadow: 0 4px 18px rgba(46,134,222,.45);
-  transition: transform .22s ease, box-shadow .22s ease !important;
+  letter-spacing: .02em;
+  border: 1.5px solid rgba(255,255,255,.55);
+  box-shadow: none;
+  transition: background .25s ease, border-color .25s ease,
+              box-shadow .25s ease, transform .22s ease !important;
+}
+.navbar.scrolled .nav-links .btn-login {
+  background: #0c2461;
+  border-color: #0c2461;
+  box-shadow: 0 2px 14px rgba(12,36,97,.22);
 }
 .nav-links .btn-login::after { display: none !important; }
 .nav-links .btn-login:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(46,134,222,.6) !important;
+  background: rgba(255,255,255,.22);
+  border-color: rgba(255,255,255,.8);
+  transform: translateY(-1px);
   color: #ffffff !important;
 }
+.navbar.scrolled .nav-links .btn-login:hover {
+  background: #1a3a7a !important;
+  border-color: #1a3a7a !important;
+  box-shadow: 0 6px 22px rgba(12,36,97,.32) !important;
+}
 
-/* Hamburger */
+/* Hamburger — white over hero, navy on scrolled */
 .nav-hamburger {
   display: none;
   flex-direction: column;
@@ -364,12 +388,13 @@ select.form-control { cursor: pointer; }
 .nav-hamburger span {
   width: 24px;
   height: 2px;
-  background: rgba(255,255,255,.85);
+  background: rgba(255,255,255,.9);
   border-radius: 2px;
-  transition: transform .3s ease, opacity .3s ease;
+  transition: transform .3s ease, opacity .3s ease, background .4s ease;
   display: block;
   transform-origin: center;
 }
+.navbar.scrolled .nav-hamburger span { background: rgba(12,36,97,.75); }
 .nav-hamburger.active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
 .nav-hamburger.active span:nth-child(2) { opacity: 0; transform: scaleX(0); }
 .nav-hamburger.active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
@@ -1239,52 +1264,83 @@ tbody tr:hover td { background: #f9fbff; }
 @media (max-width: 768px) {
   section { padding: 60px 0; }
 
-  /* Nav — mobile: dark pill */
+  /* Nav — mobile: always solid white glass pill */
   .navbar {
-    height: 62px !important;
-    background: rgba(5,15,50,.92) !important;
-    border-color: rgba(255,255,255,.13) !important;
-    box-shadow: 0 8px 32px rgba(0,0,0,.35) !important;
+    height: 68px !important;
+    background: rgba(255,255,255,.96) !important;
+    backdrop-filter: blur(32px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(32px) saturate(180%) !important;
+    border-color: rgba(200,220,245,.65) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.08),
+                inset 0 1px 0 rgba(255,255,255,1) !important;
   }
   .navbar.scrolled {
-    background: rgba(5,15,50,.98) !important;
-    border-color: rgba(46,134,222,.25) !important;
+    background: rgba(255,255,255,1) !important;
   }
   .nav-hamburger { display: flex; }
   .navbar .container { position: relative; }
 
-  /* Logo — white on dark mobile pill */
+  /* Logo — dark (no invert needed on white mobile pill), big */
   .nav-brand img {
-    height: 54px !important;
-    max-width: 190px !important;
-    filter: drop-shadow(0 1px 6px rgba(84,160,255,.25)) !important;
+    height: 64px !important;
+    max-width: 220px !important;
+    filter: none !important;
   }
+  .navbar.scrolled .nav-brand img {
+    height: 64px !important;
+    filter: none !important;
+  }
+  /* Hamburger dark on white */
+  .nav-hamburger span { background: rgba(12,36,97,.75) !important; }
+  .navbar.scrolled .nav-hamburger span { background: rgba(12,36,97,.75) !important; }
 
-  /* Dark dropdown */
+  /* Dropdown — white glass */
   .nav-links {
     display: none;
     flex-direction: column;
     position: absolute;
-    top: calc(100% + 10px);
+    top: calc(100% + 8px);
     left: 0; right: 0;
-    background: rgba(5,15,50,.97);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255,255,255,.12);
-    border-radius: 20px;
-    box-shadow: 0 16px 48px rgba(0,0,0,.45);
+    background: rgba(255,255,255,.97);
+    backdrop-filter: blur(32px) saturate(180%);
+    -webkit-backdrop-filter: blur(32px) saturate(180%);
+    border: 1px solid rgba(200,220,245,.65);
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.10);
     padding: .75rem .75rem 1rem;
-    gap: .2rem;
+    gap: .25rem;
     z-index: 998;
   }
   .nav-links::before { display: none; }
   .nav-links.open { display: flex; }
-  .nav-links .nav-link { padding: .65rem .9rem; font-size: .95rem; color: rgba(255,255,255,.85) !important; border-radius: 10px; }
-  .nav-links .nav-link:hover { background: rgba(255,255,255,.08) !important; color: #fff !important; }
-  .nav-links .btn-login { margin: .5rem 0 0; text-align: center; border-radius: 10px !important; width: 100%; justify-content: center; }
-
-  /* Logo — mobile size */
-  .nav-brand img { height: 54px; max-width: 190px; }
+  .nav-links .nav-link,
+  .navbar.scrolled .nav-links .nav-link {
+    padding: .7rem 1rem;
+    font-size: .95rem;
+    color: rgba(12,36,97,.75) !important;
+    border-radius: 12px;
+    background: none !important;
+  }
+  .nav-links .nav-link:hover,
+  .navbar.scrolled .nav-links .nav-link:hover {
+    background: rgba(12,36,97,.06) !important;
+    color: #0c2461 !important;
+  }
+  .nav-links .nav-link::after { display: none !important; }
+  .nav-links .btn-login,
+  .navbar.scrolled .nav-links .btn-login {
+    margin: .5rem 0 0;
+    background: #0c2461 !important;
+    border-color: #0c2461 !important;
+    color: #ffffff !important;
+    border-radius: 12px !important;
+    padding: .7rem 1rem !important;
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+    box-shadow: 0 2px 12px rgba(12,36,97,.2) !important;
+    transform: none !important;
+  }
 
   /* Hero — stack from top so tall content never clips behind pill navbar */
   .hero          { min-height: 100svh; height: auto; align-items: flex-start; padding-top: calc(var(--nav-h) + 80px); }
