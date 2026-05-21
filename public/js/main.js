@@ -12,7 +12,7 @@
     const y     = window.scrollY;
     const delta = y - lastY;
 
-    nav.classList.toggle('scrolled', y > 10);
+    nav.classList.toggle('scrolled', y > 40);
 
     // Hide on scroll-down past 120px (desktop only)
     if (window.innerWidth > 768) {
