@@ -229,11 +229,11 @@ select.form-control { cursor: pointer; }
   transform: translateX(-50%) translateY(0);
   width: calc(100% - 40px);
   max-width: 1220px;
-  height: 72px;
-  background: rgba(255,255,255,.72);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border: 1px solid rgba(255,255,255,.65);
+  height: 82px;
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  border: 1px solid rgba(255,255,255,.85);
   border-radius: 100px;
   display: flex;
   align-items: center;
@@ -244,9 +244,9 @@ select.form-control { cursor: pointer; }
               border-color .35s ease, transform .4s cubic-bezier(.4,0,.2,1);
 }
 .navbar.scrolled {
-  background: rgba(255,255,255,.92);
-  border-color: rgba(12,36,97,.10);
-  box-shadow: 0 8px 40px rgba(0,0,0,.13), 0 1px 0 rgba(255,255,255,.9) inset;
+  background: rgba(255,255,255,.98);
+  border-color: rgba(12,36,97,.12);
+  box-shadow: 0 8px 40px rgba(0,0,0,.14), 0 1px 0 rgba(255,255,255,1) inset;
 }
 /* Auto-hide when scrolling down */
 .navbar.nav-hidden {
@@ -269,9 +269,9 @@ select.form-control { cursor: pointer; }
   margin-right: .5rem;
 }
 .nav-brand img {
-  height: 68px;
+  height: 92px;
   width: auto;
-  max-width: 260px;
+  max-width: 320px;
   object-fit: contain;
   object-position: left center;
   transition: transform .3s ease, opacity .3s ease;
@@ -1284,7 +1284,7 @@ tbody tr:hover td { background: #f9fbff; }
   .navbar .container { position: relative; }
 
   /* Logo — mobile */
-  .nav-brand img { height: calc(var(--nav-h) - 14px); max-width: 150px; }
+  .nav-brand img { height: calc(var(--nav-h) + 8px); max-width: 180px; }
 
   /* Hero — stack from top so tall content never clips behind pill navbar */
   .hero          { min-height: 100svh; height: auto; align-items: flex-start; padding-top: calc(var(--nav-h) + 80px); }
