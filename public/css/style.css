@@ -232,7 +232,6 @@ select.form-control { cursor: pointer; }
   display: flex;
   align-items: center;
   z-index: 999;
-  overflow: visible;
   border-bottom: 1px solid rgba(12,36,97,.08);
   box-shadow: 0 2px 20px rgba(12,36,97,.07);
   transition: background .45s ease, backdrop-filter .45s ease,
@@ -1282,7 +1281,8 @@ tbody tr:hover td { background: #f9fbff; }
   .navbar .container { position: relative; }
 
   /* Logo — mobile */
-  .nav-brand img { height: calc(var(--nav-h) - 16px); max-width: 160px; filter: brightness(0) invert(1); }
+  .nav-brand img { height: calc(var(--nav-h) - 16px); max-width: 160px; }
+  .has-hero .navbar .nav-brand img { filter: brightness(0) invert(1); }
   .has-hero .navbar.scrolled .nav-brand img { filter: none; }
 
   /* Hero — stack from top so tall content never clips behind navbar */
