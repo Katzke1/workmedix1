@@ -224,28 +224,36 @@ select.form-control { cursor: pointer; }
 /* ── 9. Public Navbar ─────────────────────────────────────── */
 .navbar {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 0; left: 0; right: 0;
   height: var(--nav-h);
-  background: var(--white);
-  border-bottom: 1px solid var(--border);
+  background: rgba(7,24,64,.18);
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
   display: flex;
   align-items: center;
   z-index: 999;
-  transition: box-shadow var(--transition);
   overflow: visible;
+  border-bottom: 1px solid rgba(255,255,255,0);
+  transition: background .45s ease, backdrop-filter .45s ease,
+              box-shadow .45s ease, border-color .45s ease;
 }
-.navbar.scrolled { box-shadow: 0 2px 16px rgba(12,36,97,.1); }
+.navbar.scrolled {
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 1px 0 rgba(12,36,97,.07), 0 8px 32px rgba(12,36,97,.07);
+  border-bottom: 1px solid rgba(12,36,97,.06);
+}
 .navbar .container {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
+
+/* Brand / logo */
 .nav-brand {
   display: flex;
   align-items: center;
-  gap: .5rem;
   text-decoration: none;
 }
 .nav-brand img {
@@ -254,56 +262,98 @@ select.form-control { cursor: pointer; }
   max-width: 560px;
   object-fit: contain;
   object-position: left center;
+  filter: brightness(0) invert(1);
+  transition: filter .45s ease;
 }
-.nav-brand-text {
-  font-size: 1.35rem;
-  font-weight: 800;
-  color: var(--primary);
-  letter-spacing: -.01em;
-}
+.navbar.scrolled .nav-brand img { filter: none; }
+
+/* Nav links */
 .nav-links {
   display: flex;
   align-items: center;
-  gap: .25rem;
+  gap: .1rem;
+  list-style: none;
+  margin: 0; padding: 0;
 }
-.nav-links a {
-  color: var(--text-light);
-  font-size: .9rem;
+.nav-links .nav-link {
+  position: relative;
+  color: rgba(255,255,255,.82);
+  font-size: .88rem;
   font-weight: 500;
-  padding: .45rem .85rem;
+  padding: .5rem 1rem;
   border-radius: var(--radius);
-  transition: all var(--transition);
+  letter-spacing: .01em;
+  transition: color .3s ease, background .3s ease;
 }
-.nav-links a:hover, .nav-links a.active {
+.nav-links .nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 5px; left: 1rem; right: 1rem;
+  height: 2px;
+  background: #54a0ff;
+  border-radius: 2px;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform .25s ease;
+}
+.nav-links .nav-link:hover,
+.nav-links .nav-link.active {
+  color: #ffffff;
+  background: rgba(255,255,255,.1);
+}
+.nav-links .nav-link:hover::after,
+.nav-links .nav-link.active::after { transform: scaleX(1); }
+
+/* Scrolled state — links go dark */
+.navbar.scrolled .nav-links .nav-link { color: var(--text-light); }
+.navbar.scrolled .nav-links .nav-link::after { background: var(--primary); }
+.navbar.scrolled .nav-links .nav-link:hover,
+.navbar.scrolled .nav-links .nav-link.active {
   color: var(--primary);
-  background: var(--off-white);
+  background: rgba(12,36,97,.05);
 }
+
+/* Login button */
 .nav-links .btn-login {
-  margin-left: .5rem;
-  background: var(--primary);
-  color: var(--white);
-  padding: .45rem 1.2rem;
-  border-radius: var(--radius);
+  margin-left: .75rem;
+  background: linear-gradient(135deg, #0c2461 0%, #2e86de 100%);
+  color: #ffffff !important;
+  padding: .52rem 1.5rem;
+  border-radius: 50px;
   font-weight: 600;
+  font-size: .88rem;
+  letter-spacing: .01em;
+  box-shadow: 0 4px 18px rgba(46,134,222,.35);
+  transition: transform .25s ease, box-shadow .25s ease, background .25s ease !important;
 }
+.nav-links .btn-login::after { display: none !important; }
 .nav-links .btn-login:hover {
-  background: var(--primary-light);
-  color: var(--white);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(46,134,222,.5);
+  background: linear-gradient(135deg, #1a3a8f 0%, #54a0ff 100%) !important;
+  color: #ffffff !important;
 }
+.navbar.scrolled .nav-links .btn-login { background: linear-gradient(135deg, #0c2461 0%, #2e86de 100%); }
+
+/* Hamburger */
 .nav-hamburger {
   display: none;
   flex-direction: column;
   gap: 5px;
   cursor: pointer;
   padding: .5rem;
+  background: none;
+  border: none;
 }
 .nav-hamburger span {
   width: 24px;
   height: 2px;
-  background: var(--primary);
+  background: rgba(255,255,255,.9);
   border-radius: 2px;
   transition: all var(--transition);
+  display: block;
 }
+.navbar.scrolled .nav-hamburger span { background: var(--primary); }
 
 /* ── 10. Hero ────────────────────────────────────────────── */
 .hero {
@@ -1177,21 +1227,25 @@ tbody tr:hover td { background: #f9fbff; }
     position: absolute;
     top: var(--nav-h);
     left: 0; right: 0;
-    background: var(--white);
-    border-bottom: 1px solid var(--border);
-    box-shadow: 0 8px 24px rgba(0,0,0,.1);
-    padding: .75rem 1rem 1rem;
+    background: rgba(7,24,64,.97);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    box-shadow: 0 16px 40px rgba(0,0,0,.25);
+    padding: .75rem 1rem 1.25rem;
     gap: .2rem;
     z-index: 998;
   }
   .nav-links.open  { display: flex; }
-  .nav-links a     { padding: .65rem .9rem; font-size: .95rem; }
-  .nav-links .btn-login { margin: .4rem 0 0; text-align: center; justify-content: center; }
+  .nav-links .nav-link { color: rgba(255,255,255,.82) !important; padding: .65rem .9rem; font-size: .95rem; }
+  .nav-links .nav-link:hover { color: #fff !important; background: rgba(255,255,255,.08) !important; }
+  .nav-links .btn-login { margin: .5rem 0 0; text-align: center; justify-content: center; border-radius: 10px !important; }
   .nav-hamburger   { display: flex; }
   .navbar .container { position: relative; }
 
   /* Logo — don't overflow navbar on mobile */
-  .nav-brand img { height: calc(var(--nav-h) - 8px); max-width: 260px; }
+  .nav-brand img { height: calc(var(--nav-h) - 8px); max-width: 260px; filter: brightness(0) invert(1); }
+  .navbar.scrolled .nav-brand img { filter: none; }
 
   /* Hero — stack from top so tall content never clips behind navbar */
   .hero          { min-height: 100svh; height: auto; align-items: flex-start; padding-top: calc(var(--nav-h) + 1.5rem); }
