@@ -14,11 +14,26 @@
   const toggle = document.querySelector('.nav-hamburger');
   const links  = document.querySelector('.nav-links');
   if (!toggle || !links) return;
-  toggle.addEventListener('click', () => links.classList.toggle('open'));
+
+  function close() {
+    links.classList.remove('open');
+    toggle.classList.remove('active');
+    toggle.setAttribute('aria-expanded', 'false');
+  }
+
+  toggle.addEventListener('click', () => {
+    const isOpen = links.classList.toggle('open');
+    toggle.classList.toggle('active', isOpen);
+    toggle.setAttribute('aria-expanded', isOpen);
+  });
+
   // Close on link click
-  links.querySelectorAll('a').forEach(a =>
-    a.addEventListener('click', () => links.classList.remove('open'))
-  );
+  links.querySelectorAll('a').forEach(a => a.addEventListener('click', close));
+
+  // Close when clicking outside
+  document.addEventListener('click', e => {
+    if (!toggle.contains(e.target) && !links.contains(e.target)) close();
+  });
 })();
 
 // ── Active nav link on scroll ─────────────────────────────────────────────────
