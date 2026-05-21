@@ -43,7 +43,7 @@
   --radius-xl : 20px;
 
   --sidebar-w  : 270px;
-  --nav-h      : 130px;
+  --nav-h      : 72px;
   --transition : .22s ease;
 }
 
@@ -286,9 +286,9 @@ select.form-control { cursor: pointer; }
   text-decoration: none;
 }
 .nav-brand img {
-  height: calc(var(--nav-h) + 40px);
+  height: calc(var(--nav-h) - 20px);
   width: auto;
-  max-width: 560px;
+  max-width: 220px;
   object-fit: contain;
   object-position: left center;
   transition: filter .45s ease;
@@ -1218,10 +1218,10 @@ tbody tr:hover td { background: #f9fbff; }
 
 /* Responsive navbar height */
 @media (max-width: 1200px) {
-  :root { --nav-h: 100px; }
+  :root { --nav-h: 68px; }
 }
 @media (max-width: 768px) {
-  :root { --nav-h: 60px; }
+  :root { --nav-h: 58px; }
 }
 
 /* Hamburger → X animation */
@@ -1281,9 +1281,9 @@ tbody tr:hover td { background: #f9fbff; }
   .nav-hamburger   { display: flex; }
   .navbar .container { position: relative; }
 
-  /* Logo — don't overflow navbar on mobile */
-  .nav-brand img { height: calc(var(--nav-h) - 8px); max-width: 260px; filter: brightness(0) invert(1); }
-  .navbar.scrolled .nav-brand img { filter: none; }
+  /* Logo — mobile */
+  .nav-brand img { height: calc(var(--nav-h) - 16px); max-width: 160px; filter: brightness(0) invert(1); }
+  .has-hero .navbar.scrolled .nav-brand img { filter: none; }
 
   /* Hero — stack from top so tall content never clips behind navbar */
   .hero          { min-height: 100svh; height: auto; align-items: flex-start; padding-top: calc(var(--nav-h) + 1.5rem); }
