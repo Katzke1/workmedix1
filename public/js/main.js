@@ -1,12 +1,37 @@
 'use strict';
 
-// ── Navbar scroll shadow ──────────────────────────────────────────────────────
+// ── Navbar: scroll shadow + auto-hide on scroll-down ─────────────────────────
 (function () {
   const nav = document.querySelector('.navbar');
   if (!nav) return;
-  const handler = () => nav.classList.toggle('scrolled', window.scrollY > 20);
-  window.addEventListener('scroll', handler, { passive: true });
-  handler();
+
+  let lastY    = window.scrollY;
+  let ticking  = false;
+
+  function update() {
+    const y     = window.scrollY;
+    const delta = y - lastY;
+
+    // Scrolled state (glass deepens after 40px)
+    nav.classList.toggle('scrolled', y > 40);
+
+    // Hide when scrolling down past 120px, reveal on scroll up
+    if (y > 120) {
+      if (delta > 6)  nav.classList.add('nav-hidden');     // going down
+      if (delta < -6) nav.classList.remove('nav-hidden');  // going up
+    } else {
+      nav.classList.remove('nav-hidden');
+    }
+
+    lastY   = y;
+    ticking = false;
+  }
+
+  window.addEventListener('scroll', () => {
+    if (!ticking) { requestAnimationFrame(update); ticking = true; }
+  }, { passive: true });
+
+  update();
 })();
 
 // ── Mobile nav toggle ─────────────────────────────────────────────────────────
