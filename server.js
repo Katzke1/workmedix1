@@ -40,6 +40,9 @@ app.use(helmet({
   crossOriginOpenerPolicy: { policy: 'same-origin' },
 }));
 
+// ── Healthcheck (must be before HTTPS redirect so Railway gets a 200) ─────────
+app.get('/health', (req, res) => res.status(200).send('OK'));
+
 // Force HTTPS in production
 if (isProd) {
   app.use((req, res, next) => {
