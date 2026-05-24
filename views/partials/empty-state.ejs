@@ -1,0 +1,13 @@
+<!-- Usage: include('partials/empty-state', { title, desc, ctaHref, ctaLabel }) -->
+<div class="empty-state">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="10"/>
+    <line x1="12" y1="8" x2="12" y2="12"/>
+    <line x1="12" y1="16" x2="12.01" y2="16"/>
+  </svg>
+  <h3><%= locals.title || 'Nothing here yet' %></h3>
+  <p><%= locals.desc  || 'No records found.' %></p>
+  <% if (locals.ctaHref) { %>
+    <a href="<%= ctaHref %>" class="btn btn-primary btn-sm" style="margin-top:1rem;"><%= locals.ctaLabel || 'Get started' %></a>
+  <% } %>
+</div>

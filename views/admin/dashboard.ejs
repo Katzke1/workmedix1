@@ -27,7 +27,7 @@
       </div>
     </div>
 
-    <!-- Stats -->
+    <!-- Stats row -->
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-icon blue">
@@ -53,7 +53,7 @@
         </div>
         <div>
           <div class="stat-num"><%= stats.completedScreenings %></div>
-          <div class="stat-label">Completed Screenings</div>
+          <div class="stat-label">Completed</div>
         </div>
       </div>
       <div class="stat-card">
@@ -62,49 +62,120 @@
         </div>
         <div>
           <div class="stat-num"><%= stats.certificatesIssued %></div>
-          <div class="stat-label">Certificates Issued</div>
+          <div class="stat-label">Certificates</div>
+        </div>
+      </div>
+      <div class="stat-card" style="border-left:3px solid var(--danger);">
+        <div class="stat-icon" style="background:rgba(225,29,72,.1);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div>
+          <div class="stat-num" style="color:var(--danger);"><%= stats.expiringCerts %></div>
+          <div class="stat-label">Expiring (&le;60d)</div>
         </div>
       </div>
     </div>
 
-    <!-- Recent bookings -->
-    <div class="card">
-      <div class="card-header">
-        <h3>Recent Bookings</h3>
-        <a href="/admin/bookings" style="font-size:.85rem;color:var(--accent);">View all →</a>
+    <!-- 4-quadrant grid -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+
+      <!-- Upcoming bookings (next 7 days) -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Upcoming Bookings</h3>
+          <a href="/admin/bookings?status=confirmed" style="font-size:.82rem;color:var(--primary);">View all →</a>
+        </div>
+        <% if (upcomingBookings.length === 0) { %>
+          <div class="card-body" style="color:var(--ink-muted);font-size:.9rem;">No confirmed bookings in the next 7 days.</div>
+        <% } else { %>
+        <div style="display:flex;flex-direction:column;">
+          <% upcomingBookings.forEach(b => { %>
+          <a href="/admin/bookings/<%= b.id %>" style="display:flex;align-items:center;justify-content:space-between;padding:.7rem 1rem;border-bottom:1px solid var(--border);text-decoration:none;color:inherit;transition:background .12s;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">
+            <div>
+              <strong style="font-size:.9rem;"><%= b.service_type %></strong>
+              <div style="font-size:.8rem;color:var(--ink-muted);"><%= b.company_name || b.client_name %></div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:.82rem;font-weight:600;"><%= b.preferred_date %></div>
+              <span class="badge badge-<%= b.status %>" style="font-size:.72rem;"><%= b.status %></span>
+            </div>
+          </a>
+          <% }) %>
+        </div>
+        <% } %>
       </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Client</th>
-              <th>Company</th>
-              <th>Service</th>
-              <th>Date Requested</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% if (recentBookings.length === 0) { %>
-              <tr><td class="table-empty" colspan="5">No bookings yet.</td></tr>
-            <% } else { recentBookings.forEach(b => { %>
-              <tr>
-                <td><strong><%= b.client_name %></strong></td>
-                <td style="color:var(--text-light);font-size:.88rem;"><%= b.company_name || '—' %></td>
-                <td><%= b.service_type %></td>
-                <td style="color:var(--mid-grey);font-size:.88rem;"><%= b.preferred_date %></td>
-                <td><span class="badge badge-<%= b.status %>"><%= b.status %></span></td>
-              </tr>
-            <% }) } %>
-          </tbody>
-        </table>
+
+      <!-- Expiring certificates -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Expiring Certificates</h3>
+          <a href="/admin/certificates" style="font-size:.82rem;color:var(--primary);">Issue cert →</a>
+        </div>
+        <% if (expiringCerts.length === 0) { %>
+          <div class="card-body" style="color:var(--ink-muted);font-size:.9rem;">No certificates expiring in the next 60 days.</div>
+        <% } else { %>
+        <div style="display:flex;flex-direction:column;">
+          <% expiringCerts.forEach(c => { %>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:.7rem 1rem;border-bottom:1px solid var(--border);">
+            <div>
+              <strong style="font-size:.9rem;"><%= c.first_name || c.user_name %> <%= c.last_name || '' %></strong>
+              <div style="font-size:.8rem;color:var(--ink-muted);"><%= c.cert_type_name || c.title %></div>
+            </div>
+            <% const daysLeft = Math.ceil((new Date(c.expiry_date) - Date.now()) / 86400000); %>
+            <span class="badge badge-<%= daysLeft <= 14 ? 'cancelled' : 'pending' %>"><%= daysLeft %>d left</span>
+          </div>
+          <% }) %>
+        </div>
+        <% } %>
       </div>
+
+      <!-- CRM / Pipeline summary -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Pipeline Summary</h3>
+          <a href="/admin/crm" style="font-size:.82rem;color:var(--primary);">Open CRM →</a>
+        </div>
+        <div class="card-body" style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;text-align:center;">
+          <% Object.entries(pipelineSummary).forEach(([status, count]) => { %>
+          <div>
+            <div style="font-size:1.5rem;font-weight:700;color:var(--primary);"><%= count %></div>
+            <div style="font-size:.78rem;color:var(--ink-muted);text-transform:capitalize;"><%= status.replace('_',' ') %></div>
+          </div>
+          <% }) %>
+        </div>
+      </div>
+
+      <!-- Revenue this month -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Revenue This Month</h3>
+          <a href="/admin/crm/finance" style="font-size:.82rem;color:var(--primary);">Finance →</a>
+        </div>
+        <div class="card-body">
+          <div style="font-size:2rem;font-weight:800;color:var(--primary);">
+            R<%= revenueMonth.toLocaleString('en-ZA', {minimumFractionDigits:0}) %>
+          </div>
+          <div style="font-size:.82rem;color:var(--ink-muted);margin-top:.25rem;">
+            from <%= jobsMonth %> completed job<%= jobsMonth===1?'':'s' %> · invoiced or paid
+          </div>
+          <% if (revenuePrev > 0) { %>
+          <div style="font-size:.82rem;margin-top:.5rem;">
+            <% const delta = revenueMonth - revenuePrev; %>
+            <span style="color:<%= delta>=0 ? '#10B981' : 'var(--danger)' %>;">
+              <%= delta >= 0 ? '▲' : '▼' %> R<%= Math.abs(delta).toLocaleString('en-ZA') %>
+            </span>
+            <span style="color:var(--ink-muted);"> vs last month</span>
+          </div>
+          <% } %>
+        </div>
+      </div>
+
     </div>
 
-    <!-- Quick actions -->
+    <!-- Quick actions row -->
     <div class="grid-3" style="margin-top:1.5rem;">
       <a href="/admin/bookings" class="quick-action-card">
-        <div class="quick-action-icon" style="background:linear-gradient(135deg,#0c2461,#2e86de);">
+        <div class="quick-action-icon" style="background:linear-gradient(135deg,var(--primary),var(--primary-light));">
           <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         </div>
         <h4>Manage Bookings</h4>
@@ -115,14 +186,14 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         </div>
         <h4>Upload Results</h4>
-        <p>Add screening documents for clients</p>
+        <p>Add screening documents</p>
       </a>
       <a href="/admin/certificates" class="quick-action-card">
         <div class="quick-action-icon" style="background:linear-gradient(135deg,#0b6e4f,#00b894);">
           <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
         </div>
         <h4>Issue Certificates</h4>
-        <p>Generate and upload health certificates</p>
+        <p>Generate occupational health certs</p>
       </a>
     </div>
   </div>

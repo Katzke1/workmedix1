@@ -6,56 +6,62 @@
   <div class="app-topbar">
     <div class="app-topbar-title">
       <h2>Upload Results</h2>
-      <p>Attach screening documents to client accounts</p>
+      <p>Attach screening documents to client employees</p>
     </div>
   </div>
 
   <div class="app-content">
     <div style="max-width:680px;">
-      <% if (error) { %>
-        <div class="alert alert-danger"><%= error %></div>
-      <% } %>
-      <% if (success) { %>
-        <div class="alert alert-success" data-autodismiss><%= success %></div>
-      <% } %>
+      <% if (error)   { %><div class="alert alert-danger" style="margin-bottom:1rem;"><%= error %></div><% } %>
+      <% if (success) { %><div class="alert alert-success" data-autodismiss style="margin-bottom:1rem;"><%= success %></div><% } %>
 
       <div class="card">
-        <div class="card-header">
-          <h3>Upload Result Document</h3>
-        </div>
+        <div class="card-header"><h3>Upload Result Document</h3></div>
         <div class="card-body">
           <form method="POST" action="/admin/results" enctype="multipart/form-data">
+            <%- include('../partials/csrf') %>
+
             <div class="form-group">
-              <label class="form-label" for="client-select">Client *</label>
-              <select id="client-select" name="user_id" class="form-control" required>
+              <label class="form-label">Client *</label>
+              <select name="user_id" class="form-control" required id="res-user" onchange="loadResBookings(this.value); loadResEmps(this.value)">
                 <option value="">— Select client —</option>
                 <% clients.forEach(c => { %>
-                  <option value="<%= c.id %>">
-                    <%= c.name %><% if (c.company_name) { %> – <%= c.company_name %><% } %>
-                  </option>
+                <option value="<%= c.id %>"><%= c.name %><% if (c.company_name) { %> — <%= c.company_name %><% } %></option>
                 <% }) %>
               </select>
             </div>
 
             <div class="form-group">
-              <label class="form-label" for="booking-select">Link to Booking</label>
-              <select id="booking-select" name="booking_id" class="form-control">
-                <option value="">— select client first —</option>
+              <label class="form-label">Link to Booking</label>
+              <select name="booking_id" class="form-control" id="res-booking">
+                <option value="">— Select client first —</option>
               </select>
-              <span class="upload-hint">Optional — links this result to a specific appointment.</span>
+              <span class="form-hint">Optional — links this result to a specific appointment.</span>
             </div>
 
             <div class="form-group">
-              <label class="form-label" for="title">Document Title *</label>
-              <input type="text" id="title" name="title" class="form-control"
-                     placeholder="e.g. Pre-employment Medical Report – June 2025" required>
+              <label class="form-label">Employee (optional)</label>
+              <select name="employee_id" class="form-control" id="res-employee">
+                <option value="">— Select employee —</option>
+              </select>
+              <span class="form-hint">Link this result to a specific employee for their individual record.</span>
             </div>
 
             <div class="form-group">
-              <label class="form-label" for="file">File *</label>
-              <input type="file" id="file" name="file" class="form-control"
-                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required>
-              <span class="upload-hint">Accepted: PDF, Word (.doc/.docx), JPG, PNG — max 10 MB</span>
+              <label class="form-label">Document Title *</label>
+              <input type="text" name="title" class="form-control"
+                     placeholder="e.g. Pre-employment Medical Report — June 2026" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Report Date</label>
+              <input type="date" name="report_date" class="form-control" value="<%= new Date().toISOString().split('T')[0] %>">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">File *</label>
+              <input type="file" name="file" class="form-control" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required>
+              <span class="form-hint">PDF, Word, JPG, PNG — max 10 MB</span>
             </div>
 
             <button type="submit" class="btn btn-primary">Upload Result →</button>
@@ -63,13 +69,50 @@
         </div>
       </div>
 
-      <div class="alert alert-info" style="margin-top:1.25rem;">
-        The uploaded document will immediately appear in the client's <strong>My Results</strong> section of their portal.
+      <div class="alert alert-info" style="margin-top:1.25rem;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:1rem;font-size:.9rem;">
+        Uploaded documents appear immediately in the client's <strong>My Results</strong> portal section. If an employee is linked, the result also appears in the employee's individual record.
       </div>
     </div>
   </div>
 </main>
 </div>
+
+<script>
+function loadResBookings(userId) {
+  const sel = document.getElementById('res-booking');
+  sel.innerHTML = '<option value="">Loading…</option>';
+  if (!userId) { sel.innerHTML = '<option value="">— Select client first —</option>'; return; }
+  fetch('/admin/results/bookings-for/' + userId)
+    .then(r => r.json())
+    .then(rows => {
+      sel.innerHTML = '<option value="">— No booking link —</option>';
+      rows.forEach(b => {
+        const o = document.createElement('option');
+        o.value = b.id;
+        o.textContent = '#' + b.id + ' — ' + b.service_type + ' (' + b.preferred_date + ') — ' + b.status;
+        sel.appendChild(o);
+      });
+    });
+}
+
+function loadResEmps(userId) {
+  const sel = document.getElementById('res-employee');
+  sel.innerHTML = '<option value="">Loading…</option>';
+  if (!userId) { sel.innerHTML = '<option value="">— Select employee —</option>'; return; }
+  fetch('/admin/certificates/employees-for/' + userId)
+    .then(r => r.json())
+    .then(emps => {
+      sel.innerHTML = '<option value="">— No employee link —</option>';
+      emps.forEach(e => {
+        const o = document.createElement('option');
+        o.value = e.id;
+        o.textContent = e.first_name + ' ' + e.last_name + (e.job_title ? ' (' + e.job_title + ')' : '');
+        sel.appendChild(o);
+      });
+    });
+}
+</script>
+
 <script src="/js/main.js"></script>
 </body>
 </html>

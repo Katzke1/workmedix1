@@ -160,3 +160,6 @@ if (!existing) {
 
 console.log('Setup complete!\n');
 db.close();
+
+// Run additive enterprise migration
+require('./migrations/001_enterprise');

@@ -234,6 +234,53 @@
 </section>
 
 <!-- ═══════════════════════════════════════════════════════
+     PHOTO STRIP — real screenings in action
+════════════════════════════════════════════════════════ -->
+<section style="padding:0;overflow:hidden;">
+  <div class="photo-strip" style="display:grid;grid-template-columns:1fr 1fr;height:480px;">
+
+    <!-- Photo 1 — medical professional with patient -->
+    <div style="position:relative;overflow:hidden;">
+      <img
+        src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=900&q=80&fit=crop&crop=center"
+        alt="Workmedix practitioner conducting a pre-employment medical screening"
+        style="width:100%;height:100%;object-fit:cover;display:block;transition:transform .6s ease;"
+        loading="eager"
+        onmouseover="this.style.transform='scale(1.04)'"
+        onmouseout="this.style.transform='scale(1)'"
+      >
+      <!-- gradient overlay -->
+      <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(10,11,15,.72) 0%,rgba(10,11,15,.18) 55%,transparent 100%);pointer-events:none;"></div>
+      <!-- brand tint layer -->
+      <div style="position:absolute;inset:0;background:rgba(35,38,242,.12);mix-blend-mode:multiply;pointer-events:none;"></div>
+      <div style="position:absolute;bottom:2rem;left:2rem;right:2rem;">
+        <p style="color:rgba(255,255,255,.65);font-size:.75rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem;">Pre-employment &amp; Periodic Screenings</p>
+        <h3 style="color:#ffffff;font-family:'Outfit',sans-serif;font-size:1.35rem;font-weight:700;line-height:1.3;margin:0;">HPCSA-registered practitioners, on-site or at our clinic</h3>
+      </div>
+    </div>
+
+    <!-- Photo 2 — workplace health team -->
+    <div style="position:relative;overflow:hidden;">
+      <img
+        src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=900&q=80&fit=crop&crop=center"
+        alt="Workmedix mobile health screening team at a client site"
+        style="width:100%;height:100%;object-fit:cover;display:block;transition:transform .6s ease;"
+        loading="eager"
+        onmouseover="this.style.transform='scale(1.04)'"
+        onmouseout="this.style.transform='scale(1)'"
+      >
+      <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(10,11,15,.72) 0%,rgba(10,11,15,.18) 55%,transparent 100%);pointer-events:none;"></div>
+      <div style="position:absolute;inset:0;background:rgba(14,165,233,.10);mix-blend-mode:multiply;pointer-events:none;"></div>
+      <div style="position:absolute;bottom:2rem;left:2rem;right:2rem;">
+        <p style="color:rgba(255,255,255,.65);font-size:.75rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem;">Mobile &amp; On-Site Delivery</p>
+        <h3 style="color:#ffffff;font-family:'Outfit',sans-serif;font-size:1.35rem;font-weight:700;line-height:1.3;margin:0;">We come to you — no downtime, no disruption</h3>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
      WHY WORKMEDIX
 ════════════════════════════════════════════════════════ -->
 <section class="bg-primary" id="why">
@@ -347,6 +394,7 @@
       <div class="contact-form-wrap">
         <h3>Send Us a Message</h3>
         <form method="POST" action="/contact" novalidate>
+          <%- include('partials/csrf') %>
           <div class="form-row">
             <div class="form-group">
               <label class="form-label" for="c-name">Full Name *</label>

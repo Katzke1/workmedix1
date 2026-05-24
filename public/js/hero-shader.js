@@ -58,15 +58,17 @@
       float hf = 1.0 - (cos(uv.x * 2.0 * PI) * 0.5 + 0.5);
       float vf = 1.0 - (cos(uv.y * 2.0 * PI) * 0.5 + 0.5);
 
-      /* ── Deep navy background ─────────────────────────── */
+      /* ── Deep electric-blue background ───────────────── */
+      /* #1416B8 = rgb(20,22,184)  →  vec4(0.078,0.086,0.722)  */
+      /* #2326F2 = rgb(35,38,242)  →  vec4(0.137,0.149,0.949)  */
       vec4 col = mix(
-        vec4(0.027, 0.090, 0.220, 1.0),   /* #071840  dark navy */
-        vec4(0.048, 0.141, 0.376, 1.0),   /* #0c2461  brand navy */
+        vec4(0.040, 0.044, 0.420, 1.0),   /* #0A0B6B  deep brand ink  */
+        vec4(0.137, 0.149, 0.949, 1.0),   /* #2326F2  brand primary   */
         uv.y * 0.55 + uv.x * 0.45
       );
-      /* Subtle centre radial glow */
+      /* Subtle centre radial glow — tinted brand-blue */
       float cd = length((uv - 0.5) * vec2(1.0, 1.8));
-      col.rgb += vec3(0.0, 0.04, 0.14) * max(0.0, 1.0 - cd * 1.6);
+      col.rgb += vec3(0.05, 0.06, 0.40) * max(0.0, 1.0 - cd * 1.6);
 
       /* ── Plasma data-stream backing lines ─────────────── */
       /* Warp space slightly for an organic look */
@@ -86,8 +88,8 @@
         float ly   = rand3(ws.x * 0.22 + iTime * 0.14) * hf * 0.6 + off;
         float ln   = glow(ly, hw, ws.y) * 0.4
                    + crisp(ly, hw * 0.2, ws.y);
-        /* muted blue — keeps it subtle behind ECG lines */
-        col += vec4(0.12, 0.35, 0.72, 1.0) * ln * r * 0.30;
+        /* brand electric-blue plasma lines */
+        col += vec4(0.24, 0.30, 1.00, 1.0) * ln * r * 0.28;
       }
 
       /* ── Vignette  (soft dark edges, brighter centre) ── */

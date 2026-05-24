@@ -38,6 +38,15 @@
       </svg>
       My Certificates
     </a>
+    <% if (user.role === 'client_admin') { %>
+    <a href="/portal/employees"   class="<%= page==='employees'    ? 'active' : '' %>">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
+      </svg>
+      Our Employees
+    </a>
+    <% } %>
     <a href="/portal/profile"      class="<%= page==='profile'      ? 'active' : '' %>">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>

@@ -1,0 +1,107 @@
+<%- include('../partials/head') %>
+<body>
+<div class="app-body">
+<%- include('../partials/admin-sidebar') %>
+<main class="app-main">
+  <div class="app-topbar">
+    <div class="app-topbar-title">
+      <h2>Employee Registry</h2>
+      <p>All employees across every company</p>
+    </div>
+    <div class="topbar-actions">
+      <form method="GET" action="/admin/employees" style="display:flex;gap:.5rem;">
+        <input type="text" name="q" value="<%= locals.q || '' %>" placeholder="Search name or ID…" class="form-control" style="width:220px;">
+        <% if (locals.companyId) { %><input type="hidden" name="company_id" value="<%= companyId %>"><% } %>
+        <button type="submit" class="btn btn-outline-dark btn-sm">Search</button>
+        <% if (locals.q || locals.companyId) { %><a href="/admin/employees" class="btn btn-outline-dark btn-sm">Clear</a><% } %>
+      </form>
+    </div>
+  </div>
+
+  <div class="app-content">
+    <% if (locals.success) { %><div class="alert alert-success"><%= success %></div><% } %>
+    <% if (locals.error)   { %><div class="alert alert-danger"><%= error %></div><% } %>
+
+    <!-- Company filter chips -->
+    <% if (companies.length > 0) { %>
+    <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.25rem;">
+      <a href="/admin/employees" class="btn btn-sm <%= !locals.companyId ? 'btn-primary' : 'btn-outline-dark' %>">All</a>
+      <% companies.forEach(co => { %>
+      <a href="/admin/employees?company_id=<%= co.id %><%= locals.q ? '&q='+encodeURIComponent(q) : '' %>"
+         class="btn btn-sm <%= locals.companyId == co.id ? 'btn-primary' : 'btn-outline-dark' %>">
+        <%= co.name %>
+      </a>
+      <% }) %>
+    </div>
+    <% } %>
+
+    <div class="card">
+      <div class="card-header">
+        <h3>Employees (<%= employees.length %> shown)</h3>
+      </div>
+      <div class="table-wrap">
+        <% if (employees.length === 0) { %>
+          <%- include('../partials/empty-state', { title: 'No employees found', desc: 'No employees match your current filter.', ctaHref: null }) %>
+        <% } else { %>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Company</th>
+              <th>ID Number</th>
+              <th>Job Title</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% employees.forEach(emp => { %>
+            <tr>
+              <td>
+                <div style="display:flex;align-items:center;gap:.65rem;">
+                  <div style="width:32px;height:32px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.82rem;color:white;flex-shrink:0;">
+                    <%= emp.first_name.charAt(0).toUpperCase() %>
+                  </div>
+                  <strong><%= emp.first_name %> <%= emp.last_name %></strong>
+                </div>
+              </td>
+              <td style="font-size:.88rem;color:var(--ink-muted);"><%= emp.company_name || '—' %></td>
+              <td style="font-size:.88rem;"><%= emp.id_number || '—' %></td>
+              <td style="font-size:.88rem;"><%= emp.job_title || '—' %></td>
+              <td style="font-size:.88rem;"><%= emp.email || '—' %></td>
+              <td style="font-size:.88rem;"><%= emp.phone || '—' %></td>
+              <td>
+                <% if (emp.active) { %>
+                  <span class="badge badge-confirmed">Active</span>
+                <% } else { %>
+                  <span class="badge badge-cancelled">Archived</span>
+                <% } %>
+              </td>
+              <td>
+                <% if (emp.active) { %>
+                <form method="POST" action="/admin/employees/<%= emp.id %>/archive" style="display:inline;" onsubmit="return confirm('Archive <%= emp.first_name %> <%= emp.last_name %>?')">
+                  <%- include('../partials/csrf') %>
+                  <button type="submit" class="btn btn-sm btn-danger">Archive</button>
+                </form>
+                <% } else { %>
+                <form method="POST" action="/admin/employees/<%= emp.id %>/restore" style="display:inline;">
+                  <%- include('../partials/csrf') %>
+                  <button type="submit" class="btn btn-sm btn-outline-dark">Restore</button>
+                </form>
+                <% } %>
+              </td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+<script src="/js/main.js"></script>
+</body>
+</html>

@@ -6,7 +6,7 @@ const bcrypt   = require('bcryptjs');
 const crypto   = require('crypto');
 const db       = require('../db');
 const path     = require('path');
-const { sendVerificationEmail, sendContactNotification, sendContactConfirmation } = require('../lib/mailer');
+const { sendVerificationEmail, sendContactNotification, sendContactConfirmation, sendPasswordResetEmail, sendBookingConfirmationEmail } = require('../lib/mailer');
 
 // ── Public home ───────────────────────────────────────────────────────────────
 router.get('/', (req, res) => {
@@ -48,15 +48,20 @@ router.post('/login', (req, res) => {
     return render('Invalid email or password.');
   }
 
+  db.prepare('UPDATE users SET last_login_at=CURRENT_TIMESTAMP WHERE id=?').run(user.id);
+
   req.session.user = {
     id           : user.id,
     name         : user.name,
     email        : user.email,
     role         : user.role,
-    company_name : user.company_name
+    company_name : user.company_name,
+    company_id   : user.company_id || null,
+    email_verified: user.email_verified,
   };
 
-  res.redirect(user.role === 'admin' ? '/admin' : '/portal');
+  const isAdmin = ['admin', 'staff'].includes(user.role);
+  res.redirect(isAdmin ? '/admin' : '/portal');
 });
 
 // ── GET /register ─────────────────────────────────────────────────────────────
@@ -97,18 +102,45 @@ router.post('/register', (req, res) => {
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email.toLowerCase().trim());
   if (existing) return render('An account with this email already exists.');
 
-  const hash   = bcrypt.hashSync(password, 12);
+  const hash        = bcrypt.hashSync(password, 12);
+  const verifyToken = crypto.randomBytes(32).toString('hex');
+
+  // Create or find company
+  let companyId = null;
+  if (company_name?.trim()) {
+    const cname = company_name.trim();
+    let comp = db.prepare('SELECT id FROM companies WHERE name=?').get(cname);
+    if (!comp) {
+      comp = { id: db.prepare('INSERT INTO companies (name, active) VALUES (?,1)').run(cname).lastInsertRowid };
+    }
+    companyId = comp.id;
+  }
+
   const result = db.prepare(`
-    INSERT INTO users (name, email, password_hash, role, company_name, email_verified)
-    VALUES (?, ?, ?, 'client', ?, 1)
-  `).run(name.trim(), email.toLowerCase().trim(), hash, company_name ? company_name.trim() : null);
+    INSERT INTO users (name, email, password_hash, role, company_name, company_id, email_verified, verify_token)
+    VALUES (?, ?, ?, 'client_admin', ?, ?, 0, ?)
+  `).run(name.trim(), email.toLowerCase().trim(), hash,
+         company_name ? company_name.trim() : null, companyId, verifyToken);
+
+  const userId = result.lastInsertRowid;
+  if (companyId) {
+    db.prepare('UPDATE companies SET primary_contact_user_id=? WHERE id=? AND primary_contact_user_id IS NULL')
+      .run(userId, companyId);
+  }
+
+  // Send verification email (non-blocking)
+  sendVerificationEmail(email.toLowerCase().trim(), name.trim(), verifyToken).catch(e =>
+    console.error('[auth] verify email failed:', e.message)
+  );
 
   req.session.user = {
-    id           : result.lastInsertRowid,
-    name         : name.trim(),
-    email        : email.toLowerCase().trim(),
-    role         : 'client',
-    company_name : company_name ? company_name.trim() : null
+    id            : userId,
+    name          : name.trim(),
+    email         : email.toLowerCase().trim(),
+    role          : 'client_admin',
+    company_name  : company_name ? company_name.trim() : null,
+    company_id    : companyId,
+    email_verified: 0,
   };
 
   res.redirect('/portal');
@@ -149,6 +181,91 @@ router.post('/contact', async (req, res) => {
     // Still redirect — don't break the user flow if email fails
   }
   res.redirect('/login?msg=contact');
+});
+
+// ── GET /forgot-password ──────────────────────────────────────────────────────
+router.get('/forgot-password', (req, res) => {
+  res.render('auth/forgot-password', {
+    title      : 'Forgot Password | Workmedix',
+    description: 'Reset your Workmedix account password.',
+    error      : null,
+    success    : null,
+  });
+});
+
+// ── POST /forgot-password ─────────────────────────────────────────────────────
+router.post('/forgot-password', async (req, res) => {
+  const render = (error, success) => res.render('auth/forgot-password', {
+    title: 'Forgot Password | Workmedix', description: 'Reset your Workmedix account password.',
+    error, success
+  });
+
+  const { email } = req.body;
+  if (!email?.trim()) return render('Please enter your email address.', null);
+
+  const user = db.prepare('SELECT * FROM users WHERE email=?').get(email.toLowerCase().trim());
+  // Always show the same message to prevent user enumeration
+  const successMsg = 'If an account with that email exists, a reset link has been sent.';
+
+  if (user) {
+    const token    = crypto.randomBytes(32).toString('hex');
+    const expiry   = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
+    db.prepare('UPDATE users SET password_reset_token=?, password_reset_expires_at=? WHERE id=?')
+      .run(token, expiry, user.id);
+    sendPasswordResetEmail(user.email, user.name, token).catch(e =>
+      console.error('[auth] reset email failed:', e.message)
+    );
+  }
+
+  render(null, successMsg);
+});
+
+// ── GET /reset-password/:token ────────────────────────────────────────────────
+router.get('/reset-password/:token', (req, res) => {
+  const user = db.prepare(
+    'SELECT * FROM users WHERE password_reset_token=? AND password_reset_expires_at > datetime("now")'
+  ).get(req.params.token);
+
+  if (!user) {
+    return res.render('auth/login', {
+      title: 'Login | Workmedix', description: 'Login to your Workmedix portal.',
+      error: 'This reset link is invalid or has expired. Please request a new one.', msg: null
+    });
+  }
+
+  res.render('auth/reset-password', {
+    title  : 'Reset Password | Workmedix',
+    description: 'Set a new password for your Workmedix account.',
+    token  : req.params.token,
+    error  : null,
+  });
+});
+
+// ── POST /reset-password/:token ───────────────────────────────────────────────
+router.post('/reset-password/:token', (req, res) => {
+  const user = db.prepare(
+    'SELECT * FROM users WHERE password_reset_token=? AND password_reset_expires_at > datetime("now")'
+  ).get(req.params.token);
+
+  const invalidRender = () => res.render('auth/login', {
+    title: 'Login | Workmedix', description: 'Login.', error: 'Reset link invalid or expired.', msg: null
+  });
+
+  if (!user) return invalidRender();
+
+  const { new_password, confirm_password } = req.body;
+  if (!new_password || new_password.length < 8 || new_password !== confirm_password) {
+    return res.render('auth/reset-password', {
+      title: 'Reset Password | Workmedix', description: '', token: req.params.token,
+      error: new_password !== confirm_password ? 'Passwords do not match.' : 'Password must be at least 8 characters.',
+    });
+  }
+
+  const hash = bcrypt.hashSync(new_password, 12);
+  db.prepare('UPDATE users SET password_hash=?, password_reset_token=NULL, password_reset_expires_at=NULL WHERE id=?')
+    .run(hash, user.id);
+
+  res.redirect('/login?msg=reset');
 });
 
 // ── GET /privacy ──────────────────────────────────────────────────────────────

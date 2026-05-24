@@ -1,0 +1,94 @@
+<%- include('../partials/head') %>
+<body>
+<div class="app-body">
+  <%- include('../partials/portal-sidebar') %>
+  <main class="app-main">
+    <div class="app-topbar">
+      <div class="app-topbar-title">
+        <h2>Our Employees</h2>
+        <p>Manage the roster of employees available for screening bookings</p>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('add-form').classList.toggle('hidden')">+ Add Employee</button>
+      </div>
+    </div>
+
+    <div class="app-content">
+      <% if (locals.error)   { %><div class="alert alert-danger"><%= error %></div><% } %>
+      <% if (locals.success) { %><div class="alert alert-success"><%= success %></div><% } %>
+
+      <!-- Add employee form (toggled) -->
+      <div id="add-form" class="card hidden" style="margin-bottom:1.5rem;">
+        <div class="card-header"><h3>Add New Employee</h3></div>
+        <div class="card-body">
+          <form method="POST" action="/portal/employees">
+            <%- include('../partials/csrf') %>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">First Name *</label><input type="text" name="first_name" class="form-control" required></div>
+              <div class="form-group"><label class="form-label">Last Name *</label><input type="text" name="last_name" class="form-control" required></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">SA ID Number</label><input type="text" name="id_number" class="form-control" placeholder="13 digits" maxlength="13"></div>
+              <div class="form-group"><label class="form-label">Date of Birth</label><input type="date" name="date_of_birth" class="form-control"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">Email</label><input type="email" name="email" class="form-control"></div>
+              <div class="form-group"><label class="form-label">Phone</label><input type="tel" name="phone" class="form-control"></div>
+            </div>
+            <div class="form-group"><label class="form-label">Job Title</label><input type="text" name="job_title" class="form-control"></div>
+            <div style="display:flex;gap:1rem;margin-top:.5rem;">
+              <button type="submit" class="btn btn-primary">Save Employee</button>
+              <button type="button" class="btn btn-outline-dark" onclick="document.getElementById('add-form').classList.add('hidden')">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Employee Roster (<%= employees.filter(e=>e.active).length %> active)</h3>
+        </div>
+        <div class="table-wrap">
+          <% const active = employees.filter(e => e.active); %>
+          <% if (active.length === 0) { %>
+            <%- include('../partials/empty-state', { title: 'No employees yet', desc: 'Add employees to include them in screening bookings.', ctaHref: null }) %>
+          <% } else { %>
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>ID Number</th>
+                <th>Job Title</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% active.forEach(emp => { %>
+              <tr>
+                <td><strong><%= emp.first_name %> <%= emp.last_name %></strong></td>
+                <td><%= emp.id_number || '—' %></td>
+                <td><%= emp.job_title || '—' %></td>
+                <td><%= emp.email || '—' %></td>
+                <td><%= emp.phone || '—' %></td>
+                <td>
+                  <form method="POST" action="/portal/employees/<%= emp.id %>/archive" style="display:inline;" onsubmit="return confirm('Archive this employee?')">
+                    <%- include('../partials/csrf') %>
+                    <button type="submit" class="btn btn-sm btn-danger">Archive</button>
+                  </form>
+                </td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<style>.hidden{display:none!important}</style>
+<script src="/js/main.js"></script>
+</body>
+</html>

@@ -15,47 +15,53 @@
       <div class="alert alert-success" data-autodismiss><%= success %></div>
     <% } %>
 
+    <!-- Status filter chips -->
+    <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.25rem;">
+      <% ['', 'pending', 'confirmed', 'in_progress', 'completed', 'cancelled'].forEach(s => { %>
+      <a href="/admin/bookings<%= s ? '?status='+s : '' %>"
+         class="btn btn-sm <%= filterStatus===s ? 'btn-primary' : 'btn-outline-dark' %>">
+        <%= s || 'All' %>
+      </a>
+      <% }) %>
+    </div>
+
     <div class="card">
       <div class="card-header">
-        <h3>All Bookings</h3>
-        <span style="font-size:.85rem;color:var(--mid-grey);"><%= bookings.length %> total</span>
+        <h3>Bookings</h3>
+        <span style="font-size:.85rem;color:var(--mid-grey);"><%= bookings.length %> shown</span>
       </div>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
+              <th>#</th>
               <th>Client</th>
               <th>Company</th>
               <th>Service</th>
-              <th>Preferred Date</th>
+              <th>Date</th>
+              <th>Employees</th>
               <th>Submitted</th>
               <th>Status</th>
-              <th>Update</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
             <% if (bookings.length === 0) { %>
-              <tr><td class="table-empty" colspan="7">No bookings yet.</td></tr>
+              <tr><td class="table-empty" colspan="9">No bookings match this filter.</td></tr>
             <% } else { bookings.forEach(b => { %>
               <tr>
-                <td>
-                  <strong><%= b.client_name %></strong>
-                </td>
-                <td style="color:var(--text-light);font-size:.88rem;"><%= b.company_name || '—' %></td>
+                <td style="color:var(--mid-grey);font-size:.82rem;">#<%= b.id %></td>
+                <td><strong><%= b.client_name %></strong></td>
+                <td style="color:var(--ink-muted);font-size:.88rem;"><%= b.company_name || '—' %></td>
                 <td style="font-size:.9rem;"><%= b.service_type %></td>
-                <td style="font-size:.88rem;font-weight:600;"><%= b.preferred_date %></td>
+                <td style="font-size:.88rem;font-weight:600;white-space:nowrap;"><%= b.preferred_date || b.scheduled_at?.substring(0,10) || '—' %></td>
+                <td style="text-align:center;font-size:.88rem;"><%= b.num_people || '—' %></td>
                 <td style="color:var(--mid-grey);font-size:.82rem;white-space:nowrap;">
                   <%= new Date(b.created_at).toLocaleDateString('en-ZA') %>
                 </td>
-                <td><span class="badge badge-<%= b.status %>"><%= b.status %></span></td>
+                <td><span class="badge badge-<%= b.status %>"><%= b.status.replace('_',' ') %></span></td>
                 <td>
-                  <form method="POST" action="/admin/bookings/<%= b.id %>/status" class="status-form">
-                    <select name="status" title="Update status">
-                      <option value="pending"   <%= b.status==='pending'   ? 'selected' : '' %>>Pending</option>
-                      <option value="confirmed" <%= b.status==='confirmed' ? 'selected' : '' %>>Confirmed</option>
-                      <option value="completed" <%= b.status==='completed' ? 'selected' : '' %>>Completed</option>
-                    </select>
-                  </form>
+                  <a href="/admin/bookings/<%= b.id %>" class="btn btn-outline-dark btn-sm">View →</a>
                 </td>
               </tr>
             <% }) } %>

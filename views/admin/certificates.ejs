@@ -6,62 +6,154 @@
   <div class="app-topbar">
     <div class="app-topbar-title">
       <h2>Issue Certificates</h2>
-      <p>Upload occupational health certificates to client accounts</p>
+      <p>Issue occupational health certificates to employees</p>
     </div>
   </div>
 
   <div class="app-content">
-    <div style="max-width:680px;">
-      <% if (error) { %>
-        <div class="alert alert-danger"><%= error %></div>
-      <% } %>
-      <% if (success) { %>
-        <div class="alert alert-success" data-autodismiss><%= success %></div>
-      <% } %>
+    <div style="display:grid;grid-template-columns:1fr 380px;gap:1.5rem;align-items:start;">
 
-      <div class="card">
-        <div class="card-header">
-          <h3>Issue New Certificate</h3>
-        </div>
-        <div class="card-body">
-          <form method="POST" action="/admin/certificates" enctype="multipart/form-data">
-            <div class="form-group">
-              <label class="form-label" for="user_id">Client *</label>
-              <select id="user_id" name="user_id" class="form-control" required>
-                <option value="">— Select client —</option>
-                <% clients.forEach(c => { %>
-                  <option value="<%= c.id %>">
-                    <%= c.name %><% if (c.company_name) { %> – <%= c.company_name %><% } %>
+      <div>
+        <% if (error)   { %><div class="alert alert-danger"  style="margin-bottom:1rem;"><%= error %></div><% } %>
+        <% if (success) { %><div class="alert alert-success" data-autodismiss style="margin-bottom:1rem;"><%= success %></div><% } %>
+
+        <div class="card">
+          <div class="card-header"><h3>Issue New Certificate</h3></div>
+          <div class="card-body">
+            <form method="POST" action="/admin/certificates" enctype="multipart/form-data" id="cert-form">
+              <%- include('../partials/csrf') %>
+
+              <div class="form-group">
+                <label class="form-label">Client Account *</label>
+                <select name="user_id" class="form-control" required id="cert-user" onchange="loadEmployees(this.value)">
+                  <option value="">— Select client —</option>
+                  <% clients.forEach(c => { %>
+                  <option value="<%= c.id %>"><%= c.name %><% if (c.company_name) { %> — <%= c.company_name %><% } %></option>
+                  <% }) %>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Employee (optional)</label>
+                <select name="employee_id" class="form-control" id="cert-employee">
+                  <option value="">— Select employee —</option>
+                </select>
+                <span class="form-hint">If not selected, certificate is linked to the client account only.</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Certificate Type</label>
+                <select name="certificate_type_id" class="form-control" id="cert-type" onchange="applyExpiry(this)">
+                  <option value="">— Select type —</option>
+                  <% certTypes.forEach(ct => { %>
+                  <option value="<%= ct.id %>" data-months="<%= ct.default_validity_months %>">
+                    <%= ct.name %> (<%= ct.default_validity_months %>-month validity)
                   </option>
-                <% }) %>
-              </select>
-            </div>
+                  <% }) %>
+                </select>
+              </div>
 
-            <div class="form-group">
-              <label class="form-label" for="title">Certificate Title *</label>
-              <input type="text" id="title" name="title" class="form-control"
-                     placeholder="e.g. Certificate of Fitness – J. Smith – June 2025" required>
-            </div>
+              <div class="form-group">
+                <label class="form-label">Certificate Title *</label>
+                <input type="text" name="title" class="form-control"
+                       placeholder="e.g. Certificate of Fitness — J. Smith — 2026" required>
+              </div>
 
-            <div class="form-group">
-              <label class="form-label" for="file">Certificate File *</label>
-              <input type="file" id="file" name="file" class="form-control"
-                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required>
-              <span class="upload-hint">Accepted: PDF, Word (.doc/.docx), JPG, PNG — max 10 MB</span>
-            </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Issue Date</label>
+                  <input type="date" name="issued_date" id="cert-issue-date" class="form-control"
+                         value="<%= new Date().toISOString().split('T')[0] %>" onchange="recalcExpiry()">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Expiry Date</label>
+                  <input type="date" name="expiry_date" id="cert-expiry-date" class="form-control">
+                </div>
+              </div>
 
-            <button type="submit" class="btn btn-primary">Issue Certificate →</button>
-          </form>
+              <div class="form-group">
+                <label class="form-label">Certificate File (optional)</label>
+                <input type="file" name="file" class="form-control" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                <span class="form-hint">PDF, Word, JPG, PNG — max 10 MB. Leave blank if no file to attach.</span>
+              </div>
+
+              <button type="submit" class="btn btn-primary">Issue Certificate →</button>
+            </form>
+          </div>
         </div>
       </div>
 
-      <div class="alert alert-info" style="margin-top:1.25rem;">
-        The certificate will immediately appear in the client's <strong>My Certificates</strong> section. The issue date is set automatically.
+      <!-- Right: expiring certs -->
+      <div>
+        <div class="card">
+          <div class="card-header">
+            <h3>Expiring in 60 Days</h3>
+            <span style="font-size:.82rem;color:var(--mid-grey);"><%= expiring.length %> certs</span>
+          </div>
+          <% if (expiring.length === 0) { %>
+          <div class="card-body" style="color:var(--ink-muted);font-size:.9rem;">No certificates expiring in the next 60 days.</div>
+          <% } else { %>
+          <div style="display:flex;flex-direction:column;">
+            <% expiring.forEach(c => { %>
+            <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border);font-size:.88rem;">
+              <strong><%= c.first_name || c.user_name %> <%= c.last_name || '' %></strong>
+              <div style="color:var(--ink-muted);font-size:.82rem;"><%= c.cert_type_name || c.title %></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.2rem;">
+                <span style="font-size:.78rem;color:var(--ink-muted);">
+                  <% const co = c.company_name || c.legacy_company_name; if (co) { %><%= co %><% } %>
+                </span>
+                <% const daysLeft = Math.ceil((new Date(c.expiry_date) - Date.now()) / 86400000); %>
+                <span class="badge badge-<%= daysLeft <= 14 ? 'cancelled' : daysLeft <= 30 ? 'pending' : 'confirmed' %>">
+                  <%= daysLeft %>d
+                </span>
+              </div>
+            </div>
+            <% }) %>
+          </div>
+          <% } %>
+        </div>
       </div>
+
     </div>
   </div>
 </main>
 </div>
+
+<script>
+let certTypeMonths = 0;
+
+function applyExpiry(sel) {
+  certTypeMonths = parseInt(sel.selectedOptions[0]?.dataset.months || 0);
+  recalcExpiry();
+}
+
+function recalcExpiry() {
+  if (!certTypeMonths) return;
+  const iss = document.getElementById('cert-issue-date').value;
+  if (!iss) return;
+  const d = new Date(iss);
+  d.setMonth(d.getMonth() + certTypeMonths);
+  document.getElementById('cert-expiry-date').value = d.toISOString().split('T')[0];
+}
+
+function loadEmployees(userId) {
+  const sel = document.getElementById('cert-employee');
+  sel.innerHTML = '<option value="">Loading…</option>';
+  if (!userId) { sel.innerHTML = '<option value="">— Select employee —</option>'; return; }
+  fetch('/admin/certificates/employees-for/' + userId)
+    .then(r => r.json())
+    .then(emps => {
+      sel.innerHTML = '<option value="">— Select employee —</option>';
+      emps.forEach(e => {
+        const opt = document.createElement('option');
+        opt.value = e.id;
+        opt.textContent = e.first_name + ' ' + e.last_name + (e.job_title ? ' (' + e.job_title + ')' : '');
+        sel.appendChild(opt);
+      });
+    });
+}
+</script>
+
 <script src="/js/main.js"></script>
 </body>
 </html>

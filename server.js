@@ -8,6 +8,12 @@ const helmet       = require('helmet');
 const compression  = require('compression');
 const rateLimit    = require('express-rate-limit');
 
+const { getSessionSecret, validateConfig } = require('./lib/config');
+const csrfMiddleware = require('./lib/csrf');
+const db = require('./db');
+
+validateConfig();
+
 const app        = express();
 const PORT       = process.env.PORT || 3000;
 const isProd     = process.env.NODE_ENV === 'production';
@@ -15,12 +21,11 @@ const isProd     = process.env.NODE_ENV === 'production';
 app.set('trust proxy', 1);
 const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, 'uploads');
 
-// Ensure upload directories exist at boot
 ['results', 'certificates'].forEach(sub => {
   fs.mkdirSync(path.join(UPLOADS_DIR, sub), { recursive: true });
 });
 
-// ── Security headers (Helmet) ──────────────────────────────────────────────────
+// ── Security headers ────────────────────────────────────────────────────────────
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -40,10 +45,17 @@ app.use(helmet({
   crossOriginOpenerPolicy: { policy: 'same-origin' },
 }));
 
-// ── Healthcheck (must be before HTTPS redirect so Railway gets a 200) ─────────
-app.get('/health', (req, res) => res.status(200).send('OK'));
+// ── Health check (before HTTPS redirect so Railway gets 200) ───────────────────
+app.get('/health', (req, res) => {
+  try {
+    db.prepare('SELECT 1').get();
+    const uploadOk = fs.existsSync(UPLOADS_DIR);
+    res.status(200).json({ status: 'ok', db: 'ok', uploads: uploadOk ? 'ok' : 'missing' });
+  } catch (err) {
+    res.status(500).json({ status: 'error', detail: err.message });
+  }
+});
 
-// Force HTTPS in production
 if (isProd) {
   app.use((req, res, next) => {
     if (req.headers['x-forwarded-proto'] !== 'https') {
@@ -53,31 +65,23 @@ if (isProd) {
   });
 }
 
-// ── Gzip compression ───────────────────────────────────────────────────────────
 app.use(compression());
 
-// ── View engine ────────────────────────────────────────────────────────────────
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// ── Body parsing ───────────────────────────────────────────────────────────────
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use(express.json({ limit: '2mb' }));
 
-// ── Static files with cache headers ───────────────────────────────────────────
-// Versioned assets (css/js/images): cache 1 year
 app.use('/css',    express.static(path.join(__dirname, 'public/css'),    { maxAge: '1y', immutable: true }));
 app.use('/js',     express.static(path.join(__dirname, 'public/js'),     { maxAge: '1y', immutable: true }));
 app.use('/images', express.static(path.join(__dirname, 'public/images'), { maxAge: '30d' }));
-// Everything else (robots, manifest, etc.): short cache
 app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
-
-// Uploads — access controlled per-route
 app.use('/uploads', express.static(UPLOADS_DIR, { maxAge: '1h' }));
 
 // ── Session ─────────────────────────────────────────────────────────────────────
 app.use(session({
-  secret           : process.env.SESSION_SECRET || 'wm-dev-secret-CHANGE-IN-PROD',
+  secret           : getSessionSecret(),
   resave           : false,
   saveUninitialized: false,
   name             : 'wm.sid',
@@ -89,7 +93,10 @@ app.use(session({
   }
 }));
 
-// Expose session user to every EJS template
+// ── CSRF protection ─────────────────────────────────────────────────────────────
+app.use(csrfMiddleware);
+
+// ── Template locals ─────────────────────────────────────────────────────────────
 app.use((req, res, next) => {
   res.locals.user    = req.session.user || null;
   res.locals.APP_URL = (process.env.APP_URL || `http://localhost:${PORT}`).replace(/\/$/, '');
@@ -98,23 +105,26 @@ app.use((req, res, next) => {
 
 // ── Rate limiting ──────────────────────────────────────────────────────────────
 const authLimiter = rateLimit({
-  windowMs        : 15 * 60 * 1000,  // 15 minutes
-  max             : 20,
-  message         : 'Too many attempts, please try again in 15 minutes.',
-  standardHeaders : true,
-  legacyHeaders   : false,
+  windowMs: 15 * 60 * 1000, max: 20,
+  message : 'Too many attempts, please try again in 15 minutes.',
+  standardHeaders: true, legacyHeaders: false,
 });
 const contactLimiter = rateLimit({
-  windowMs        : 60 * 60 * 1000,  // 1 hour
-  max             : 10,
-  message         : 'Too many contact submissions, please try again later.',
-  standardHeaders : true,
-  legacyHeaders   : false,
+  windowMs: 60 * 60 * 1000, max: 10,
+  message : 'Too many contact submissions, please try again later.',
+  standardHeaders: true, legacyHeaders: false,
+});
+const bookingLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, max: 5,
+  message : 'Too many booking requests, please try again later.',
+  standardHeaders: true, legacyHeaders: false,
 });
 
-app.use('/login',    authLimiter);
-app.use('/register', authLimiter);
-app.use('/contact',  contactLimiter);
+app.use('/login',           authLimiter);
+app.use('/register',        authLimiter);
+app.use('/forgot-password', authLimiter);
+app.use('/contact',         contactLimiter);
+app.use('/portal/book',     bookingLimiter);
 
 // ── Routes ──────────────────────────────────────────────────────────────────────
 app.use('/',          require('./routes/auth'));
@@ -133,11 +143,19 @@ app.use((req, res) => {
 // ── Global error handler ────────────────────────────────────────────────────────
 app.use((err, req, res, _next) => {
   console.error('[ERROR]', err.stack || err.message);
+  const wantsJson = req.headers.accept?.includes('application/json');
+  if (wantsJson) {
+    return res.status(500).json({ error: isProd ? 'Internal server error' : err.message });
+  }
   res.status(500).render('error', {
     title      : 'Server Error | Workmedix',
     description: 'An unexpected error occurred.',
     message    : isProd ? 'Something went wrong. Please try again later.' : err.message,
   });
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[UNHANDLED REJECTION]', reason);
 });
 
 app.listen(PORT, () => {
