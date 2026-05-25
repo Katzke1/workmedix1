@@ -20,7 +20,6 @@ router.get('/', (req, res) => {
     upcoming     : db.prepare(`SELECT COUNT(*) c FROM bookings WHERE user_id=? AND status IN ('pending','confirmed')`).get(uid).c,
     results      : db.prepare(`SELECT COUNT(*) c FROM results      WHERE user_id=?`).get(uid).c,
     certificates : db.prepare(`SELECT COUNT(*) c FROM certificates  WHERE user_id=?`).get(uid).c,
-    employees    : cid ? db.prepare(`SELECT COUNT(*) c FROM employees WHERE company_id=? AND active=1`).get(cid).c : 0,
   };
   const recentBookings = db.prepare(
     `SELECT * FROM bookings WHERE user_id=? ORDER BY created_at DESC LIMIT 5`
@@ -54,9 +53,8 @@ router.get('/', (req, res) => {
 function bookRenderData(req) {
   const cid = req.session.user.company_id;
   return {
-    services  : db.prepare(`SELECT * FROM crm_service_rates ORDER BY sort_order`).all(),
-    sites     : cid ? db.prepare(`SELECT * FROM sites WHERE company_id=? ORDER BY label`).all(cid) : [],
-    employees : cid ? db.prepare(`SELECT * FROM employees WHERE company_id=? AND active=1 ORDER BY last_name, first_name`).all(cid) : [],
+    services : db.prepare(`SELECT * FROM crm_service_rates WHERE show_in_portal=1 ORDER BY sort_order`).all(),
+    sites    : cid ? db.prepare(`SELECT * FROM sites WHERE company_id=? ORDER BY label`).all(cid) : [],
   };
 }
 
@@ -219,38 +217,6 @@ router.post('/profile/password', (req, res) => {
   render(null, 'Password updated successfully.');
 });
 
-// ── Employees (company roster — client_admin only) ────────────────────────────
-router.get('/employees', requireClientAdmin, (req, res) => {
-  const cid  = req.session.user.company_id;
-  if (!cid) return res.redirect('/portal');
-  const employees = db.prepare(
-    `SELECT * FROM employees WHERE company_id=? ORDER BY last_name, first_name`
-  ).all(cid);
-  res.render('portal/employees', {
-    title: 'Our Employees | Workmedix', description: 'Manage your company employee roster.', page: 'employees', employees, error: null, success: null
-  });
-});
-
-router.post('/employees', requireClientAdmin, (req, res) => {
-  const cid = req.session.user.company_id;
-  if (!cid) return res.redirect('/portal');
-  const { first_name, last_name, id_number, email, phone, job_title, date_of_birth } = req.body;
-  const { valid, errors } = validateEmployee({ first_name, last_name, id_number, email });
-  const employees = db.prepare(`SELECT * FROM employees WHERE company_id=? ORDER BY last_name, first_name`).all(cid);
-  const render = (error) => res.render('portal/employees', { title: 'Our Employees | Workmedix', description: '', page: 'employees', employees, error, success: null });
-  if (!valid) return render(Object.values(errors)[0]);
-  db.prepare(`INSERT INTO employees (company_id, first_name, last_name, id_number, email, phone, job_title, date_of_birth, active) VALUES (?,?,?,?,?,?,?,?,1)`)
-    .run(cid, first_name.trim(), last_name.trim(), id_number?.trim() || null, email?.trim().toLowerCase() || null, phone?.trim() || null, job_title?.trim() || null, date_of_birth || null);
-  const updatedList = db.prepare(`SELECT * FROM employees WHERE company_id=? ORDER BY last_name, first_name`).all(cid);
-  res.render('portal/employees', { title: 'Our Employees | Workmedix', description: '', page: 'employees', employees: updatedList, error: null, success: 'Employee added successfully.' });
-});
-
-router.post('/employees/:id/archive', requireClientAdmin, (req, res) => {
-  const cid = req.session.user.company_id;
-  const emp = db.prepare(`SELECT * FROM employees WHERE id=? AND company_id=?`).get(req.params.id, cid);
-  if (!emp) return res.status(404).send('Not found');
-  db.prepare('UPDATE employees SET active=0 WHERE id=?').run(emp.id);
-  res.redirect('/portal/employees');
-});
+// Employee roster removed — employees are managed by Workmedix admin, not clients.
 
 module.exports = router;

@@ -440,8 +440,12 @@ router.post('/settings', (req, res) => {
   const prices = Array.isArray(default_price) ? default_price : [default_price];
   const costs  = Array.isArray(default_cost)  ? default_cost  : [default_cost];
 
-  const upd = db.prepare('UPDATE crm_service_rates SET service_name=?,default_price=?,default_cost=? WHERE id=?');
-  ids.forEach((rid, i) => upd.run(names[i], +prices[i]||0, +costs[i]||0, rid));
+  const upd = db.prepare('UPDATE crm_service_rates SET service_name=?,default_price=?,default_cost=?,show_in_portal=? WHERE id=?');
+  ids.forEach((rid, i) => {
+    const portalKey = `show_in_portal_${rid}`;
+    const showInPortal = req.body[portalKey] === '1' ? 1 : 0;
+    upd.run(names[i], +prices[i]||0, +costs[i]||0, showInPortal, rid);
+  });
 
   // Add new rate if provided
   if (req.body.new_name?.trim()) {

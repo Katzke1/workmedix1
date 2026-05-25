@@ -23,7 +23,7 @@
             <%- include('../../partials/csrf') %>
             <div class="table-wrap" style="margin:-1rem -1.25rem;margin-bottom:.75rem">
               <table>
-                <thead><tr><th>Service Name</th><th>Default Price (excl VAT)</th><th>Default Cost (incl VAT)</th><th>Margin</th><th></th></tr></thead>
+                <thead><tr><th>Service Name</th><th>Default Price (excl VAT)</th><th>Default Cost (incl VAT)</th><th>Margin</th><th style="text-align:center;white-space:nowrap">Client Portal</th><th></th></tr></thead>
                 <tbody>
                 <% rates.forEach(r => { %>
                   <% const margin = r.default_price > 0 ? (((r.default_price - r.default_cost)/r.default_price)*100).toFixed(1) : '—'; %>
@@ -48,6 +48,12 @@
                     </td>
                     <td id="margin-<%= r.id %>" style="font-weight:600;color:<%= typeof margin==='string'&&margin!=='—'&&parseFloat(margin)>=0?'#20bf6b':'#ef4444' %>">
                       <%= margin !== '—' ? margin+'%' : '—' %>
+                    </td>
+                    <td style="text-align:center;">
+                      <label class="portal-toggle" title="<%= r.show_in_portal ? 'Visible to clients' : 'Hidden from clients' %>">
+                        <input type="checkbox" name="show_in_portal_<%= r.id %>" value="1" <%= r.show_in_portal ? 'checked' : '' %>>
+                        <span class="portal-toggle-track"></span>
+                      </label>
                     </td>
                     <td>
                       <button type="submit" form="del-rate-<%= r.id %>" class="btn btn-sm btn-danger">×</button>
@@ -92,6 +98,22 @@
     </div>
   </div>
 </div>
+<style>
+.portal-toggle { position:relative; display:inline-flex; align-items:center; cursor:pointer; }
+.portal-toggle input { position:absolute; opacity:0; width:0; height:0; }
+.portal-toggle-track {
+  display:block; width:36px; height:20px; border-radius:10px;
+  background:var(--border); transition:background .2s;
+}
+.portal-toggle-track::after {
+  content:''; position:absolute; top:3px; left:3px;
+  width:14px; height:14px; border-radius:50%;
+  background:white; transition:transform .2s;
+  box-shadow:0 1px 3px rgba(0,0,0,.2);
+}
+.portal-toggle input:checked + .portal-toggle-track { background:var(--primary); }
+.portal-toggle input:checked + .portal-toggle-track::after { transform:translateX(16px); }
+</style>
 <script>
 function calcMargin(input) {
   const row   = input.dataset.row;

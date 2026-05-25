@@ -118,11 +118,17 @@ console.log('✓ Tables created');
 // ── Migrations (add columns to existing DBs) ──────────────────────────────────
 const migrations = [
   `ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0`,
-  `ALTER TABLE users ADD COLUMN verify_token   TEXT`
+  `ALTER TABLE users ADD COLUMN verify_token   TEXT`,
+  // show_in_portal: controls whether a service appears on the client booking page
+  `ALTER TABLE crm_service_rates ADD COLUMN show_in_portal INTEGER NOT NULL DEFAULT 1`,
 ];
 migrations.forEach(sql => {
   try { db.exec(sql); } catch (e) { /* column already exists — safe to ignore */ }
 });
+// Occuplus NEO is an internal cost item — hide from client portal by default
+try {
+  db.prepare(`UPDATE crm_service_rates SET show_in_portal=0 WHERE service_name LIKE '%Occuplus%' AND show_in_portal=1`).run();
+} catch(e) {}
 console.log('✓ Migrations applied');
 
 // ── Seed CRM service rates (only if empty) ────────────────────────────────────
