@@ -16,18 +16,26 @@ router.get('/', (req, res) => {
   const uid  = req.session.user.id;
   const cid  = req.session.user.company_id;
 
-  const stats = {
+  // Load the full company record (includes CRM link)
+  const company = cid
+    ? db.prepare(`SELECT co.*, cc.id as crm_client_id FROM companies co LEFT JOIN crm_clients cc ON cc.id=co.crm_client_id WHERE co.id=?`).get(cid)
+    : null;
+
+  // Stats are company-wide when a company is linked, otherwise fall back to user-scoped
+  const stats = cid ? {
+    upcoming     : db.prepare(`SELECT COUNT(*) c FROM bookings WHERE company_id=? AND status IN ('pending','confirmed')`).get(cid).c,
+    results      : db.prepare(`SELECT COUNT(*) c FROM results WHERE user_id=?`).get(uid).c,
+    certificates : db.prepare(`SELECT COUNT(*) c FROM certificates WHERE user_id=?`).get(uid).c,
+  } : {
     upcoming     : db.prepare(`SELECT COUNT(*) c FROM bookings WHERE user_id=? AND status IN ('pending','confirmed')`).get(uid).c,
-    results      : db.prepare(`SELECT COUNT(*) c FROM results      WHERE user_id=?`).get(uid).c,
-    certificates : db.prepare(`SELECT COUNT(*) c FROM certificates  WHERE user_id=?`).get(uid).c,
+    results      : db.prepare(`SELECT COUNT(*) c FROM results WHERE user_id=?`).get(uid).c,
+    certificates : db.prepare(`SELECT COUNT(*) c FROM certificates WHERE user_id=?`).get(uid).c,
   };
-  const recentBookings = db.prepare(
-    `SELECT * FROM bookings WHERE user_id=? ORDER BY created_at DESC LIMIT 5`
-  ).all(uid);
 
-  const expiringCerts = [];
-
-  const verificationBanner = !req.session.user.email_verified;
+  // Recent bookings — company-wide, showing who submitted each
+  const recentBookings = cid
+    ? db.prepare(`SELECT b.*, u.name submitted_by FROM bookings b JOIN users u ON b.user_id=u.id WHERE b.company_id=? ORDER BY b.created_at DESC LIMIT 5`).all(cid)
+    : db.prepare(`SELECT *, name submitted_by FROM bookings JOIN users ON users.id=bookings.user_id WHERE bookings.user_id=? ORDER BY bookings.created_at DESC LIMIT 5`).all(uid);
 
   res.render('portal/dashboard', {
     title        : 'My Dashboard | Workmedix',
@@ -35,8 +43,9 @@ router.get('/', (req, res) => {
     page         : 'dashboard',
     stats,
     recentBookings,
-    expiringCerts,
-    verificationBanner,
+    expiringCerts    : [],
+    verificationBanner: !req.session.user.email_verified,
+    company,
   });
 });
 

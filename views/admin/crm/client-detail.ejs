@@ -120,6 +120,56 @@
       </div>
     </div>
 
+    <!-- Portal activity -->
+    <div class="card" style="margin-top:0">
+      <div class="card-header">
+        <h3>Portal Account</h3>
+        <% if (portalUsers.length > 0) { %>
+          <span class="badge badge-completed" style="font-size:.75rem;">Active</span>
+        <% } else { %>
+          <span class="badge badge-pending" style="font-size:.75rem;">No portal account</span>
+        <% } %>
+      </div>
+      <% if (portalUsers.length > 0) { %>
+        <div class="card-body" style="padding-bottom:.5rem;">
+          <p style="font-size:.85rem;font-weight:600;color:var(--ink-muted);margin:0 0 .5rem;">Users</p>
+          <% portalUsers.forEach(u => { %>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:.45rem 0;border-bottom:1px solid var(--border);">
+              <div>
+                <div style="font-weight:600;font-size:.9rem;"><%= u.name %></div>
+                <div style="font-size:.8rem;color:var(--ink-muted);"><%= u.email %></div>
+              </div>
+              <div style="font-size:.75rem;color:var(--ink-muted);text-align:right;">
+                <% if (u.last_login_at) { %>Last login<br><%= new Date(u.last_login_at).toLocaleDateString('en-ZA') %><% } else { %>Never logged in<% } %>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+        <% if (portalBookings.length > 0) { %>
+          <div style="padding:.75rem 1.25rem;">
+            <p style="font-size:.85rem;font-weight:600;color:var(--ink-muted);margin:0 0 .5rem;">Recent Portal Bookings</p>
+            <% portalBookings.forEach(b => { %>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:.4rem 0;border-bottom:1px solid var(--border);font-size:.85rem;">
+                <div>
+                  <a href="/admin/bookings/<%= b.id %>" style="font-weight:600;color:var(--primary);"><%= b.service_type %></a>
+                  <div style="font-size:.78rem;color:var(--ink-muted);">by <%= b.submitted_by %></div>
+                </div>
+                <div style="text-align:right;">
+                  <span class="badge badge-<%= b.status %>"><%= b.status %></span>
+                  <div style="font-size:.75rem;color:var(--ink-muted);margin-top:.15rem;"><%= b.preferred_date || '—' %></div>
+                </div>
+              </div>
+            <% }) %>
+            <a href="/admin/bookings?company=<%= client.company_id %>" style="font-size:.82rem;color:var(--accent);display:block;margin-top:.5rem;">View all bookings →</a>
+          </div>
+        <% } %>
+      <% } else { %>
+        <div class="card-body" style="font-size:.88rem;color:var(--ink-muted);">
+          This company has not registered a portal account yet. When they sign up at <strong>/register</strong>, they will automatically be linked here.
+        </div>
+      <% } %>
+    </div>
+
     <!-- Danger zone -->
     <div class="card" style="border-color:#fee;margin-top:0">
       <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">

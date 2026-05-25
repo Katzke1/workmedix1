@@ -86,8 +86,10 @@ router.post('/register', (req, res) => {
     formData    : req.body
   });
 
-  if (!name || !email || !password || !confirm_password)
+  if (!name || !company_name?.trim() || !email || !password || !confirm_password)
     return render('All fields are required.');
+  if (company_name.trim().length < 2)
+    return render('Please enter your company or organisation name.');
   if (name.trim().length < 2)
     return render('Please enter your full name (at least 2 characters).');
   if (!/^[a-zA-Z\s\-'\.]+$/.test(name.trim()))
@@ -105,28 +107,40 @@ router.post('/register', (req, res) => {
   const hash        = bcrypt.hashSync(password, 12);
   const verifyToken = crypto.randomBytes(32).toString('hex');
 
-  // Create or find company
-  let companyId = null;
-  if (company_name?.trim()) {
-    const cname = company_name.trim();
-    let comp = db.prepare('SELECT id FROM companies WHERE name=?').get(cname);
+  // Create or find company — also ensure a linked crm_clients record exists
+  const cname = company_name.trim();
+  const { companyId, crmClientId } = db.transaction(() => {
+    let comp = db.prepare('SELECT id, crm_client_id FROM companies WHERE name=?').get(cname);
     if (!comp) {
-      comp = { id: db.prepare('INSERT INTO companies (name, active) VALUES (?,1)').run(cname).lastInsertRowid };
+      const newCompId = db.prepare('INSERT INTO companies (name, active) VALUES (?,1)').run(cname).lastInsertRowid;
+      const newCrmId  = db.prepare(
+        `INSERT INTO crm_clients (company_name, contract_type, active, company_id) VALUES (?, 'ad-hoc', 1, ?)`
+      ).run(cname, newCompId).lastInsertRowid;
+      db.prepare('UPDATE companies SET crm_client_id=? WHERE id=?').run(newCrmId, newCompId);
+      return { companyId: newCompId, crmClientId: newCrmId };
     }
-    companyId = comp.id;
-  }
+    let crmId = comp.crm_client_id;
+    if (!crmId) {
+      crmId = db.prepare(
+        `INSERT INTO crm_clients (company_name, contract_type, active, company_id) VALUES (?, 'ad-hoc', 1, ?)`
+      ).run(cname, comp.id).lastInsertRowid;
+      db.prepare('UPDATE companies SET crm_client_id=? WHERE id=?').run(crmId, comp.id);
+    }
+    return { companyId: comp.id, crmClientId: crmId };
+  })();
 
   const result = db.prepare(`
     INSERT INTO users (name, email, password_hash, role, company_name, company_id, email_verified, verify_token)
     VALUES (?, ?, ?, 'client_admin', ?, ?, 0, ?)
-  `).run(name.trim(), email.toLowerCase().trim(), hash,
-         company_name ? company_name.trim() : null, companyId, verifyToken);
+  `).run(name.trim(), email.toLowerCase().trim(), hash, cname, companyId, verifyToken);
 
   const userId = result.lastInsertRowid;
-  if (companyId) {
-    db.prepare('UPDATE companies SET primary_contact_user_id=? WHERE id=? AND primary_contact_user_id IS NULL')
-      .run(userId, companyId);
-  }
+  // Set primary contact on company
+  db.prepare('UPDATE companies SET primary_contact_user_id=? WHERE id=? AND primary_contact_user_id IS NULL')
+    .run(userId, companyId);
+  // Set contact details on the CRM client record (only if not already filled in)
+  db.prepare(`UPDATE crm_clients SET contact_name=?, contact_email=? WHERE id=? AND contact_name IS NULL`)
+    .run(name.trim(), email.toLowerCase().trim(), crmClientId);
 
   // Send verification email (non-blocking)
   sendVerificationEmail(email.toLowerCase().trim(), name.trim(), verifyToken).catch(e =>

@@ -46,10 +46,10 @@
                  placeholder="Jane Smith" required autocomplete="name">
         </div>
         <div class="form-group">
-          <label class="form-label" for="company_name">Company Name</label>
+          <label class="form-label" for="company_name">Company / Organisation Name *</label>
           <input type="text" id="company_name" name="company_name" class="form-control"
                  value="<%= formData.company_name || '' %>"
-                 placeholder="Your organisation" autocomplete="organization">
+                 placeholder="Your organisation" required autocomplete="organization">
         </div>
         <div class="form-group">
           <label class="form-label" for="email">Email Address *</label>

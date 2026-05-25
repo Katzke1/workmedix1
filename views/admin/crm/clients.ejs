@@ -29,11 +29,11 @@
           <thead><tr>
             <th>Company</th><th>Contact</th><th>Phone</th>
             <th>Industry</th><th>Contract</th>
-            <th>Jobs</th><th>Total Revenue</th><th>Actions</th>
+            <th>Portal</th><th>Jobs</th><th>Total Revenue</th><th>Actions</th>
           </tr></thead>
           <tbody>
           <% if (clients.length === 0) { %>
-            <tr><td colspan="8" class="table-empty">No clients yet — <a href="/admin/crm/clients/new">add your first client</a></td></tr>
+            <tr><td colspan="9" class="table-empty">No clients yet — <a href="/admin/crm/clients/new">add your first client</a></td></tr>
           <% } else { clients.forEach(c => { %>
             <tr>
               <td>
@@ -44,6 +44,16 @@
               <td><%= c.contact_phone || '—' %></td>
               <td><%= c.industry || '—' %></td>
               <td><span class="crm-contract-badge crm-contract-<%= c.contract_type %>"><%= c.contract_type %></span></td>
+              <td>
+                <% if (c.portal_users > 0) { %>
+                  <span title="<%= c.portal_users %> portal user<%= c.portal_users!==1?'s':'' %>" style="display:inline-flex;align-items:center;gap:.3rem;font-size:.8rem;color:#0b6e4f;font-weight:600;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                    <%= c.portal_users %>
+                  </span>
+                <% } else { %>
+                  <span style="color:var(--ink-muted);font-size:.8rem;">—</span>
+                <% } %>
+              </td>
               <td><%= c.job_count %></td>
               <td style="font-weight:600;color:var(--primary)"><%- fmt(c.total_rev) %></td>
               <td>

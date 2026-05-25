@@ -119,10 +119,13 @@ router.get('/clients', (req, res) => {
   const type   = req.query.type || '';
   let sql = `
     SELECT c.*,
-           COUNT(j.id) as job_count,
-           COALESCE(SUM(j.unit_price*j.num_people),0) as total_rev
+           COUNT(DISTINCT j.id) as job_count,
+           COALESCE(SUM(j.unit_price*j.num_people),0) as total_rev,
+           COUNT(DISTINCT u.id) as portal_users
     FROM crm_clients c
     LEFT JOIN crm_jobs j ON j.client_id=c.id AND j.status!='cancelled'
+    LEFT JOIN companies co ON co.id=c.company_id
+    LEFT JOIN users u ON u.company_id=co.id AND u.role NOT IN ('admin','staff')
     WHERE 1=1
   `;
   const params = [];
@@ -184,6 +187,20 @@ router.get('/clients/:id', (req, res) => {
     return { label: monthLabel(m), revenue: r.reduce((a,j)=>a+j.rev,0) };
   });
 
+  // Portal data — users and bookings linked to this company via companies.company_id
+  const portalUsers = client.company_id
+    ? db.prepare(`SELECT id, name, email, last_login_at, created_at FROM users WHERE company_id=? AND role NOT IN ('admin','staff') ORDER BY name`).all(client.company_id)
+    : [];
+  const portalBookings = client.company_id
+    ? db.prepare(`
+        SELECT b.*, u.name submitted_by
+        FROM bookings b
+        JOIN users u ON b.user_id=u.id
+        WHERE b.company_id=?
+        ORDER BY b.created_at DESC LIMIT 10
+      `).all(client.company_id)
+    : [];
+
   res.render('admin/crm/client-detail', {
     title: `${client.company_name} | CRM`, page: 'crm-clients', user: req.session.user,
     client, jobs, stats, monthly, fmt, pct, STATUS_LABELS,
@@ -191,6 +208,7 @@ router.get('/clients/:id', (req, res) => {
     error: null, success: null,
     chartLabels: JSON.stringify(monthly.map(m=>m.label)),
     chartData:   JSON.stringify(monthly.map(m=>+m.revenue.toFixed(2))),
+    portalUsers, portalBookings,
   });
 });
 
