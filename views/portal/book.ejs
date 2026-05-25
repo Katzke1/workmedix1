@@ -217,49 +217,29 @@
             </div>
           </div>
 
-          <!-- ── Step 3: Employees ───────────────────────────────────────────── -->
+          <!-- ── Step 3: Number of Employees ──────────────────────────────────── -->
           <div class="book-panel hidden" id="step-3">
             <div class="card">
               <div class="card-header">
-                <h3>Select Employees</h3>
-                <span class="card-header-badge" id="emp-count-label">0 selected</span>
+                <h3>Number of Employees</h3>
+                <span class="card-header-sub">How many people will be screened?</span>
               </div>
               <div class="card-body">
-                <% if (employees.length === 0) { %>
-                <div class="empty-notice">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="32" height="32"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.58-7 8-7s8 3 8 7"/></svg>
-                  <p><strong>No employees in your roster.</strong><br><a href="/portal/employees">Add employees first</a> to include them in this booking.</p>
-                </div>
-                <% } else { %>
-                <div class="emp-toolbar">
-                  <div class="emp-search-wrap">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    <input type="text" id="emp-search" class="emp-search-input" placeholder="Search employees…">
-                  </div>
-                  <div style="display:flex;gap:.5rem;">
-                    <button type="button" class="btn btn-ghost btn-sm" id="select-all-btn">Select All</button>
-                    <button type="button" class="btn btn-ghost btn-sm" id="clear-all-btn">Clear</button>
+                <div class="emp-count-wrap">
+                  <div class="form-group" style="max-width:260px;">
+                    <label class="form-label" for="num_employees">Total employees to screen <span class="req">*</span></label>
+                    <div class="emp-count-row">
+                      <button type="button" class="emp-stepper-btn" id="emp-decrement">−</button>
+                      <input type="number" id="num_employees" name="num_employees"
+                             class="form-control emp-count-input" min="1" max="500" value="1" required>
+                      <button type="button" class="emp-stepper-btn" id="emp-increment">+</button>
+                    </div>
+                    <span class="form-hint">Our team will bring the necessary equipment for this headcount.</span>
+                    <p id="emp-count-error" class="field-error" style="display:none;">Please enter at least 1 employee.</p>
                   </div>
                 </div>
-                <div class="emp-list" id="employee-list">
-                  <% employees.forEach(emp => { %>
-                  <label class="emp-row" data-name="<%= (emp.first_name + ' ' + emp.last_name + ' ' + (emp.job_title||'')).toLowerCase() %>">
-                    <input type="checkbox" name="employee_ids[]" value="<%= emp.id %>" class="emp-cb">
-                    <div class="emp-avatar"><%= emp.first_name.charAt(0).toUpperCase() %></div>
-                    <div class="emp-info">
-                      <strong><%= emp.first_name %> <%= emp.last_name %></strong>
-                      <span><%= emp.job_title || 'Employee' %></span>
-                    </div>
-                    <span class="emp-id"><%= emp.id_number || '—' %></span>
-                    <div class="emp-tick">
-                      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2.5 8 6.5 12 13.5 4"/></svg>
-                    </div>
-                  </label>
-                  <% }) %>
-                </div>
-                <% } %>
 
-                <div class="step-nav" style="margin-top:1.25rem;">
+                <div class="step-nav" style="margin-top:1.5rem;">
                   <button type="button" class="btn btn-ghost step-back" data-back="2">← Back</button>
                   <button type="button" class="btn btn-primary step-next" data-next="4">Next: Review →</button>
                 </div>
@@ -300,6 +280,7 @@
                     </div>
                     <div><span class="review-label">Employees</span><strong id="rev-emps" class="review-val">—</strong></div>
                   </div>
+
                 </div>
 
                 <p class="review-notice">
@@ -340,7 +321,7 @@
 
 <style>
 /* ── Page layout ───────────────────────── */
-.book-wrap { max-width: 760px; }
+.book-wrap { max-width: none; }
 
 /* ── Stepper ───────────────────────────── */
 .bk-stepper {
@@ -520,77 +501,37 @@
 .new-site-divider::before { content:''; position:absolute; left:0; right:0; top:50%; height:1px; background:var(--border); }
 .new-site-divider span { position:relative; background:white; padding:0 .75rem; font-size:.82rem; color:var(--ink-muted); font-weight:500; }
 
-/* ── Employee list ───────────────────── */
-.emp-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: .85rem;
-}
-.emp-search-wrap {
-  position: relative;
+/* ── Employee count stepper ──────────── */
+.emp-count-wrap { padding: 1.5rem 0; }
+.emp-count-row {
   display: flex;
   align-items: center;
+  gap: .5rem;
+  margin-top: .5rem;
 }
-.emp-search-wrap svg { position: absolute; left: .65rem; pointer-events: none; stroke: var(--ink-muted); }
-.emp-search-input {
-  border: 1px solid var(--border);
+.emp-count-input {
+  width: 90px !important;
+  text-align: center;
+  font-size: 1.2rem !important;
+  font-weight: 600 !important;
+}
+.emp-stepper-btn {
+  width: 38px;
+  height: 38px;
   border-radius: 8px;
-  padding: .5rem .75rem .5rem 2.1rem;
-  font-size: .875rem;
-  width: 220px;
-  outline: none;
+  border: 2px solid var(--border);
   background: var(--surface-2);
-}
-.emp-search-input:focus { border-color: var(--primary); background: white; }
-.emp-list {
-  display: flex;
-  flex-direction: column;
-  gap: .3rem;
-  max-height: 340px;
-  overflow-y: auto;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: .4rem;
-}
-.emp-row {
-  display: flex;
-  align-items: center;
-  gap: .85rem;
-  padding: .65rem .85rem;
-  border-radius: 8px;
+  color: var(--ink);
+  font-size: 1.3rem;
+  line-height: 1;
   cursor: pointer;
-  transition: background .12s;
-}
-.emp-row:hover { background: var(--surface-2); }
-.emp-row input { display: none; }
-.emp-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark, #1a1db8));
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  font-size: .8rem;
-  color: white;
-  flex-shrink: 0;
+  font-weight: 500;
+  transition: border-color .15s, background .15s;
 }
-.emp-info { flex: 1; display: flex; flex-direction: column; gap: .1rem; }
-.emp-info strong { font-size: .88rem; color: var(--ink); }
-.emp-info span   { font-size: .78rem; color: var(--ink-muted); }
-.emp-id { font-size: .78rem; color: var(--ink-muted); }
-.emp-tick { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: border-color .15s, background .15s; }
-.emp-tick svg { width: 11px; height: 11px; stroke: transparent; }
-.emp-row input:checked ~ .emp-tick { background: var(--primary); border-color: var(--primary); }
-.emp-row input:checked ~ .emp-tick svg { stroke: white; }
-.emp-row input:checked ~ .emp-info strong { color: var(--primary); }
-
-.empty-notice { display: flex; gap: 1rem; align-items: flex-start; padding: 1.25rem; background: var(--surface-2); border-radius: 10px; border: 1px solid var(--border); }
-.empty-notice svg { flex-shrink: 0; stroke: var(--ink-muted); margin-top: .1rem; }
-.empty-notice p { font-size: .9rem; line-height: 1.5; }
+.emp-stepper-btn:hover { border-color: var(--primary); background: rgba(35,38,242,.05); color: var(--primary); }
 
 /* ── Review grid ─────────────────────── */
 .review-grid {
@@ -710,6 +651,16 @@
     return ok;
   }
 
+  /* ── Step 3 validation ─────────────────────────────────────── */
+  function validateStep3() {
+    var inp = document.getElementById('num_employees');
+    var err = document.getElementById('emp-count-error');
+    var v   = parseInt(inp ? inp.value : '0', 10);
+    if (!inp || v < 1) { if (err) err.style.display = 'block'; return false; }
+    if (err) err.style.display = 'none';
+    return true;
+  }
+
   /* ── Wire up Next / Back buttons ───────────────────────────── */
   document.querySelectorAll('.step-next').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -718,6 +669,7 @@
       // Validate the step we're leaving
       if (from === 1 && !validateStep1()) return;
       if (from === 2 && !validateStep2()) return;
+      if (from === 3 && !validateStep3()) return;
       goStep(next);
     });
   });
@@ -741,38 +693,20 @@
     });
   });
 
-  /* ── Employee count ─────────────────────────────────────────── */
-  function countEmps() {
-    var n = document.querySelectorAll('input[name="employee_ids[]"]:checked').length;
-    var label = document.getElementById('emp-count-label');
-    if (label) label.textContent = n + ' selected';
-  }
-  document.querySelectorAll('.emp-cb').forEach(function (cb) {
-    cb.addEventListener('change', countEmps);
-  });
-
-  /* ── Employee search ────────────────────────────────────────── */
-  var empSearch = document.getElementById('emp-search');
-  if (empSearch) {
-    empSearch.addEventListener('input', function () {
-      var q = this.value.toLowerCase();
-      document.querySelectorAll('.emp-row').forEach(function (row) {
-        row.style.display = row.dataset.name.includes(q) ? '' : 'none';
-      });
+  /* ── Employee count stepper ─────────────────────────────────── */
+  var empInput = document.getElementById('num_employees');
+  var empDec   = document.getElementById('emp-decrement');
+  var empInc   = document.getElementById('emp-increment');
+  if (empDec && empInc && empInput) {
+    empDec.addEventListener('click', function () {
+      var v = parseInt(empInput.value, 10) || 1;
+      if (v > 1) empInput.value = v - 1;
+    });
+    empInc.addEventListener('click', function () {
+      var v = parseInt(empInput.value, 10) || 1;
+      if (v < 500) empInput.value = v + 1;
     });
   }
-
-  /* ── Select/clear all ───────────────────────────────────────── */
-  var selAll = document.getElementById('select-all-btn');
-  var clrAll = document.getElementById('clear-all-btn');
-  if (selAll) selAll.addEventListener('click', function () {
-    document.querySelectorAll('.emp-cb').forEach(function (cb) { cb.checked = true; });
-    countEmps();
-  });
-  if (clrAll) clrAll.addEventListener('click', function () {
-    document.querySelectorAll('.emp-cb').forEach(function (cb) { cb.checked = false; });
-    countEmps();
-  });
 
   /* ── Notes character counter ────────────────────────────────── */
   var notes = document.getElementById('notes');
@@ -806,15 +740,8 @@
       document.getElementById('rev-site').textContent = (addr2 && addr2.value) ? addr2.value : '—';
     }
 
-    var checked = Array.from(document.querySelectorAll('input[name="employee_ids[]"]:checked'));
-    if (checked.length === 0) {
-      document.getElementById('rev-emps').textContent = 'None (admin will assign)';
-    } else {
-      var names = checked.map(function (cb) {
-        return cb.closest('.emp-row').querySelector('strong').textContent;
-      });
-      document.getElementById('rev-emps').textContent = names.join(', ');
-    }
+    var empCount = parseInt((document.getElementById('num_employees') || {}).value, 10) || 1;
+    document.getElementById('rev-emps').textContent = empCount + (empCount === 1 ? ' employee' : ' employees');
   }
 
 })();

@@ -20,6 +20,7 @@
             All prices are per person.
           </p>
           <form method="POST" action="/admin/crm/settings">
+            <%- include('../../partials/csrf') %>
             <div class="table-wrap" style="margin:-1rem -1.25rem;margin-bottom:.75rem">
               <table>
                 <thead><tr><th>Service Name</th><th>Default Price (excl VAT)</th><th>Default Cost (incl VAT)</th><th>Margin</th><th></th></tr></thead>
@@ -81,7 +82,9 @@
 
           <!-- Delete forms (outside main form) -->
           <% rates.forEach(r => { %>
-            <form id="del-rate-<%= r.id %>" method="POST" action="/admin/crm/settings/delete/<%= r.id %>" style="display:none"></form>
+            <form id="del-rate-<%= r.id %>" method="POST" action="/admin/crm/settings/delete/<%= r.id %>" style="display:none">
+              <%- include('../../partials/csrf') %>
+            </form>
           <% }); %>
         </div>
       </div>

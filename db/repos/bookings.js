@@ -2,12 +2,14 @@
 
 const db = require('../index');
 
-function createBookingWithEmployees({ userId, companyId, serviceId, serviceType, siteId, scheduledAt, scheduledEndAt, notes, employeeIds }) {
+function createBookingWithEmployees({ userId, companyId, serviceId, serviceType, siteId, scheduledAt, scheduledEndAt, notes, employeeIds, numPeople }) {
   return db.transaction(() => {
+    // numPeople takes priority; fall back to employeeIds count for backwards-compat
+    const headcount = numPeople != null ? numPeople : (employeeIds || []).length;
     const result = db.prepare(`
       INSERT INTO bookings (user_id, company_id, site_id, service_id, service_type, preferred_date, scheduled_at, scheduled_end_at, notes, status, num_people)
       VALUES (?, ?, ?, ?, ?, date(?), ?, ?, ?, 'pending', ?)
-    `).run(userId, companyId, siteId || null, serviceId || null, serviceType, scheduledAt, scheduledAt, scheduledEndAt || null, notes || null, employeeIds.length);
+    `).run(userId, companyId, siteId || null, serviceId || null, serviceType, scheduledAt, scheduledAt, scheduledEndAt || null, notes || null, headcount);
 
     const bookingId = result.lastInsertRowid;
 

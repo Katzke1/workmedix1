@@ -82,7 +82,7 @@ router.post('/book', (req, res) => {
     new_site_contact_name, new_site_contact_phone
   } = req.body;
 
-  const employeeIds = [].concat(req.body['employee_ids[]'] || []).map(Number).filter(Boolean);
+  const numPeople = Math.max(1, parseInt(req.body.num_employees, 10) || 1);
 
   if (!service_id || !preferred_date)
     return render('Please select a service and preferred date.', null);
@@ -111,7 +111,8 @@ router.post('/book', (req, res) => {
 
   createBookingWithEmployees({
     userId: uid, companyId: cid, serviceId: svc.id, serviceType: svc.service_name,
-    siteId: resolvedSiteId, scheduledAt, scheduledEndAt: null, notes: notes?.trim() || null, employeeIds
+    siteId: resolvedSiteId, scheduledAt, scheduledEndAt: null, notes: notes?.trim() || null,
+    numPeople, employeeIds: []
   });
 
   render(null, `Booking request submitted for ${svc.service_name} on ${preferred_date}. We will confirm within one business day.`);
