@@ -2,24 +2,17 @@
 
 const db = require('../index');
 
-function createBookingWithEmployees({ userId, companyId, serviceId, serviceType, siteId, scheduledAt, scheduledEndAt, notes, employeeIds, numPeople }) {
+function createBookingWithEmployees({ userId, companyId, serviceId, serviceType, locationText, scheduledAt, scheduledEndAt, notes, numPeople }) {
   return db.transaction(() => {
-    // numPeople takes priority; fall back to employeeIds count for backwards-compat
-    const headcount = numPeople != null ? numPeople : (employeeIds || []).length;
     const result = db.prepare(`
-      INSERT INTO bookings (user_id, company_id, site_id, service_id, service_type, preferred_date, scheduled_at, scheduled_end_at, notes, status, num_people)
-      VALUES (?, ?, ?, ?, ?, date(?), ?, ?, ?, 'pending', ?)
-    `).run(userId, companyId, siteId || null, serviceId || null, serviceType, scheduledAt, scheduledAt, scheduledEndAt || null, notes || null, headcount);
-
-    const bookingId = result.lastInsertRowid;
-
-    const insertBE = db.prepare(`
-      INSERT OR IGNORE INTO booking_employees (booking_id, employee_id, attendance_status)
-      VALUES (?, ?, 'scheduled')
-    `);
-    employeeIds.forEach(eid => insertBE.run(bookingId, eid));
-
-    return bookingId;
+      INSERT INTO bookings (user_id, company_id, service_id, service_type, preferred_date, scheduled_at, scheduled_end_at, location_text, notes, status, num_people)
+      VALUES (?, ?, ?, ?, date(?), ?, ?, ?, ?, 'pending', ?)
+    `).run(
+      userId, companyId || null, serviceId || null, serviceType,
+      scheduledAt, scheduledAt, scheduledEndAt || null,
+      locationText || null, notes || null, numPeople || 1
+    );
+    return result.lastInsertRowid;
   })();
 }
 

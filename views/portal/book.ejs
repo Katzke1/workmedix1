@@ -116,7 +116,7 @@
             </div>
           </div>
 
-          <!-- ── Step 2: Location / Site ────────────────────────────────────── -->
+          <!-- ── Step 2: Location ───────────────────────────────────────────── -->
           <div class="book-panel hidden" id="step-2">
             <div class="card">
               <div class="card-header">
@@ -124,90 +124,33 @@
                 <span class="card-header-sub">Where should we come to you?</span>
               </div>
               <div class="card-body">
-
-                <% if (sites.length > 0) { %>
                 <div class="form-group">
-                  <label class="form-label">Saved Sites</label>
-                  <div class="site-list" id="site-list">
-                    <% sites.forEach(site => { %>
-                    <label class="site-opt">
-                      <input type="radio" name="site_id" value="<%= site.id %>" class="site-radio">
-                      <div class="site-opt-inner">
-                        <div class="site-opt-icon">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                        </div>
-                        <div>
-                          <strong><%= site.label %></strong>
-                          <span><%= site.address %><% if (site.city) { %>, <%= site.city %><% } %></span>
-                        </div>
-                        <div class="site-opt-check">
-                          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2.5 8 6.5 12 13.5 4"/></svg>
-                        </div>
-                      </div>
-                    </label>
-                    <% }) %>
-                    <label class="site-opt site-opt-new">
-                      <input type="radio" name="site_id" value="new" class="site-radio" id="site-new-radio">
-                      <div class="site-opt-inner">
-                        <div class="site-opt-icon site-opt-icon--add">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                        </div>
-                        <div>
-                          <strong>New location</strong>
-                          <span>Enter a new screening address</span>
-                        </div>
-                        <div class="site-opt-check">
-                          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2.5 8 6.5 12 13.5 4"/></svg>
-                        </div>
-                      </div>
-                    </label>
+                  <label class="form-label" for="loc_address">Street Address <span class="req">*</span></label>
+                  <input type="text" id="loc_address" name="loc_address" class="form-control"
+                         placeholder="e.g. 123 Main Street, Industrial Park" autocomplete="street-address">
+                  <p id="loc-error" class="field-error" style="display:none;">Please enter a street address.</p>
+                </div>
+                <div class="form-row-2">
+                  <div class="form-group">
+                    <label class="form-label" for="loc_city">City / Town</label>
+                    <input type="text" id="loc_city" name="loc_city" class="form-control"
+                           placeholder="Johannesburg" autocomplete="address-level2">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="loc_province">Province</label>
+                    <select id="loc_province" name="loc_province" class="form-control">
+                      <option value="">— Select —</option>
+                      <option>Gauteng</option><option>Western Cape</option><option>KwaZulu-Natal</option>
+                      <option>Eastern Cape</option><option>Limpopo</option><option>Mpumalanga</option>
+                      <option>North West</option><option>Free State</option><option>Northern Cape</option>
+                    </select>
                   </div>
                 </div>
-                <% } %>
-
-                <!-- New site form -->
-                <div id="new-site-form" class="new-site-form <%= sites.length > 0 ? 'hidden' : '' %>">
-                  <% if (sites.length > 0) { %>
-                  <div class="new-site-divider"><span>New Site Details</span></div>
-                  <% } %>
-                  <div class="form-row-2">
-                    <div class="form-group">
-                      <label class="form-label">Site Label</label>
-                      <input type="text" name="new_site_label" class="form-control" placeholder="e.g. Head Office, Mine Site A">
-                    </div>
-                    <div class="form-group">
-                      <label class="form-label">Street Address</label>
-                      <input type="text" name="new_site_address" class="form-control" placeholder="123 Main Street">
-                    </div>
-                  </div>
-                  <div class="form-row-2">
-                    <div class="form-group">
-                      <label class="form-label">City</label>
-                      <input type="text" name="new_site_city" class="form-control" placeholder="Johannesburg">
-                    </div>
-                    <div class="form-group">
-                      <label class="form-label">Province</label>
-                      <select name="new_site_province" class="form-control">
-                        <option value="">— Select —</option>
-                        <option>Gauteng</option><option>Western Cape</option><option>KwaZulu-Natal</option>
-                        <option>Eastern Cape</option><option>Limpopo</option><option>Mpumalanga</option>
-                        <option>North West</option><option>Free State</option><option>Northern Cape</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="form-row-2">
-                    <div class="form-group">
-                      <label class="form-label">Site Contact Name</label>
-                      <input type="text" name="new_site_contact_name" class="form-control" placeholder="John Smith">
-                    </div>
-                    <div class="form-group">
-                      <label class="form-label">Site Contact Phone</label>
-                      <input type="tel" name="new_site_contact_phone" class="form-control" placeholder="011 000 0000">
-                    </div>
-                  </div>
+                <div class="form-group">
+                  <label class="form-label" for="loc_contact">On-site Contact <span style="color:var(--ink-muted);font-weight:400;">(optional)</span></label>
+                  <input type="text" id="loc_contact" name="loc_contact" class="form-control"
+                         placeholder="Name and phone number of person to meet on the day">
                 </div>
-
-                <p id="site-error" class="field-error" style="display:none;">Please select or enter a location.</p>
 
                 <div class="step-nav">
                   <button type="button" class="btn btn-ghost step-back" data-back="1">← Back</button>
@@ -457,49 +400,6 @@
 .req { color: var(--danger); }
 .char-count { display: block; margin-top: .25rem; }
 
-/* ── Site options ────────────────────── */
-.site-list { display: flex; flex-direction: column; gap: .5rem; }
-.site-opt { display: block; cursor: pointer; }
-.site-opt input { position: absolute; opacity: 0; width: 0; height: 0; }
-.site-opt-inner {
-  display: flex;
-  align-items: center;
-  gap: .85rem;
-  border: 2px solid var(--border);
-  border-radius: 10px;
-  padding: .85rem 1rem;
-  transition: border-color .15s, background .15s;
-}
-.site-opt-inner:hover { border-color: rgba(35,38,242,.3); background: #fafaff; }
-.site-opt input:checked + .site-opt-inner {
-  border-color: var(--primary);
-  background: rgba(35,38,242,.04);
-}
-.site-opt-inner div { flex: 1; display: flex; flex-direction: column; gap: .15rem; }
-.site-opt-inner strong { font-size: .9rem; color: var(--ink); }
-.site-opt-inner span  { font-size: .82rem; color: var(--ink-muted); }
-.site-opt-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  background: rgba(35,38,242,.08);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.site-opt-icon svg { width: 16px; height: 16px; stroke: var(--primary); }
-.site-opt-icon--add { background: rgba(39,174,96,.1); }
-.site-opt-icon--add svg { stroke: #27ae60; }
-.site-opt-check { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: border-color .15s, background .15s; }
-.site-opt-check svg { width: 12px; height: 12px; stroke: transparent; }
-.site-opt input:checked + .site-opt-inner .site-opt-check { background: var(--primary); border-color: var(--primary); }
-.site-opt input:checked + .site-opt-inner .site-opt-check svg { stroke: white; }
-
-.new-site-form { margin-top: 1rem; }
-.new-site-divider { text-align: center; position: relative; margin: 1.25rem 0; }
-.new-site-divider::before { content:''; position:absolute; left:0; right:0; top:50%; height:1px; background:var(--border); }
-.new-site-divider span { position:relative; background:white; padding:0 .75rem; font-size:.82rem; color:var(--ink-muted); font-weight:500; }
 
 /* ── Employee count stepper ──────────── */
 .emp-count-wrap { padding: 1.5rem 0; }
@@ -638,17 +538,14 @@
   }
 
   function validateStep2() {
-    var ok = true;
-    var errEl = document.getElementById('site-error');
-    var siteChecked = document.querySelector('input[name="site_id"]:checked');
-    var noSites = !document.getElementById('site-list'); // no saved sites
-    if (!noSites && !siteChecked) {
-      errEl.style.display = 'block';
-      ok = false;
-    } else {
-      errEl.style.display = 'none';
+    var addr  = document.getElementById('loc_address');
+    var errEl = document.getElementById('loc-error');
+    if (!addr || !addr.value.trim()) {
+      if (errEl) errEl.style.display = 'block';
+      return false;
     }
-    return ok;
+    if (errEl) errEl.style.display = 'none';
+    return true;
   }
 
   /* ── Step 3 validation ─────────────────────────────────────── */
@@ -680,18 +577,6 @@
     });
   });
 
-  /* ── Site form toggle ───────────────────────────────────────── */
-  document.querySelectorAll('.site-radio').forEach(function (radio) {
-    radio.addEventListener('change', function () {
-      var form = document.getElementById('new-site-form');
-      if (!form) return;
-      if (radio.value === 'new') {
-        form.classList.remove('hidden');
-      } else {
-        form.classList.add('hidden');
-      }
-    });
-  });
 
   /* ── Employee count stepper ─────────────────────────────────── */
   var empInput = document.getElementById('num_employees');
@@ -728,17 +613,14 @@
     var time = document.getElementById('preferred_time').value || 'Any time';
     document.getElementById('rev-datetime').textContent = date + ' · ' + time;
 
-    var siteRadio = document.querySelector('input[name="site_id"]:checked');
-    if (siteRadio && siteRadio.value === 'new') {
-      var addr = document.querySelector('[name="new_site_address"]').value;
-      document.getElementById('rev-site').textContent = addr || 'New site (address pending)';
-    } else if (siteRadio) {
-      var inner = siteRadio.closest('.site-opt').querySelector('strong');
-      document.getElementById('rev-site').textContent = inner ? inner.textContent : '—';
-    } else {
-      var addr2 = document.querySelector('[name="new_site_address"]');
-      document.getElementById('rev-site').textContent = (addr2 && addr2.value) ? addr2.value : '—';
-    }
+    var addrEl = document.getElementById('loc_address');
+    var cityEl = document.getElementById('loc_city');
+    var provEl = document.getElementById('loc_province');
+    var parts  = [];
+    if (addrEl && addrEl.value.trim()) parts.push(addrEl.value.trim());
+    if (cityEl && cityEl.value.trim()) parts.push(cityEl.value.trim());
+    if (provEl && provEl.value)        parts.push(provEl.value);
+    document.getElementById('rev-site').textContent = parts.length ? parts.join(', ') : '—';
 
     var empCount = parseInt((document.getElementById('num_employees') || {}).value, 10) || 1;
     document.getElementById('rev-emps').textContent = empCount + (empCount === 1 ? ' employee' : ' employees');

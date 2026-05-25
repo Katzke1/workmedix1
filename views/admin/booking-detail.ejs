@@ -34,14 +34,9 @@
               <dt>Confirmed Time</dt><dd><%= new Date(booking.scheduled_at).toLocaleString('en-ZA') %></dd>
               <% } %>
               <dt>Location</dt>
-              <dd>
-                <% if (booking.site_label) { %>
-                  <strong><%= booking.site_label %></strong><br>
-                  <span style="font-size:.88rem;color:var(--ink-muted);">
-                    <%= booking.site_address %><% if (booking.site_city) { %>, <%= booking.site_city %><% } %>
-                  </span>
-                <% } else { %>—<% } %>
-              </dd>
+              <dd><%= booking.location_text || '—' %></dd>
+              <dt>Headcount</dt>
+              <dd><%= booking.num_people || 1 %> employee<%= (booking.num_people || 1) !== 1 ? 's' : '' %></dd>
               <dt>Assigned Practitioner</dt><dd><%= booking.staff_name || '—' %></dd>
               <dt>Notes</dt><dd><%= booking.notes || '—' %></dd>
               <dt>Submitted</dt><dd><%= new Date(booking.created_at).toLocaleString('en-ZA') %></dd>
@@ -49,45 +44,6 @@
           </div>
         </div>
 
-        <!-- Attendees / employees -->
-        <div class="card" style="margin-bottom:1.5rem;">
-          <div class="card-header">
-            <h3>Attendees (<%= booking.employees.length %>)</h3>
-          </div>
-          <% if (booking.employees.length === 0) { %>
-            <%- include('../partials/empty-state', { title: 'No employees assigned', desc: 'Employees were not selected during booking or have not been assigned yet.', ctaHref: null }) %>
-          <% } else { %>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th><th>ID Number</th><th>Job Title</th><th>Attendance</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% booking.employees.forEach(emp => { %>
-                <tr>
-                  <td><strong><%= emp.first_name %> <%= emp.last_name %></strong></td>
-                  <td><%= emp.id_number || '—' %></td>
-                  <td><%= emp.job_title || '—' %></td>
-                  <td>
-                    <form method="POST" action="/admin/bookings/<%= booking.id %>/attendance/<%= emp.id %>">
-                      <%- include('../partials/csrf') %>
-                      <select name="attendance_status" class="form-control" style="width:140px;" onchange="this.form.submit()">
-                        <option value="scheduled" <%= emp.attendance_status==='scheduled' ? 'selected':'' %>>Scheduled</option>
-                        <option value="attended"  <%= emp.attendance_status==='attended'  ? 'selected':'' %>>Attended</option>
-                        <option value="no_show"   <%= emp.attendance_status==='no_show'   ? 'selected':'' %>>No Show</option>
-                        <option value="rescheduled" <%= emp.attendance_status==='rescheduled' ? 'selected':'' %>>Rescheduled</option>
-                      </select>
-                    </form>
-                  </td>
-                </tr>
-                <% }) %>
-              </tbody>
-            </table>
-          </div>
-          <% } %>
-        </div>
 
         <!-- Create CRM job (visible when completed) -->
         <% if (booking.status === 'completed' && !booking.crm_job_id) { %>

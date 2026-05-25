@@ -25,16 +25,7 @@ router.get('/', (req, res) => {
     `SELECT * FROM bookings WHERE user_id=? ORDER BY created_at DESC LIMIT 5`
   ).all(uid);
 
-  const expiringCerts = cid ? db.prepare(`
-    SELECT c.*, ct.name cert_type_name, e.first_name, e.last_name
-    FROM   certificates c
-    LEFT JOIN certificate_types ct ON c.certificate_type_id = ct.id
-    LEFT JOIN employees e ON c.employee_id = e.id
-    JOIN   users u ON c.user_id = u.id
-    WHERE  u.company_id = ? AND c.expiry_date IS NOT NULL
-      AND  c.expiry_date <= date('now','+60 days') AND c.expiry_date >= date('now')
-    ORDER  BY c.expiry_date ASC LIMIT 5
-  `).all(cid) : [];
+  const expiringCerts = [];
 
   const verificationBanner = !req.session.user.email_verified;
 
@@ -50,35 +41,29 @@ router.get('/', (req, res) => {
 });
 
 // ── Book a screening ───────────────────────────────────────────────────────────
-function bookRenderData(req) {
-  const cid = req.session.user.company_id;
+function bookRenderData() {
   return {
-    services : db.prepare(`SELECT * FROM crm_service_rates WHERE show_in_portal=1 ORDER BY sort_order`).all(),
-    sites    : cid ? db.prepare(`SELECT * FROM sites WHERE company_id=? ORDER BY label`).all(cid) : [],
+    services: db.prepare(`SELECT * FROM crm_service_rates WHERE show_in_portal=1 ORDER BY sort_order`).all(),
   };
 }
 
 router.get('/book', (req, res) => {
   res.render('portal/book', {
     title: 'Book a Screening | Workmedix', description: 'Request a mobile health screening appointment.',
-    page: 'book', error: null, success: null, ...bookRenderData(req)
+    page: 'book', error: null, success: null, ...bookRenderData()
   });
 });
 
 router.post('/book', (req, res) => {
   const render = (error, success) => res.render('portal/book', {
     title: 'Book a Screening | Workmedix', description: 'Request a mobile health screening appointment.',
-    page: 'book', error, success, ...bookRenderData(req)
+    page: 'book', error, success, ...bookRenderData()
   });
 
   const uid = req.session.user.id;
-  const cid = req.session.user.company_id;
-  const {
-    service_id, preferred_date, preferred_time, notes,
-    site_id,
-    new_site_label, new_site_address, new_site_city, new_site_province,
-    new_site_contact_name, new_site_contact_phone
-  } = req.body;
+  const cid = req.session.user.company_id || null;
+  const { service_id, preferred_date, preferred_time, notes,
+          loc_address, loc_city, loc_province, loc_contact } = req.body;
 
   const numPeople = Math.max(1, parseInt(req.body.num_employees, 10) || 1);
 
@@ -86,31 +71,25 @@ router.post('/book', (req, res) => {
     return render('Please select a service and preferred date.', null);
   if (new Date(preferred_date) < new Date(new Date().toDateString()))
     return render('Please select a future date.', null);
+  if (!loc_address?.trim())
+    return render('Please enter a screening address.', null);
   if (notes && notes.length > 500)
     return render('Notes may not exceed 500 characters.', null);
 
   const svc = db.prepare(`SELECT * FROM crm_service_rates WHERE id=?`).get(service_id);
   if (!svc) return render('Invalid service selected.', null);
 
-  // Resolve or create site
-  let resolvedSiteId = null;
-  if (site_id && site_id !== 'new') {
-    const s = cid ? db.prepare(`SELECT id FROM sites WHERE id=? AND company_id=?`).get(site_id, cid) : null;
-    if (s) resolvedSiteId = s.id;
-  } else if (new_site_address?.trim()) {
-    if (!cid) return render('No company linked to your account — contact support.', null);
-    if (!new_site_label?.trim()) return render('Please provide a label for the new site.', null);
-    const ins = db.prepare(`INSERT INTO sites (company_id, label, address, city, province, contact_name, contact_phone) VALUES (?,?,?,?,?,?,?)`)
-      .run(cid, new_site_label.trim(), new_site_address.trim(), new_site_city?.trim() || null, new_site_province || null, new_site_contact_name?.trim() || null, new_site_contact_phone?.trim() || null);
-    resolvedSiteId = ins.lastInsertRowid;
-  }
+  // Build a single location string for admin visibility
+  const parts = [loc_address.trim()];
+  if (loc_city?.trim())     parts.push(loc_city.trim());
+  if (loc_province?.trim()) parts.push(loc_province.trim());
+  const locationText = parts.join(', ') + (loc_contact?.trim() ? ` | Contact: ${loc_contact.trim()}` : '');
 
   const scheduledAt = preferred_time ? `${preferred_date}T${preferred_time}:00` : `${preferred_date}T08:00:00`;
 
   createBookingWithEmployees({
     userId: uid, companyId: cid, serviceId: svc.id, serviceType: svc.service_name,
-    siteId: resolvedSiteId, scheduledAt, scheduledEndAt: null, notes: notes?.trim() || null,
-    numPeople, employeeIds: []
+    locationText, scheduledAt, scheduledEndAt: null, notes: notes?.trim() || null, numPeople,
   });
 
   render(null, `Booking request submitted for ${svc.service_name} on ${preferred_date}. We will confirm within one business day.`);

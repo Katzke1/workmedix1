@@ -121,6 +121,8 @@ const migrations = [
   `ALTER TABLE users ADD COLUMN verify_token   TEXT`,
   // show_in_portal: controls whether a service appears on the client booking page
   `ALTER TABLE crm_service_rates ADD COLUMN show_in_portal INTEGER NOT NULL DEFAULT 1`,
+  // location_text: free-form address stored directly on booking (no sites/company needed)
+  `ALTER TABLE bookings ADD COLUMN location_text TEXT`,
 ];
 migrations.forEach(sql => {
   try { db.exec(sql); } catch (e) { /* column already exists — safe to ignore */ }
