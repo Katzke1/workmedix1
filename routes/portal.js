@@ -8,6 +8,7 @@ const db                     = require('../db');
 const { requireAuth, requireClientAdmin } = require('../middleware/auth');
 const { validateEmployee, validateBooking } = require('../lib/schemas/booking');
 const { createBookingWithEmployees } = require('../db/repos/bookings');
+const { sendNewBookingNotification } = require('../lib/mailer');
 
 router.use(requireAuth);
 
@@ -96,10 +97,24 @@ router.post('/book', (req, res) => {
 
   const scheduledAt = preferred_time ? `${preferred_date}T${preferred_time}:00` : `${preferred_date}T08:00:00`;
 
-  createBookingWithEmployees({
+  const bookingId = createBookingWithEmployees({
     userId: uid, companyId: cid, serviceId: svc.id, serviceType: svc.service_name,
     locationText, scheduledAt, scheduledEndAt: null, notes: notes?.trim() || null, numPeople,
   });
+
+  // Notify info@workmedix.co.za about the new booking (non-blocking)
+  const company = cid ? db.prepare('SELECT name FROM companies WHERE id=?').get(cid) : null;
+  sendNewBookingNotification({
+    bookingId,
+    companyName  : company?.name || req.session.user.company_name || req.session.user.name,
+    contactName  : req.session.user.name,
+    contactEmail : req.session.user.email,
+    serviceType  : svc.service_name,
+    preferredDate: preferred_date,
+    locationText,
+    numPeople,
+    notes        : notes?.trim() || null,
+  }).catch(e => console.error('[booking] notification email failed:', e.message));
 
   render(null, `Booking request submitted for ${svc.service_name} on ${preferred_date}. We will confirm within one business day.`);
 });
