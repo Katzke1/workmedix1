@@ -118,7 +118,7 @@ router.post('/book', (req, res) => {
 // ── Bookings list ─────────────────────────────────────────────────────────────
 router.get('/bookings', (req, res) => {
   const bookings = db.prepare(
-    `SELECT * FROM bookings WHERE user_id=? ORDER BY preferred_date DESC`
+    `SELECT * FROM bookings WHERE user_id=? ORDER BY COALESCE(scheduled_at, preferred_date) DESC`
   ).all(req.session.user.id);
 
   res.render('portal/bookings', {
@@ -150,8 +150,10 @@ router.get('/results', (req, res) => {
 router.get('/results/:id/download', (req, res) => {
   const row = db.prepare(`SELECT * FROM results WHERE id=? AND user_id=?`)
                .get(req.params.id, req.session.user.id);
-  if (!row) return res.status(404).send('File not found.');
-  res.download(row.file_path);
+  if (!row || !row.file_path) return res.status(404).send('File not found.');
+  res.download(row.file_path, (err) => {
+    if (err && !res.headersSent) res.status(404).send('File not available.');
+  });
 });
 
 // ── Certificates ──────────────────────────────────────────────────────────────
@@ -172,7 +174,9 @@ router.get('/certificates/:id/download', (req, res) => {
   const row = db.prepare(`SELECT * FROM certificates WHERE id=? AND user_id=?`)
                .get(req.params.id, req.session.user.id);
   if (!row || !row.file_path) return res.status(404).send('File not found.');
-  res.download(row.file_path);
+  res.download(row.file_path, (err) => {
+    if (err && !res.headersSent) res.status(404).send('File not available.');
+  });
 });
 
 // ── Profile ───────────────────────────────────────────────────────────────────

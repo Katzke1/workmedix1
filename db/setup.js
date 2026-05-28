@@ -173,3 +173,4 @@ db.close();
 require('./migrations/001_enterprise');
 require('./migrations/002_fix_role_constraint');
 require('./migrations/003_wipe_test_data');
+require('./migrations/004_expand_booking_status');

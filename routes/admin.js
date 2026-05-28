@@ -37,12 +37,12 @@ router.use(requireAdmin);
 // ── Test email ────────────────────────────────────────────────────────────────
 router.get('/test-email', async (req, res) => {
   const to = req.query.to || req.session.user.email;
-  res.setTimeout(20000, () => res.send('❌ Timed out after 20s — SMTP server unreachable from Railway.'));
+  res.setTimeout(20000, () => res.send('❌ Timed out after 20s.'));
   try {
     await sendTestEmail(to);
-    res.send(`✅ Test email sent to <strong>${to}</strong>. Check your inbox.<br><small>Sent via ${process.env.SMTP_HOST}:${process.env.SMTP_PORT} as ${process.env.SMTP_USER}</small>`);
+    res.send(`✅ Test email sent to <strong>${to}</strong>. Check your inbox.<br><small>Sent via Resend API · from ${process.env.SMTP_FROM || 'info@workmedix.com'}</small>`);
   } catch (err) {
-    res.send(`❌ Email failed:<br><pre style="background:#fee;padding:1rem;border-radius:6px;">${err.message}</pre><br><strong>Current settings:</strong><pre>SMTP_HOST=${process.env.SMTP_HOST}\nSMTP_PORT=${process.env.SMTP_PORT}\nSMTP_USER=${process.env.SMTP_USER}\nSMTP_FROM=${process.env.SMTP_FROM}</pre>`);
+    res.send(`❌ Email failed:<br><pre style="background:#fee;padding:1rem;border-radius:6px;">${err.message}</pre><br><strong>RESEND_API_KEY set:</strong> ${process.env.RESEND_API_KEY ? 'Yes' : 'NO — add it to Railway env vars'}`);
   }
 });
 
@@ -172,18 +172,37 @@ router.post('/bookings/:id/create-crm-job', (req, res) => {
   if (!booking) return res.redirect('/admin/bookings');
   if (booking.crm_job_id) return res.redirect(`/admin/bookings/${req.params.id}`);
 
-  const clientId = booking.company_id
+  // Resolve a crm_clients row — required (NOT NULL). Create one ad-hoc if needed.
+  let clientId = booking.company_id
     ? db.prepare(`SELECT crm_client_id FROM companies WHERE id=?`).get(booking.company_id)?.crm_client_id
     : null;
 
+  if (!clientId) {
+    // No CRM client linked — create an ad-hoc one from the booking contact
+    const companyName = booking.company_name || booking.legacy_company_name || `Booking #${booking.id}`;
+    const existing    = db.prepare(`SELECT id FROM crm_clients WHERE company_name=?`).get(companyName);
+    if (existing) {
+      clientId = existing.id;
+    } else {
+      clientId = db.prepare(
+        `INSERT INTO crm_clients (company_name, contact_name, contact_email, contract_type, active) VALUES (?,?,?,'ad-hoc',1)`
+      ).run(companyName, booking.client_name || null, booking.client_email || null).lastInsertRowid;
+    }
+    // Link back to company if we have one
+    if (booking.company_id) {
+      db.prepare(`UPDATE companies SET crm_client_id=? WHERE id=? AND crm_client_id IS NULL`).run(clientId, booking.company_id);
+    }
+  }
+
   const r = db.prepare(`
-    INSERT INTO crm_jobs (client_id, booking_id, service_type, status, num_people, notes, created_at)
-    VALUES (?, ?, ?, 'quote', ?, ?, datetime('now'))
+    INSERT INTO crm_jobs (client_id, booking_id, service_type, status, num_people, notes, job_date, created_at)
+    VALUES (?, ?, ?, 'confirmed', ?, ?, COALESCE(?, date('now')), datetime('now'))
   `).run(
-    clientId || null, booking.id,
+    clientId, booking.id,
     booking.service_type,
-    booking.employees.length || null,
-    `Auto-created from booking #${booking.id} on ${booking.preferred_date || 'N/A'}`
+    booking.num_people || booking.employees.length || 1,
+    `Auto-created from booking #${booking.id}`,
+    booking.preferred_date || null
   );
   res.redirect(`/admin/crm/jobs/${r.lastInsertRowid}`);
 });
@@ -277,7 +296,7 @@ router.get('/clients', (req, res) => {
       (SELECT COUNT(*) FROM bookings     WHERE user_id=u.id) booking_count,
       (SELECT COUNT(*) FROM results      WHERE user_id=u.id) result_count,
       (SELECT COUNT(*) FROM certificates WHERE user_id=u.id) cert_count
-    FROM users u WHERE u.role='client'
+    FROM users u WHERE u.role NOT IN ('admin','staff')
     ORDER BY u.created_at DESC
   `).all();
 
@@ -290,7 +309,7 @@ router.get('/clients', (req, res) => {
 });
 
 router.get('/clients/:id', (req, res) => {
-  const clientUser = db.prepare(`SELECT * FROM users WHERE id=? AND role='client'`).get(req.params.id);
+  const clientUser = db.prepare(`SELECT * FROM users WHERE id=? AND role NOT IN ('admin','staff')`).get(req.params.id);
   if (!clientUser) return res.redirect('/admin/clients');
 
   const bookings     = db.prepare(`SELECT * FROM bookings     WHERE user_id=? ORDER BY preferred_date DESC`).all(clientUser.id);
