@@ -189,12 +189,14 @@ router.post('/contact', async (req, res) => {
   }
   try {
     await sendContactNotification({ name: name.trim(), company: company?.trim() || '', email: email.trim(), phone: phone.trim(), service: service || 'Not specified', message: message.trim() });
+    console.log('[contact] notification sent');
     await sendContactConfirmation({ name: name.trim(), email: email.trim(), service: service || 'our services' });
+    console.log('[contact] confirmation sent');
   } catch (e) {
-    console.error('Contact email error:', e.message);
+    console.error('[contact] email error:', e.message);
     // Still redirect — don't break the user flow if email fails
   }
-  res.redirect('/login?msg=contact');
+  res.redirect('/?msg=contact');
 });
 
 // ── GET /forgot-password ──────────────────────────────────────────────────────

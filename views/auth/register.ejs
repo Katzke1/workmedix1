@@ -39,6 +39,7 @@
       <% } %>
 
       <form method="POST" action="/register" novalidate>
+        <%- include('../partials/csrf') %>
         <div class="form-group">
           <label class="form-label" for="name">Full Name *</label>
           <input type="text" id="name" name="name" class="form-control"

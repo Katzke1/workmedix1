@@ -64,6 +64,7 @@
           <% } %>
 
           <form method="POST" action="/portal/profile/password">
+            <%- include('../partials/csrf') %>
             <div class="form-group">
               <label class="form-label" for="current_password">Current Password</label>
               <input type="password" id="current_password" name="current_password"

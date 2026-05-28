@@ -60,6 +60,7 @@
                 <td><%= j.staff_name||'—' %></td>
                 <td>
                   <form method="POST" action="/admin/crm/jobs/<%= j.id %>/status" style="display:inline">
+                    <%- include('../../partials/csrf') %>
                     <select name="status" onchange="this.form.submit()" class="crm-status-select crm-status-select-<%= j.status %>">
                       <% STATUS_ORDER.forEach(s => { %><option value="<%= s %>" <%= j.status===s?'selected':'' %>><%= STATUS_LABELS[s] %></option><% }); %>
                     </select>
@@ -69,6 +70,7 @@
                   <div style="display:flex;gap:.3rem">
                     <a href="/admin/crm/jobs/<%= j.id %>" class="btn btn-sm btn-outline-dark">View</a>
                     <form method="POST" action="/admin/crm/jobs/<%= j.id %>/delete" style="display:inline">
+                      <%- include('../../partials/csrf') %>
                       <button type="submit" class="btn btn-sm btn-danger" data-confirm="Delete this job?">×</button>
                     </form>
                   </div>

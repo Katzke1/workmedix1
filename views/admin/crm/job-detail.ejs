@@ -44,6 +44,7 @@
         <div class="card-header"><h3>Job Details</h3></div>
         <div class="card-body">
           <form method="POST" action="/admin/crm/jobs/<%= job.id %>">
+            <%- include('../../partials/csrf') %>
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">Client *</label>
@@ -170,6 +171,7 @@
               <p style="margin:0;font-size:.85rem">This cannot be undone.</p>
             </div>
             <form method="POST" action="/admin/crm/jobs/<%= job.id %>/delete">
+              <%- include('../../partials/csrf') %>
               <button type="submit" class="btn btn-danger btn-sm" data-confirm="Delete this job?">Delete</button>
             </form>
           </div>

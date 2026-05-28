@@ -17,6 +17,7 @@
         <div class="card-header"><h3>Add Staff Member</h3></div>
         <div class="card-body">
           <form method="POST" action="/admin/crm/staff">
+            <%- include('../../partials/csrf') %>
             <div class="form-group">
               <label class="form-label">Full Name *</label>
               <input type="text" name="name" class="form-control" required placeholder="e.g. Dr. Jane Smith">
@@ -56,6 +57,7 @@
           <div class="card" style="margin-bottom:1rem">
             <div class="card-body">
               <form method="POST" action="/admin/crm/staff/<%= s.id %>">
+                <%- include('../../partials/csrf') %>
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap;margin-bottom:1rem">
                   <div>
                     <div style="font-size:1.1rem;font-weight:700;color:var(--text-dark)"><%= s.name %></div>
@@ -108,7 +110,7 @@
                   <button type="submit" form="del-<%= s.id %>" class="btn btn-danger btn-sm">Remove</button>
                 </div>
               </form>
-              <form id="del-<%= s.id %>" method="POST" action="/admin/crm/staff/<%= s.id %>/delete" style="display:none"></form>
+              <form id="del-<%= s.id %>" method="POST" action="/admin/crm/staff/<%= s.id %>/delete" style="display:none"><%- include('../../partials/csrf') %></form>
             </div>
           </div>
         <% }); } %>

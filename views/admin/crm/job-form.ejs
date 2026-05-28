@@ -12,6 +12,7 @@
         <div class="card-body">
           <% if (error) { %><div class="alert alert-danger"><%= error %></div><% } %>
           <form method="POST" action="/admin/crm/jobs" id="job-form">
+            <%- include('../../partials/csrf') %>
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">Client *</label>

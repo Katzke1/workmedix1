@@ -8,6 +8,7 @@ const helmet       = require('helmet');
 const compression  = require('compression');
 const rateLimit    = require('express-rate-limit');
 
+const cookieParser = require('cookie-parser');
 const { getSessionSecret, validateConfig } = require('./lib/config');
 const csrfMiddleware = require('./lib/csrf');
 const db = require('./db');
@@ -67,6 +68,7 @@ if (isProd) {
 }
 
 app.use(compression());
+app.use(cookieParser());
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
