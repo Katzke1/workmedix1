@@ -29,6 +29,7 @@ router.get('/login', (req, res) => {
     title       : 'Login | Workmedix',
     description : 'Login to your Workmedix client portal or admin dashboard.',
     error       : null,
+    resendEmail : null,
     msg         : req.query.msg || null
   });
 });
@@ -37,10 +38,12 @@ router.get('/login', (req, res) => {
 router.post('/login', (req, res) => {
   const { email, password } = req.body;
 
-  const render = (error) => res.render('auth/login', {
+  const render = (error, resendEmail = null) => res.render('auth/login', {
     title       : 'Login | Workmedix',
     description : 'Login to your Workmedix client portal or admin dashboard.',
-    error
+    error,
+    resendEmail,
+    msg         : null,
   });
 
   if (!email || !password) return render('Please enter your email and password.');
@@ -52,7 +55,7 @@ router.post('/login', (req, res) => {
 
   // Block unverified clients — admins/staff are always allowed through
   if (!user.email_verified && !['admin', 'staff'].includes(user.role)) {
-    return render(`Your email address hasn't been verified yet. Please check your inbox for the verification link, or <a href="/resend-verification?email=${encodeURIComponent(user.email)}" style="color:inherit;font-weight:600;">click here to resend it</a>.`);
+    return render('Please verify your email address before signing in. Check your inbox for the verification link.', user.email);
   }
 
   db.prepare('UPDATE users SET last_login_at=CURRENT_TIMESTAMP WHERE id=?').run(user.id);

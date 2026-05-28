@@ -32,7 +32,15 @@
         <div class="alert alert-success">✓ Password updated successfully. Please sign in with your new password.</div>
       <% } %>
       <% if (error) { %>
-        <div class="alert alert-danger"><%= error %></div>
+        <div class="alert alert-danger">
+          <%= error %>
+          <% if (locals.resendEmail) { %>
+            <br><a href="/resend-verification?email=<%= encodeURIComponent(resendEmail) %>"
+                   style="color:inherit;font-weight:700;text-decoration:underline;">
+              Resend verification email →
+            </a>
+          <% } %>
+        </div>
       <% } %>
 
       <form method="POST" action="/login" novalidate>
