@@ -213,6 +213,7 @@ router.get('/forgot-password', (req, res) => {
 
 // ── POST /forgot-password ─────────────────────────────────────────────────────
 router.post('/forgot-password', async (req, res) => {
+  console.log('[auth] POST /forgot-password hit, body:', req.body);
   const render = (error, success) => res.render('auth/forgot-password', {
     title: 'Forgot Password | Workmedix', description: 'Reset your Workmedix account password.',
     error, success
