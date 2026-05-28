@@ -14,7 +14,7 @@ function requireAdmin(req, res, next) {
 function requireClientAdmin(req, res, next) {
   if (!req.session.user) return res.redirect('/login');
   const { role } = req.session.user;
-  if (!['admin', 'staff', 'client_admin'].includes(role)) return res.redirect('/portal');
+  if (!['admin', 'staff', 'client_admin', 'client'].includes(role)) return res.redirect('/portal');
   next();
 }
 

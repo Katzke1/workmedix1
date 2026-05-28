@@ -133,7 +133,7 @@ router.post('/register', (req, res) => {
 
   const result = db.prepare(`
     INSERT INTO users (name, email, password_hash, role, company_name, company_id, email_verified, verify_token)
-    VALUES (?, ?, ?, 'client_admin', ?, ?, 0, ?)
+    VALUES (?, ?, ?, 'client', ?, ?, 0, ?)
   `).run(name.trim(), email.toLowerCase().trim(), hash, cname, companyId, verifyToken);
 
   const userId = result.lastInsertRowid;
@@ -153,7 +153,7 @@ router.post('/register', (req, res) => {
     id            : userId,
     name          : name.trim(),
     email         : email.toLowerCase().trim(),
-    role          : 'client_admin',
+    role          : 'client',
     company_name  : company_name ? company_name.trim() : null,
     company_id    : companyId,
     email_verified: 0,
