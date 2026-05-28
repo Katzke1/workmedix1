@@ -25,6 +25,11 @@
       <h2>Sign In</h2>
       <p class="sub">Enter your credentials to continue.</p>
 
+      <% if (locals.msg === 'verify') { %>
+        <div class="alert alert-success">
+          ✓ Account created! Check your inbox for a verification link and click it to activate your account before signing in.
+        </div>
+      <% } %>
       <% if (locals.msg === 'contact') { %>
         <div class="alert alert-success">✓ Message sent! Our team will be in touch within one business day.</div>
       <% } %>

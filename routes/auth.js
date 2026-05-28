@@ -157,17 +157,8 @@ router.post('/register', (req, res) => {
     console.error('[auth] verify email failed:', e.message)
   );
 
-  req.session.user = {
-    id            : userId,
-    name          : name.trim(),
-    email         : email.toLowerCase().trim(),
-    role          : 'client',
-    company_name  : company_name ? company_name.trim() : null,
-    company_id    : companyId,
-    email_verified: 0,
-  };
-
-  res.redirect('/portal');
+  // Do NOT log them in yet — they must verify their email first
+  res.redirect('/login?msg=verify');
 });
 
 // ── GET /resend-verification ──────────────────────────────────────────────────
