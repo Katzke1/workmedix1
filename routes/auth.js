@@ -50,6 +50,11 @@ router.post('/login', (req, res) => {
     return render('Invalid email or password.');
   }
 
+  // Block unverified clients — admins/staff are always allowed through
+  if (!user.email_verified && !['admin', 'staff'].includes(user.role)) {
+    return render(`Your email address hasn't been verified yet. Please check your inbox for the verification link, or <a href="/resend-verification?email=${encodeURIComponent(user.email)}" style="color:inherit;font-weight:600;">click here to resend it</a>.`);
+  }
+
   db.prepare('UPDATE users SET last_login_at=CURRENT_TIMESTAMP WHERE id=?').run(user.id);
 
   req.session.user = {
@@ -160,6 +165,41 @@ router.post('/register', (req, res) => {
   };
 
   res.redirect('/portal');
+});
+
+// ── GET /resend-verification ──────────────────────────────────────────────────
+router.get('/resend-verification', (req, res) => {
+  res.render('auth/resend-verification', {
+    title       : 'Resend Verification | Workmedix',
+    description : 'Resend your email verification link.',
+    prefillEmail: req.query.email || '',
+    error       : null,
+    success     : null,
+  });
+});
+
+// ── POST /resend-verification ─────────────────────────────────────────────────
+router.post('/resend-verification', async (req, res) => {
+  const render = (error, success) => res.render('auth/resend-verification', {
+    title: 'Resend Verification | Workmedix', description: 'Resend your email verification link.',
+    prefillEmail: req.body.email || '', error, success,
+  });
+
+  const { email } = req.body;
+  if (!email?.trim()) return render('Please enter your email address.', null);
+
+  const user = db.prepare('SELECT * FROM users WHERE email=?').get(email.toLowerCase().trim());
+  const ok   = 'If that email is registered and unverified, we\'ve sent a new link. Check your inbox.';
+
+  if (user && !user.email_verified) {
+    const token = crypto.randomBytes(32).toString('hex');
+    db.prepare('UPDATE users SET verify_token=? WHERE id=?').run(token, user.id);
+    sendVerificationEmail(user.email, user.name, token).catch(e =>
+      console.error('[auth] resend verify failed:', e.message)
+    );
+  }
+
+  render(null, ok);
 });
 
 // ── GET /verify/:token ────────────────────────────────────────────────────────

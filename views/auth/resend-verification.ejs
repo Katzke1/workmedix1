@@ -1,0 +1,61 @@
+<%- include('../partials/head') %>
+<body>
+<div class="auth-page">
+
+  <!-- Left panel -->
+  <div class="auth-left">
+    <div class="auth-left-content">
+      <a href="/" class="auth-logo">
+        <img src="/images/logo-white.png" alt="Workmedix">
+      </a>
+      <h2>Verify your email.</h2>
+      <p>We send a one-time verification link to your email address when you register. Click the link in that email to activate your account.</p>
+      <div style="margin-top:2rem;padding:1.5rem;background:rgba(255,255,255,.07);border-radius:12px;border:1px solid rgba(255,255,255,.12);">
+        <p style="color:rgba(255,255,255,.55);font-size:.82rem;margin-bottom:.5rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;">Didn't get the email?</p>
+        <p style="color:rgba(255,255,255,.75);font-size:.9rem;margin:0;">Check your spam folder, or enter your email below to resend the link.</p>
+      </div>
+    </div>
+    <div class="auth-left-footer">&copy; <%= new Date().getFullYear() %> Workmedix. All rights reserved.</div>
+  </div>
+
+  <!-- Right panel -->
+  <div class="auth-right">
+    <div class="auth-card">
+      <h2>Resend Verification</h2>
+      <p class="sub">Enter your email and we'll send a new link.</p>
+
+      <% if (error) { %>
+        <div class="alert alert-danger"><%- error %></div>
+      <% } %>
+      <% if (success) { %>
+        <div class="alert alert-success">✓ <%= success %></div>
+      <% } %>
+
+      <% if (!success) { %>
+      <form method="POST" action="/resend-verification" novalidate>
+        <%- include('../partials/csrf') %>
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address</label>
+          <input type="email" id="email" name="email" class="form-control"
+                 value="<%= prefillEmail %>"
+                 placeholder="you@company.co.za" required autocomplete="email">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top:.5rem;">
+          Send Verification Link →
+        </button>
+      </form>
+      <% } %>
+
+      <div class="auth-footer">
+        Already verified? <a href="/login">Sign in here</a>
+      </div>
+      <div style="text-align:center;margin-top:.75rem;">
+        <a href="/" style="font-size:.82rem;color:var(--mid-grey);">&larr; Back to website</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script src="/js/main.js"></script>
+</body>
+</html>
