@@ -7,31 +7,23 @@ const dbPath = process.env.DB_PATH || path.join(__dirname, '..', 'workmedix.db')
 const db     = new Database(dbPath);
 db.pragma('journal_mode = WAL');
 
-const applied = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='_migrations'`).get();
-if (!applied) {
-  console.log('[002] _migrations table not found — skipping (run setup first)');
-  db.close();
-  return;
-}
-
-function migrationApplied(name) {
+function migrationApplied(version) {
   try {
-    return !!db.prepare('SELECT 1 FROM _migrations WHERE name=?').get(name);
+    return !!db.prepare('SELECT 1 FROM schema_migrations WHERE version=?').get(version);
   } catch { return false; }
 }
 
-function recordMigration(name) {
-  db.prepare('INSERT OR IGNORE INTO _migrations (name) VALUES (?)').run(name);
+function recordMigration(version) {
+  db.prepare('INSERT OR IGNORE INTO schema_migrations (version) VALUES (?)').run(version);
 }
 
 // ── 002a: expand role CHECK constraint ────────────────────────────────────────
-// SQLite does not support ALTER TABLE ... MODIFY, so we use the rename trick.
 if (!migrationApplied('002a_role_constraint')) {
   console.log('[002] Expanding users.role CHECK constraint…');
 
-  db.exec(`
-    PRAGMA foreign_keys = OFF;
+  db.exec(`PRAGMA foreign_keys = OFF`);
 
+  db.exec(`
     CREATE TABLE users_new (
       id                        INTEGER  PRIMARY KEY AUTOINCREMENT,
       name                      TEXT     NOT NULL,
@@ -48,8 +40,10 @@ if (!migrationApplied('002a_role_constraint')) {
       last_login_at             DATETIME,
       password_reset_token      TEXT,
       password_reset_expires_at DATETIME
-    );
+    )
+  `);
 
+  db.exec(`
     INSERT INTO users_new
       SELECT
         id, name, email, password_hash, role, company_name, created_at,
@@ -57,13 +51,12 @@ if (!migrationApplied('002a_role_constraint')) {
         verify_token,
         company_id, phone, last_login_at,
         password_reset_token, password_reset_expires_at
-      FROM users;
-
-    DROP TABLE users;
-    ALTER TABLE users_new RENAME TO users;
-
-    PRAGMA foreign_keys = ON;
+      FROM users
   `);
+
+  db.exec(`DROP TABLE users`);
+  db.exec(`ALTER TABLE users_new RENAME TO users`);
+  db.exec(`PRAGMA foreign_keys = ON`);
 
   recordMigration('002a_role_constraint');
   console.log('[002] ✓ users.role CHECK constraint expanded');
