@@ -14,7 +14,9 @@ router.get('/', (req, res) => {
     title        : 'Workmedix | Workplace Health Screening Johannesburg',
     description  : 'Professional workplace health screening services in Johannesburg. Pre-employment medicals, occupational health, drug testing and fitness-for-duty assessments.',
     page         : 'home',
-    canonicalPath: '/'
+    canonicalPath: '/',
+    msg          : req.query.msg || null,
+    err          : req.query.err || null,
   });
 });
 

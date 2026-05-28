@@ -393,6 +393,12 @@
       <!-- Form side -->
       <div class="contact-form-wrap">
         <h3>Send Us a Message</h3>
+        <% if (locals.msg === 'contact') { %>
+          <div class="alert alert-success" style="margin-bottom:1.25rem;">✅ Message sent! We'll be in touch within one business day.</div>
+        <% } %>
+        <% if (locals.err === 'contact') { %>
+          <div class="alert alert-danger" style="margin-bottom:1.25rem;">Please fill in all required fields.</div>
+        <% } %>
         <form method="POST" action="/contact" novalidate>
           <%- include('partials/csrf') %>
           <div class="form-row">
