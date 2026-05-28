@@ -222,17 +222,19 @@ router.post('/forgot-password', async (req, res) => {
   if (!email?.trim()) return render('Please enter your email address.', null);
 
   const user = db.prepare('SELECT * FROM users WHERE email=?').get(email.toLowerCase().trim());
-  // Always show the same message to prevent user enumeration
   const successMsg = 'If an account with that email exists, a reset link has been sent.';
 
   if (user) {
-    const token    = crypto.randomBytes(32).toString('hex');
-    const expiry   = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
+    const token  = crypto.randomBytes(32).toString('hex');
+    const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
     db.prepare('UPDATE users SET password_reset_token=?, password_reset_expires_at=? WHERE id=?')
       .run(token, expiry, user.id);
-    sendPasswordResetEmail(user.email, user.name, token).catch(e =>
-      console.error('[auth] reset email failed:', e.message)
-    );
+    console.log('[auth] sending reset email to', user.email);
+    sendPasswordResetEmail(user.email, user.name, token)
+      .then(() => console.log('[auth] reset email sent'))
+      .catch(e => console.error('[auth] reset email failed:', e.message));
+  } else {
+    console.log('[auth] reset requested for unknown email:', email.toLowerCase().trim());
   }
 
   render(null, successMsg);
