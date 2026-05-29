@@ -19,13 +19,13 @@
         <div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
         <div><div class="stat-num"><%- fmt(totals.rev) %></div><div class="stat-label">Total Revenue <%= year %></div></div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card stat-card-danger">
         <div class="stat-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
-        <div><div class="stat-num" style="color:#ef4444"><%- fmt(totals.cost) %></div><div class="stat-label">Total Cost <%= year %></div></div>
+        <div><div class="stat-num stat-num-red"><%- fmt(totals.cost) %></div><div class="stat-label">Total Cost <%= year %></div></div>
       </div>
       <div class="stat-card">
         <div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
-        <div><div class="stat-num" style="color:#20bf6b"><%- fmt(totals.profit) %></div><div class="stat-label">Total Profit <%= year %></div></div>
+        <div><div class="stat-num stat-num-green"><%- fmt(totals.profit) %></div><div class="stat-label">Total Profit <%= year %></div></div>
       </div>
       <div class="stat-card">
         <div class="stat-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/></svg></div>

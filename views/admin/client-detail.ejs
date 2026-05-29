@@ -47,12 +47,12 @@
           </thead>
           <tbody>
             <% if (bookings.length === 0) { %>
-              <tr><td class="table-empty" colspan="5">No bookings for this clientUser.</td></tr>
+              <tr><td class="table-empty" colspan="5">No bookings for this client.</td></tr>
             <% } else { bookings.forEach(b => { %>
               <tr>
                 <td><strong><%= b.service_type %></strong></td>
                 <td><%= b.preferred_date %></td>
-                <td><span class="badge badge-<%= b.status %>"><%= b.status %></span></td>
+                <td><span class="badge badge-<%= b.status %>"><%= b.status.replace(/_/g,' ') %></span></td>
                 <td style="color:var(--text-light);font-size:.85rem;max-width:180px;"><%= b.notes ? b.notes.substring(0,60)+'…' : '—' %></td>
                 <td style="color:var(--mid-grey);font-size:.82rem;"><%= new Date(b.created_at).toLocaleDateString('en-ZA') %></td>
               </tr>

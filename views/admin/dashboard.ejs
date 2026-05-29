@@ -28,7 +28,7 @@
     </div>
 
     <!-- Stats row -->
-    <div class="stats-grid">
+    <div class="stats-grid stats-grid-5">
       <div class="stat-card">
         <div class="stat-icon blue">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
@@ -65,12 +65,12 @@
           <div class="stat-label">Certificates</div>
         </div>
       </div>
-      <div class="stat-card" style="border-left:3px solid var(--danger);">
-        <div class="stat-icon" style="background:rgba(225,29,72,.1);">
-          <svg viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <div class="stat-card stat-card-danger">
+        <div class="stat-icon red">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         </div>
         <div>
-          <div class="stat-num" style="color:var(--danger);"><%= stats.expiringCerts %></div>
+          <div class="stat-num stat-num-danger"><%= stats.expiringCerts %></div>
           <div class="stat-label">Expiring (&le;60d)</div>
         </div>
       </div>
@@ -97,7 +97,7 @@
             </div>
             <div style="text-align:right;">
               <div style="font-size:.82rem;font-weight:600;"><%= b.preferred_date %></div>
-              <span class="badge badge-<%= b.status %>" style="font-size:.72rem;"><%= b.status %></span>
+              <span class="badge badge-<%= b.status %>"><%= b.status.replace(/_/g,' ') %></span>
             </div>
           </a>
           <% }) %>
@@ -138,8 +138,8 @@
         <div class="card-body" style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;text-align:center;">
           <% Object.entries(pipelineSummary).forEach(([status, count]) => { %>
           <div>
-            <div style="font-size:1.5rem;font-weight:700;color:var(--primary);"><%= count %></div>
-            <div style="font-size:.78rem;color:var(--ink-muted);text-transform:capitalize;"><%= status.replace('_',' ') %></div>
+            <div class="pipeline-num"><%= count %></div>
+            <div style="font-size:.78rem;color:var(--ink-muted);text-transform:capitalize;margin-top:.2rem;"><%= status.replace(/_/g,' ') %></div>
           </div>
           <% }) %>
         </div>
@@ -152,7 +152,7 @@
           <a href="/admin/crm/finance" style="font-size:.82rem;color:var(--primary);">Finance →</a>
         </div>
         <div class="card-body">
-          <div style="font-size:2rem;font-weight:800;color:var(--primary);">
+          <div class="revenue-num">
             R<%= revenueMonth.toLocaleString('en-ZA', {minimumFractionDigits:0}) %>
           </div>
           <div style="font-size:.82rem;color:var(--ink-muted);margin-top:.25rem;">

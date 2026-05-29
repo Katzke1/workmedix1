@@ -49,9 +49,9 @@
   <div class="sidebar-footer">
     <div class="sidebar-user">
       <div class="sidebar-avatar"><%= user.name.charAt(0).toUpperCase() %></div>
-      <div>
-        <div class="sidebar-user-name"><%= user.name %></div>
-        <div class="sidebar-user-email"><%= user.company_name || user.email %></div>
+      <div style="min-width:0;flex:1;">
+        <div class="sidebar-user-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><%= user.name %></div>
+        <div class="sidebar-user-email" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><%= user.company_name || user.email %></div>
       </div>
     </div>
     <a href="/logout" class="sidebar-logout">

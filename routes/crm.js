@@ -332,6 +332,8 @@ router.post('/jobs/:id', (req, res) => {
 });
 
 router.post('/jobs/:id/status', (req, res) => {
+  const allowed = ['quoted','confirmed','in_progress','completed','invoiced','paid','cancelled'];
+  if (!allowed.includes(req.body.status)) return res.redirect(req.headers.referer || '/admin/crm/jobs');
   db.prepare('UPDATE crm_jobs SET status=? WHERE id=?').run(req.body.status, req.params.id);
   res.redirect(req.headers.referer || '/admin/crm/jobs');
 });

@@ -6,7 +6,7 @@
   <div class="app-topbar">
     <div class="app-topbar-title">
       <h2>Booking #<%= booking.id %></h2>
-      <p><%= booking.service_type %> — <span class="badge badge-<%= booking.status %>"><%= booking.status %></span></p>
+      <p><%= booking.service_type %> — <span class="badge badge-<%= booking.status %>"><%= booking.status.replace(/_/g,' ') %></span></p>
     </div>
     <div class="topbar-actions">
       <a href="/admin/bookings" class="btn btn-outline-dark btn-sm">← All Bookings</a>
@@ -47,7 +47,7 @@
 
         <!-- Create CRM job (visible when completed) -->
         <% if (booking.status === 'completed' && !booking.crm_job_id) { %>
-        <div class="card" style="border-left:3px solid var(--accent);">
+        <div class="card card-info-border">
           <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;gap:1rem;">
             <div>
               <strong>Ready to invoice?</strong>
@@ -61,7 +61,7 @@
         </div>
         <% } %>
         <% if (booking.crm_job_id) { %>
-        <div class="card" style="border-left:3px solid #10B981;">
+        <div class="card card-success-border">
           <div class="card-body">
             <strong style="color:#10B981;">CRM Job created</strong> —
             <a href="/admin/crm/jobs/<%= booking.crm_job_id %>">View Job #<%= booking.crm_job_id %> →</a>
@@ -134,11 +134,6 @@
   </div>
 </main>
 </div>
-<style>
-.detail-list { display:grid; grid-template-columns:140px 1fr; gap:.35rem 1rem; font-size:.92rem; }
-.detail-list dt { font-weight:600; color:var(--ink-muted); white-space:nowrap; }
-.detail-list dd { margin:0; color:var(--ink); }
-</style>
 <script>
 document.querySelector('[name="status"]')?.addEventListener('change', function() {
   document.getElementById('cancel-reason-group').style.display = this.value === 'cancelled' ? 'block' : 'none';

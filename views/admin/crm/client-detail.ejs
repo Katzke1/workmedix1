@@ -156,7 +156,7 @@
                   <div style="font-size:.78rem;color:var(--ink-muted);">by <%= b.submitted_by %></div>
                 </div>
                 <div style="text-align:right;">
-                  <span class="badge badge-<%= b.status %>"><%= b.status %></span>
+                  <span class="badge badge-<%= b.status %>"><%= b.status.replace(/_/g,' ') %></span>
                   <div style="font-size:.75rem;color:var(--ink-muted);margin-top:.15rem;"><%= b.preferred_date || '—' %></div>
                 </div>
               </div>

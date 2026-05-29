@@ -20,7 +20,7 @@
       <% ['', 'pending', 'confirmed', 'in_progress', 'completed', 'cancelled'].forEach(s => { %>
       <a href="/admin/bookings<%= s ? '?status='+s : '' %>"
          class="btn btn-sm <%= filterStatus===s ? 'btn-primary' : 'btn-outline-dark' %>">
-        <%= s || 'All' %>
+        <%= s ? s.replace(/_/g,' ').replace(/^\w/, c=>c.toUpperCase()) : 'All' %>
       </a>
       <% }) %>
     </div>

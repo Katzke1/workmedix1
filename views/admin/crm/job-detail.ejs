@@ -23,13 +23,13 @@
         <div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
         <div><div class="stat-num"><%- fmt(job.rev) %></div><div class="stat-label">Revenue</div></div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card stat-card-danger">
         <div class="stat-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
-        <div><div class="stat-num" style="color:#ef4444"><%- fmt(job.unit_cost * job.num_people + job.travel_cost) %></div><div class="stat-label">Total Cost</div></div>
+        <div><div class="stat-num stat-num-red"><%- fmt(job.unit_cost * job.num_people + job.travel_cost) %></div><div class="stat-label">Total Cost</div></div>
       </div>
       <div class="stat-card">
         <div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
-        <div><div class="stat-num" style="color:<%= job.profit>=0?'#20bf6b':'#ef4444' %>"><%- fmt(job.profit) %></div><div class="stat-label">Profit</div></div>
+        <div><div class="stat-num <%= job.profit>=0 ? 'stat-num-green' : 'stat-num-red' %>"><%- fmt(job.profit) %></div><div class="stat-label">Profit</div></div>
       </div>
       <div class="stat-card">
         <div class="stat-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>

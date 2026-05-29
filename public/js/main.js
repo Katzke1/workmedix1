@@ -351,3 +351,65 @@ document.querySelectorAll('.password-toggle').forEach(btn => {
 
   allReveal.forEach(el => io.observe(el));
 })();
+
+// ── Portal/admin sidebar — mobile toggle ──────────────────────────
+(function () {
+  const sidebar = document.querySelector('.sidebar');
+  if (!sidebar) return;                          // not a portal page
+
+  const topbar = document.querySelector('.app-topbar');
+  if (!topbar) return;
+
+  // Inject toggle button before topbar title
+  const toggle = document.createElement('button');
+  toggle.className = 'sidebar-toggle';
+  toggle.setAttribute('aria-label', 'Open navigation');
+  toggle.setAttribute('aria-expanded', 'false');
+  toggle.innerHTML =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+    'stroke-linecap="round" stroke-linejoin="round">' +
+    '<line x1="3" y1="6"  x2="21" y2="6"/>' +
+    '<line x1="3" y1="12" x2="21" y2="12"/>' +
+    '<line x1="3" y1="18" x2="21" y2="18"/>' +
+    '</svg>';
+  topbar.prepend(toggle);
+
+  // Inject overlay
+  const overlay = document.createElement('div');
+  overlay.className = 'sidebar-overlay';
+  document.body.appendChild(overlay);
+
+  function openSidebar() {
+    sidebar.classList.add('open');
+    overlay.classList.add('visible');
+    toggle.setAttribute('aria-expanded', 'true');
+    toggle.innerHTML =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+      'stroke-linecap="round" stroke-linejoin="round">' +
+      '<line x1="18" y1="6" x2="6" y2="18"/>' +
+      '<line x1="6"  y1="6" x2="18" y2="18"/>' +
+      '</svg>';
+  }
+  function closeSidebar() {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('visible');
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.innerHTML =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+      'stroke-linecap="round" stroke-linejoin="round">' +
+      '<line x1="3" y1="6"  x2="21" y2="6"/>' +
+      '<line x1="3" y1="12" x2="21" y2="12"/>' +
+      '<line x1="3" y1="18" x2="21" y2="18"/>' +
+      '</svg>';
+  }
+
+  toggle.addEventListener('click', function () {
+    sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+  });
+  overlay.addEventListener('click', closeSidebar);
+
+  // Close on resize back to desktop
+  window.addEventListener('resize', function () {
+    if (window.innerWidth > 768) closeSidebar();
+  });
+})();
