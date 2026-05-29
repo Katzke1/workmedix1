@@ -73,6 +73,9 @@ app.use(cookieParser());
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+// Asset version — changes on every server restart / deployment, busts browser CSS cache
+app.locals.assetVersion = Date.now();
+
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use(express.json({ limit: '2mb' }));
 
