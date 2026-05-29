@@ -9,13 +9,43 @@
       <p>Client record<% if (clientUser.company_name) { %> · <%= clientUser.company_name %><% } %></p>
     </div>
     <div class="topbar-actions">
+      <a href="/admin/clients/<%= clientUser.id %>?edit=<%= editing ? '0' : '1' %>" class="btn btn-outline-dark btn-sm"><%= editing ? 'Cancel' : 'Edit Client' %></a>
       <a href="/admin/clients" style="font-size:.85rem;color:var(--mid-grey);">← Back to clients</a>
     </div>
   </div>
 
   <div class="app-content">
+    <% if (locals.success) { %><div class="alert alert-success" data-autodismiss><%= success %></div><% } %>
+    <% if (locals.error)   { %><div class="alert alert-danger"><%= error %></div><% } %>
+
     <!-- Client info -->
     <div class="card" style="margin-bottom:1.5rem;">
+      <% if (editing) { %>
+      <div class="card-header"><h3>Edit Client Details</h3></div>
+      <div class="card-body">
+        <form method="POST" action="/admin/clients/<%= clientUser.id %>">
+          <%- include('../partials/csrf') %>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Full Name *</label>
+              <input type="text" name="name" class="form-control" value="<%= clientUser.name %>" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email Address *</label>
+              <input type="email" name="email" class="form-control" value="<%= clientUser.email %>" required>
+            </div>
+          </div>
+          <div class="form-group" style="max-width:320px;">
+            <label class="form-label">Phone</label>
+            <input type="tel" name="phone" class="form-control" value="<%= clientUser.phone || '' %>">
+          </div>
+          <div style="display:flex;gap:.5rem;margin-top:.25rem;">
+            <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+            <a href="/admin/clients/<%= clientUser.id %>" class="btn btn-outline-dark btn-sm">Cancel</a>
+          </div>
+        </form>
+      </div>
+      <% } else { %>
       <div class="card-body" style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:center;">
         <div style="width:60px;height:60px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:800;color:white;flex-shrink:0;">
           <%= clientUser.name.charAt(0).toUpperCase() %>
@@ -33,6 +63,7 @@
           <a href="/admin/certificates?client=<%= clientUser.id %>" class="btn btn-outline-dark btn-sm">Issue Certificate</a>
         </div>
       </div>
+      <% } %>
     </div>
 
     <!-- Bookings -->

@@ -87,40 +87,50 @@
 (function () {
   const form    = document.getElementById('contact-form');
   const success = document.getElementById('contact-success');
+  const errBanner = document.getElementById('contact-error');
   if (!form) return;
 
-  form.addEventListener('submit', function (e) {
+  form.addEventListener('submit', async function (e) {
     e.preventDefault();
 
-    // Simple validation
-    const fields   = form.querySelectorAll('[required]');
-    let   isValid  = true;
-
+    // Client-side validation
+    const fields = form.querySelectorAll('[required]');
+    let isValid  = true;
     fields.forEach(f => {
       f.style.borderColor = '';
-      if (!f.value.trim()) {
-        f.style.borderColor = '#ef4444';
-        isValid = false;
-      }
+      if (!f.value.trim()) { f.style.borderColor = '#ef4444'; isValid = false; }
     });
-
     const emailField = form.querySelector('[type="email"]');
     if (emailField && emailField.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailField.value)) {
       emailField.style.borderColor = '#ef4444';
       isValid = false;
     }
+    if (!isValid) {
+      if (errBanner) { errBanner.style.display = 'block'; }
+      return;
+    }
+    if (errBanner) errBanner.style.display = 'none';
 
-    if (!isValid) return;
-
-    // Simulate submission (wire up to a real endpoint when ready)
-    const btn = form.querySelector('button[type="submit"]');
+    const btn = document.getElementById('contact-submit-btn');
     btn.disabled    = true;
     btn.textContent = 'Sending…';
 
-    setTimeout(() => {
+    try {
+      const data = new URLSearchParams(new FormData(form));
+      const res  = await fetch('/contact', {
+        method : 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body   : data.toString(),
+        redirect: 'manual',   // don't follow the server redirect
+      });
+      // Server always redirects (302) on success — treat any 3xx/2xx as success
       form.style.display    = 'none';
-      success.style.display = 'block';
-    }, 900);
+      if (success) success.style.display = 'block';
+    } catch (err) {
+      btn.disabled    = false;
+      btn.textContent = 'Send Message →';
+      if (errBanner) { errBanner.textContent = 'Something went wrong. Please try again.'; errBanner.style.display = 'block'; }
+    }
   });
 })();
 

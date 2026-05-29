@@ -293,10 +293,13 @@ router.post('/certificates', (req, res) => {
 router.get('/clients', (req, res) => {
   const clients = db.prepare(`
     SELECT u.*,
+      COALESCE(co.name, u.company_name) AS company_name,
       (SELECT COUNT(*) FROM bookings     WHERE user_id=u.id) booking_count,
       (SELECT COUNT(*) FROM results      WHERE user_id=u.id) result_count,
       (SELECT COUNT(*) FROM certificates WHERE user_id=u.id) cert_count
-    FROM users u WHERE u.role NOT IN ('admin','staff')
+    FROM users u
+    LEFT JOIN companies co ON u.company_id = co.id
+    WHERE u.role NOT IN ('admin','staff')
     ORDER BY u.created_at DESC
   `).all();
 
@@ -310,6 +313,11 @@ router.get('/clients', (req, res) => {
 
 router.get('/clients/:id', (req, res) => {
   const clientUser = db.prepare(`SELECT * FROM users WHERE id=? AND role NOT IN ('admin','staff')`).get(req.params.id);
+  // Prefer the proper companies table name if the user has a company_id
+  if (clientUser?.company_id) {
+    const co = db.prepare(`SELECT name FROM companies WHERE id=?`).get(clientUser.company_id);
+    if (co) clientUser.company_name = co.name;
+  }
   if (!clientUser) return res.redirect('/admin/clients');
 
   const bookings     = db.prepare(`SELECT * FROM bookings     WHERE user_id=? ORDER BY preferred_date DESC`).all(clientUser.id);
@@ -323,8 +331,25 @@ router.get('/clients/:id', (req, res) => {
     clientUser,
     bookings,
     results,
-    certificates
+    certificates,
+    editing : req.query.edit === '1',
+    success : req.query.saved ? 'Client details updated.' : null,
+    error   : null,
   });
+});
+
+router.post('/clients/:id', (req, res) => {
+  const { name, email, phone } = req.body;
+  if (!name?.trim() || !email?.trim()) {
+    return res.redirect(`/admin/clients/${req.params.id}?edit=1`);
+  }
+  const conflict = db.prepare(`SELECT id FROM users WHERE email=? AND id!=?`).get(email.trim().toLowerCase(), req.params.id);
+  if (conflict) {
+    return res.redirect(`/admin/clients/${req.params.id}?edit=1&err=email`);
+  }
+  db.prepare(`UPDATE users SET name=?, email=?, phone=? WHERE id=?`)
+    .run(name.trim(), email.trim().toLowerCase(), phone?.trim() || null, req.params.id);
+  res.redirect(`/admin/clients/${req.params.id}?saved=1`);
 });
 
 // ── Employees (cross-company) ─────────────────────────────────────────────────
