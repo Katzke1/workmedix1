@@ -21,8 +21,8 @@
           <thead>
             <tr>
               <th>Document Title</th>
-              <th>Linked Service</th>
-              <th>Uploaded</th>
+              <th class="hide-mobile">Linked Service</th>
+              <th class="hide-mobile">Uploaded</th>
               <th>Action</th>
             </tr>
           </thead>
@@ -44,10 +44,10 @@
                     <strong><%= r.title %></strong>
                   </div>
                 </td>
-                <td style="color:var(--text-light);font-size:.88rem;">
+                <td class="hide-mobile" style="color:var(--text-light);font-size:.88rem;">
                   <%= r.service_type || '—' %>
                 </td>
-                <td style="color:var(--mid-grey);font-size:.85rem;white-space:nowrap;">
+                <td class="hide-mobile" style="color:var(--mid-grey);font-size:.85rem;white-space:nowrap;">
                   <%= new Date(r.uploaded_at).toLocaleDateString('en-ZA') %>
                 </td>
                 <td>

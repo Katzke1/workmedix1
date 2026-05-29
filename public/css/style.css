@@ -132,6 +132,20 @@ section { padding: 90px 0; }
 .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 2rem; }
 .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 2rem; }
 
+/* Dashboard / detail page layout helpers (responsive via CSS, not inline styles) */
+.dash-2col-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.booking-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
 /* ── 5. Buttons ──────────────────────────────────────────── */
 .btn {
   display: inline-flex;
@@ -2864,8 +2878,13 @@ tbody tr:last-child td { border-bottom: none !important; }
 @media (max-width: 900px)  { .stats-grid-5 { grid-template-columns: repeat(2,1fr) !important; } }
 @media (max-width: 480px)  { .stats-grid-5 { grid-template-columns: 1fr !important; } }
 
-/* ── Mobile sidebar ──────────────────────────────────────────── */
+/* ── Mobile layout — full overhaul ──────────────────────────── */
 @media (max-width: 768px) {
+  /* Prevent any wide content from expanding the page */
+  .app-body { overflow-x: hidden !important; }
+  .app-main { margin-left: 0 !important; overflow-x: hidden; min-width: 0; }
+
+  /* Sidebar slides in from left */
   .sidebar {
     transform: translateX(-100%);
     transition: transform .28s cubic-bezier(.4,0,.2,1) !important;
@@ -2876,15 +2895,59 @@ tbody tr:last-child td { border-bottom: none !important; }
     transform: translateX(0) !important;
     box-shadow: 6px 0 40px rgba(0,0,0,.5) !important;
   }
-  .app-main { margin-left: 0 !important; }
+
+  /* Topbar — tighter on mobile */
+  .app-topbar { padding: 0 1rem !important; }
+  .topbar-date { display: none !important; }   /* hide date, show only title */
+  .app-topbar-title h2 { font-size: .92rem !important; }
+
+  /* Content */
   .app-content { padding: 1.25rem !important; }
-  .stats-grid { grid-template-columns: 1fr 1fr !important; gap: .85rem !important; }
   .dash-welcome-banner { padding: 1.35rem !important; }
   .dash-welcome-logo { display: none !important; }
+
+  /* Stats */
+  .stats-grid { grid-template-columns: 1fr 1fr !important; gap: .85rem !important; }
+
+  /* 2-col dashboard grids → single column */
+  .dash-2col-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  /* Quick-action 3-col → 1-col */
+  .grid-3 {
+    grid-template-columns: 1fr !important;
+    gap: .85rem !important;
+  }
+  .quick-action-card { padding: 1.2rem 1rem !important; }
+  .quick-action-card p { font-size: .82rem; }
+
+  /* Booking / client detail side-by-side grid → stack */
+  .booking-detail-grid { grid-template-columns: 1fr !important; }
+
+  /* Card headers — wrap gracefully */
+  .card-header { flex-wrap: wrap; gap: .4rem !important; }
+  .card-header h3 { flex: 1 1 auto; }
+
+  /* Tables — hide lower-priority columns */
+  .hide-mobile { display: none !important; }
+  .table-wrap  { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { min-width: 400px; }  /* allow horizontal scroll instead of squishing */
+
+  /* Topbar actions — hide verbose back-links on very small pages */
+  .topbar-actions a[href^="/admin/clients"],
+  .topbar-actions a[href^="/admin/bookings"] {
+    font-size: .78rem;
+  }
 }
+
 @media (max-width: 480px) {
   .stats-grid { grid-template-columns: 1fr !important; }
   .app-content { padding: 1rem !important; }
+  .stat-card { padding: 1rem 1.1rem !important; }
+  .stat-num  { font-size: 1.6rem !important; }
+  table { min-width: 320px; }
 }
 
 /* ── CRM KPI cards — upgraded to match design system ────────── */

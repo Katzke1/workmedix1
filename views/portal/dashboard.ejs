@@ -20,7 +20,7 @@
         <img src="/images/logo-white.png" alt="Workmedix">
       </div>
       <div class="dash-welcome-text">
-        <h3><%= company ? company.name : user.name %></h3>
+        <h3><%= locals.company ? locals.company.name : user.name %></h3>
         <p>Workmedix Client Portal &nbsp;·&nbsp; Logged in as <%= user.name %></p>
       </div>
     </div>
@@ -59,7 +59,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
         </div>
         <div>
-          <div class="stat-org-name"><%= company ? company.name : (user.company_name || '—') %></div>
+          <div class="stat-org-name"><%= locals.company ? locals.company.name : (user.company_name || '—') %></div>
           <div class="stat-label">Organisation</div>
         </div>
       </div>
@@ -76,9 +76,9 @@
           <thead>
             <tr>
               <th>Service</th>
-              <th>Preferred Date</th>
+              <th class="hide-mobile">Preferred Date</th>
               <th>Status</th>
-              <th>Submitted</th>
+              <th class="hide-mobile">Submitted</th>
             </tr>
           </thead>
           <tbody>
@@ -87,9 +87,9 @@
             <% } else { recentBookings.forEach(b => { %>
               <tr>
                 <td><strong><%= b.service_type %></strong></td>
-                <td><%= b.preferred_date %></td>
+                <td class="hide-mobile"><%= b.preferred_date %></td>
                 <td><span class="badge badge-<%= b.status %>"><%= b.status.replace(/_/g,' ') %></span></td>
-                <td style="color:var(--mid-grey);font-size:.85rem;"><%= new Date(b.created_at).toLocaleDateString('en-ZA') %></td>
+                <td class="hide-mobile" style="color:var(--mid-grey);font-size:.85rem;"><%= new Date(b.created_at).toLocaleDateString('en-ZA') %></td>
               </tr>
             <% }) } %>
           </tbody>
@@ -101,7 +101,7 @@
     </div>
 
     <!-- Quick actions -->
-    <div class="grid-3" style="margin-top:1.5rem;">
+    <div class="grid-3" style="margin-top:1.5rem;margin-bottom:0;">
       <a href="/portal/results" class="quick-action-card">
         <div class="quick-action-icon" style="background:linear-gradient(135deg,#0c2461,#2e86de);">
           <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>

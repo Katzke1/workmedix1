@@ -36,11 +36,11 @@
             <tr>
               <th>#</th>
               <th>Client</th>
-              <th>Company</th>
+              <th class="hide-mobile">Company</th>
               <th>Service</th>
               <th>Date</th>
-              <th>Employees</th>
-              <th>Submitted</th>
+              <th class="hide-mobile">Employees</th>
+              <th class="hide-mobile">Submitted</th>
               <th>Status</th>
               <th></th>
             </tr>
@@ -52,11 +52,11 @@
               <tr>
                 <td style="color:var(--mid-grey);font-size:.82rem;">#<%= b.id %></td>
                 <td><strong><%= b.client_name %></strong></td>
-                <td style="color:var(--ink-muted);font-size:.88rem;"><%= b.company_name || '—' %></td>
+                <td class="hide-mobile" style="color:var(--ink-muted);font-size:.88rem;"><%= b.company_name || '—' %></td>
                 <td style="font-size:.9rem;"><%= b.service_type %></td>
                 <td style="font-size:.88rem;font-weight:600;white-space:nowrap;"><%= b.preferred_date || b.scheduled_at?.substring(0,10) || '—' %></td>
-                <td style="text-align:center;font-size:.88rem;"><%= b.num_people || '—' %></td>
-                <td style="color:var(--mid-grey);font-size:.82rem;white-space:nowrap;">
+                <td class="hide-mobile" style="text-align:center;font-size:.88rem;"><%= b.num_people || '—' %></td>
+                <td class="hide-mobile" style="color:var(--mid-grey);font-size:.82rem;white-space:nowrap;">
                   <%= new Date(b.created_at).toLocaleDateString('en-ZA') %>
                 </td>
                 <td><span class="badge badge-<%= b.status %>"><%= b.status.replace('_',' ') %></span></td>
