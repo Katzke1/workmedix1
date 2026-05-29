@@ -260,14 +260,20 @@ router.post('/forgot-password', async (req, res) => {
   const successMsg = 'If an account with that email exists, a reset link has been sent.';
 
   if (user) {
-    const token  = crypto.randomBytes(32).toString('hex');
-    const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-    db.prepare('UPDATE users SET password_reset_token=?, password_reset_expires_at=? WHERE id=?')
-      .run(token, expiry, user.id);
-    console.log('[auth] sending reset email to', user.email);
-    sendPasswordResetEmail(user.email, user.name, token)
-      .then(() => console.log('[auth] reset email sent'))
-      .catch(e => console.error('[auth] reset email failed:', e.message));
+    const token = crypto.randomBytes(32).toString('hex');
+    // Store expiry in SQLite datetime format so datetime("now") comparison works correctly
+    const expiry = new Date(Date.now() + 60 * 60 * 1000)
+      .toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');
+    try {
+      db.prepare('UPDATE users SET password_reset_token=?, password_reset_expires_at=? WHERE id=?')
+        .run(token, expiry, user.id);
+      console.log('[auth] sending reset email to', user.email);
+      sendPasswordResetEmail(user.email, user.name, token)
+        .then(() => console.log('[auth] reset email sent'))
+        .catch(e => console.error('[auth] reset email failed:', e.message));
+    } catch (e) {
+      console.error('[auth] reset token save failed:', e.message);
+    }
   } else {
     console.log('[auth] reset requested for unknown email:', email.toLowerCase().trim());
   }
@@ -277,42 +283,71 @@ router.post('/forgot-password', async (req, res) => {
 
 // ── GET /reset-password/:token ────────────────────────────────────────────────
 router.get('/reset-password/:token', (req, res) => {
-  const user = db.prepare(
-    'SELECT * FROM users WHERE password_reset_token=? AND password_reset_expires_at > datetime("now")'
-  ).get(req.params.token);
+  const expiredRender = () => res.render('auth/login', {
+    title      : 'Login | Workmedix',
+    description: 'Login to your Workmedix portal.',
+    error      : 'This reset link is invalid or has expired. Please request a new one.',
+    msg        : null,
+    resendEmail: null,
+  });
 
-  if (!user) {
-    return res.render('auth/login', {
-      title: 'Login | Workmedix', description: 'Login to your Workmedix portal.',
-      error: 'This reset link is invalid or has expired. Please request a new one.', msg: null
-    });
+  let user;
+  try {
+    user = db.prepare(
+      `SELECT * FROM users
+       WHERE password_reset_token=?
+         AND password_reset_expires_at IS NOT NULL
+         AND password_reset_expires_at > datetime('now')`
+    ).get(req.params.token);
+  } catch (e) {
+    console.error('[auth] reset lookup failed:', e.message);
+    return expiredRender();
   }
 
+  if (!user) return expiredRender();
+
   res.render('auth/reset-password', {
-    title  : 'Reset Password | Workmedix',
+    title      : 'Reset Password | Workmedix',
     description: 'Set a new password for your Workmedix account.',
-    token  : req.params.token,
-    error  : null,
+    token      : req.params.token,
+    error      : null,
   });
 });
 
 // ── POST /reset-password/:token ───────────────────────────────────────────────
 router.post('/reset-password/:token', (req, res) => {
-  const user = db.prepare(
-    'SELECT * FROM users WHERE password_reset_token=? AND password_reset_expires_at > datetime("now")'
-  ).get(req.params.token);
-
-  const invalidRender = () => res.render('auth/login', {
-    title: 'Login | Workmedix', description: 'Login.', error: 'Reset link invalid or expired.', msg: null
+  const expiredRender = () => res.render('auth/login', {
+    title      : 'Login | Workmedix',
+    description: 'Login to your Workmedix portal.',
+    error      : 'This reset link is invalid or has expired. Please request a new one.',
+    msg        : null,
+    resendEmail: null,
   });
 
-  if (!user) return invalidRender();
+  let user;
+  try {
+    user = db.prepare(
+      `SELECT * FROM users
+       WHERE password_reset_token=?
+         AND password_reset_expires_at IS NOT NULL
+         AND password_reset_expires_at > datetime('now')`
+    ).get(req.params.token);
+  } catch (e) {
+    console.error('[auth] reset lookup failed:', e.message);
+    return expiredRender();
+  }
+
+  if (!user) return expiredRender();
 
   const { new_password, confirm_password } = req.body;
   if (!new_password || new_password.length < 8 || new_password !== confirm_password) {
     return res.render('auth/reset-password', {
-      title: 'Reset Password | Workmedix', description: '', token: req.params.token,
-      error: new_password !== confirm_password ? 'Passwords do not match.' : 'Password must be at least 8 characters.',
+      title      : 'Reset Password | Workmedix',
+      description: 'Set a new password for your Workmedix account.',
+      token      : req.params.token,
+      error      : new_password !== confirm_password
+        ? 'Passwords do not match.'
+        : 'Password must be at least 8 characters.',
     });
   }
 
