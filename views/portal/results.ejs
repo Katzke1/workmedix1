@@ -5,70 +5,337 @@
 <main class="app-main">
   <div class="app-topbar">
     <div class="app-topbar-title">
-      <h2>My Results</h2>
-      <p>Screening results uploaded by Workmedix</p>
+      <h2>Medical Results</h2>
+      <p>Audiometry &amp; spirometry reports for your employees</p>
     </div>
   </div>
 
   <div class="app-content">
-    <div class="card">
-      <div class="card-header">
-        <h3>Available Results</h3>
-        <span style="font-size:.85rem;color:var(--mid-grey);"><%= results.length %> document<%= results.length !== 1 ? 's' : '' %></span>
+
+    <%
+      const fmtDate = iso => iso
+        ? new Date(iso).toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' })
+        : '—';
+    %>
+
+    <% if (patients.length === 0 && extras.length === 0) { %>
+      <div class="card">
+        <div class="card-body" style="text-align:center;padding:3rem 1rem;">
+          <div class="med-empty-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="40" height="40"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <h3 style="margin:.75rem 0 .35rem;">No results yet</h3>
+          <p style="color:var(--mid-grey);max-width:420px;margin:0 auto;">
+            Reports appear here automatically after each employee is screened. Audiometry and spirometry PDFs land on the matching person by ID number.
+          </p>
+        </div>
       </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Document Title</th>
-              <th class="hide-mobile">Linked Service</th>
-              <th class="hide-mobile">Uploaded</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% if (results.length === 0) { %>
-              <tr>
-                <td class="table-empty" colspan="4">
-                  No results available yet.<br>
-                  <span style="font-size:.85rem;">Results will appear here after your screening is completed and reviewed.</span>
-                </td>
-              </tr>
-            <% } else { results.forEach(r => { %>
-              <tr>
-                <td>
-                  <div style="display:flex;align-items:center;gap:.75rem;">
-                    <div style="width:34px;height:34px;background:linear-gradient(135deg,var(--primary),var(--accent));border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                    </div>
-                    <strong><%= r.title %></strong>
-                  </div>
-                </td>
-                <td class="hide-mobile" style="color:var(--text-light);font-size:.88rem;">
-                  <%= r.service_type || '—' %>
-                </td>
-                <td class="hide-mobile" style="color:var(--mid-grey);font-size:.85rem;white-space:nowrap;">
-                  <%= new Date(r.uploaded_at).toLocaleDateString('en-ZA') %>
-                </td>
-                <td>
-                  <a href="/portal/results/<%= r.id %>/download"
-                     class="btn btn-outline-dark btn-sm">
-                    ↓ Download
-                  </a>
-                </td>
-              </tr>
-            <% }) } %>
-          </tbody>
-        </table>
+    <% } else { %>
+
+      <!-- ── Toolbar ─────────────────────────────────────────── -->
+      <div class="med-toolbar">
+        <div class="med-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="med-search" placeholder="Search by name or ID number…" autocomplete="off">
+        </div>
+
+        <div class="med-control">
+          <label>Done between</label>
+          <div class="med-dates">
+            <input type="date" id="med-from">
+            <span>–</span>
+            <input type="date" id="med-to">
+          </div>
+        </div>
+
+        <div class="med-control">
+          <label>Show</label>
+          <select id="med-show">
+            <option value="all">All employees</option>
+            <option value="complete">Complete (audio + spiro)</option>
+            <option value="missing-audio">Missing audiometry</option>
+            <option value="missing-spiro">Missing spirometry</option>
+          </select>
+        </div>
+
+        <div class="med-control">
+          <label>Sort</label>
+          <select id="med-sort">
+            <option value="date-desc">Date (newest)</option>
+            <option value="date-asc">Date (oldest)</option>
+            <option value="name-asc">Name (A–Z)</option>
+            <option value="name-desc">Name (Z–A)</option>
+          </select>
+        </div>
+
+        <button type="button" id="med-clear" class="btn btn-ghost btn-sm">Clear</button>
       </div>
-    </div>
+
+      <p class="med-count" id="med-count"></p>
+
+      <!-- ── Patient folders ─────────────────────────────────── -->
+      <div class="med-grid" id="med-grid">
+        <% patients.forEach(p => { %>
+          <article class="med-folder"
+                   data-name="<%= p.name.toLowerCase() %>"
+                   data-id="<%= (p.identifier || '').toLowerCase() %>"
+                   data-date="<%= p.dateISO %>"
+                   data-audio="<%= p.audio ? 1 : 0 %>"
+                   data-spiro="<%= p.spiro ? 1 : 0 %>">
+            <header class="med-folder-head">
+              <div class="med-avatar"><%= p.name.charAt(0).toUpperCase() %></div>
+              <div class="med-who">
+                <strong><%= p.name %></strong>
+                <span><%= p.identifier || 'No ID on file' %><%= p.job_title ? ' · ' + p.job_title : '' %></span>
+              </div>
+              <span class="med-date-pill" title="Date of most recent test"><%= fmtDate(p.dateISO) %></span>
+            </header>
+
+            <div class="med-reports">
+              <!-- Audiometry -->
+              <div class="med-report <%= p.audio ? 'is-available' : 'is-missing' %>">
+                <span class="med-report-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M3 18v-6a9 9 0 0118 0v6"/><path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z"/></svg>
+                </span>
+                <div class="med-report-text">
+                  <strong>Audiometry</strong>
+                  <span><%= p.audio ? (p.audio.report_date ? 'Tested ' + fmtDate(p.audio.report_date) : 'Report on file') : 'No audiometry on file' %></span>
+                </div>
+                <% if (p.audio) { %>
+                  <a class="btn btn-primary btn-sm" href="/portal/results/<%= p.audio.id %>/download">↓ PDF</a>
+                <% } else { %>
+                  <span class="med-missing-tag">Not on file</span>
+                <% } %>
+              </div>
+
+              <!-- Spirometry -->
+              <div class="med-report <%= p.spiro ? 'is-available' : 'is-missing' %>">
+                <span class="med-report-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                </span>
+                <div class="med-report-text">
+                  <strong>Spirometry</strong>
+                  <span><%= p.spiro ? (p.spiro.report_date ? 'Tested ' + fmtDate(p.spiro.report_date) : 'Report on file') : 'No spirometry on file' %></span>
+                </div>
+                <% if (p.spiro) { %>
+                  <a class="btn btn-primary btn-sm" href="/portal/results/<%= p.spiro.id %>/download">↓ PDF</a>
+                <% } else { %>
+                  <span class="med-missing-tag">Not on file</span>
+                <% } %>
+              </div>
+
+              <% p.others.forEach(o => { %>
+              <div class="med-report is-available">
+                <span class="med-report-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </span>
+                <div class="med-report-text">
+                  <strong><%= o.title %></strong>
+                  <span><%= o.report_date ? fmtDate(o.report_date) : 'Document on file' %></span>
+                </div>
+                <a class="btn btn-primary btn-sm" href="/portal/results/<%= o.id %>/download">↓ PDF</a>
+              </div>
+              <% }) %>
+            </div>
+          </article>
+        <% }) %>
+      </div>
+
+      <p class="med-nomatch" id="med-nomatch" style="display:none;">No employees match your filters.</p>
+
+      <!-- ── Other (non-employee) documents ──────────────────── -->
+      <% if (extras.length) { %>
+        <div class="card" style="margin-top:1.5rem;">
+          <div class="card-header"><h3>Other documents</h3></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Document</th><th class="hide-mobile">Date</th><th>Action</th></tr></thead>
+              <tbody>
+                <% extras.forEach(o => { %>
+                <tr>
+                  <td><strong><%= o.title %></strong></td>
+                  <td class="hide-mobile" style="color:var(--mid-grey);font-size:.85rem;"><%= fmtDate(o.report_date || (o.uploaded_at||'').slice(0,10)) %></td>
+                  <td><a class="btn btn-outline-dark btn-sm" href="/portal/results/<%= o.id %>/download">↓ Download</a></td>
+                </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      <% } %>
+
+    <% } %>
 
     <div class="alert alert-info" style="margin-top:1.5rem;">
-      <strong>Privacy notice:</strong> All medical documents are confidential and only accessible by you. If you have questions about any of your results, please contact Workmedix directly.
+      <strong>Privacy notice:</strong> these documents are confidential and visible only to your organisation. Questions about a result? Contact Workmedix directly.
     </div>
   </div>
 </main>
 </div>
+
+<style>
+/* ── Toolbar ───────────────────────────────────────────── */
+.med-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: .85rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.15rem;
+  margin-bottom: 1.1rem;
+  box-shadow: 0 1px 2px rgba(15,18,60,.04);
+}
+.med-control { display: flex; flex-direction: column; gap: .3rem; }
+.med-control label {
+  font-size: .68rem; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--mid-grey);
+}
+.med-search { position: relative; flex: 1 1 240px; }
+.med-search svg { position: absolute; left: .8rem; top: 50%; transform: translateY(-50%); stroke: var(--mid-grey); pointer-events: none; }
+.med-search input { width: 100%; padding-left: 2.3rem; }
+.med-toolbar input[type="text"],
+.med-toolbar input[type="date"],
+.med-toolbar select {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: .55rem .7rem;
+  font-size: .88rem;
+  background: var(--surface);
+  color: inherit;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.med-toolbar input:focus, .med-toolbar select:focus {
+  outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px var(--ring);
+}
+.med-dates { display: flex; align-items: center; gap: .4rem; }
+.med-dates span { color: var(--mid-grey); }
+.med-count { font-size: .85rem; color: var(--mid-grey); margin: 0 0 1rem .2rem; }
+.med-nomatch { text-align: center; color: var(--mid-grey); padding: 2rem; }
+
+/* ── Patient folders ───────────────────────────────────── */
+.med-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1rem;
+}
+.med-folder {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(15,18,60,.04), 0 6px 18px -12px rgba(15,18,60,.18);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+.med-folder:hover { transform: translateY(-2px); box-shadow: 0 2px 4px rgba(15,18,60,.05), 0 14px 30px -16px rgba(35,38,242,.28); }
+.med-folder-head {
+  display: flex; align-items: center; gap: .7rem;
+  padding: .9rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+}
+.med-avatar {
+  width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: #fff; font-weight: 800; font-size: 1rem;
+  display: flex; align-items: center; justify-content: center;
+}
+.med-who { min-width: 0; flex: 1; }
+.med-who strong { display: block; font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.med-who span { display: block; font-size: .78rem; color: var(--mid-grey); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.med-date-pill {
+  flex-shrink: 0; font-size: .72rem; font-weight: 600; color: var(--primary-dark);
+  background: rgba(35,38,242,.08); padding: .25rem .6rem; border-radius: 100px; white-space: nowrap;
+}
+.med-reports { padding: .65rem .75rem .85rem; display: flex; flex-direction: column; gap: .5rem; }
+.med-report {
+  display: flex; align-items: center; gap: .7rem;
+  padding: .6rem .7rem; border-radius: 10px; border: 1px solid var(--border);
+}
+.med-report.is-available { background: var(--surface-2); }
+.med-report.is-missing   { background: repeating-linear-gradient(45deg, #fbfbfd, #fbfbfd 8px, #f5f6fb 8px, #f5f6fb 16px); border-style: dashed; }
+.med-report-icon {
+  width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.med-report.is-available .med-report-icon { background: rgba(35,38,242,.10); color: var(--primary); }
+.med-report.is-missing   .med-report-icon { background: #eef0f6; color: var(--mid-grey); }
+.med-report-text { flex: 1; min-width: 0; }
+.med-report-text strong { display: block; font-size: .85rem; }
+.med-report-text span { display: block; font-size: .76rem; color: var(--mid-grey); }
+.med-report.is-missing .med-report-text strong { color: var(--mid-grey); }
+.med-missing-tag { font-size: .72rem; font-weight: 600; color: var(--mid-grey); white-space: nowrap; }
+.btn-ghost { background: transparent; border: 1.5px solid var(--border); color: var(--mid-grey); }
+.btn-ghost:hover { border-color: var(--primary); color: var(--primary); background: rgba(35,38,242,.04); }
+.med-empty-icon { color: var(--primary); opacity: .5; }
+
+@media (max-width: 560px) {
+  .med-grid { grid-template-columns: 1fr; }
+  .med-toolbar { flex-direction: column; align-items: stretch; }
+  .med-search { flex-basis: auto; }
+}
+</style>
+
+<script>
+(function () {
+  const grid = document.getElementById('med-grid');
+  if (!grid) return;
+  const cards   = Array.from(grid.querySelectorAll('.med-folder'));
+  const search  = document.getElementById('med-search');
+  const from    = document.getElementById('med-from');
+  const to      = document.getElementById('med-to');
+  const show    = document.getElementById('med-show');
+  const sort    = document.getElementById('med-sort');
+  const clear   = document.getElementById('med-clear');
+  const count   = document.getElementById('med-count');
+  const noMatch = document.getElementById('med-nomatch');
+
+  function apply() {
+    const term = (search.value || '').trim().toLowerCase();
+    const f = from.value, t = to.value, mode = show.value;
+    let visible = 0;
+
+    cards.forEach(c => {
+      const name = c.dataset.name, id = c.dataset.id, date = c.dataset.date;
+      const hasAudio = c.dataset.audio === '1', hasSpiro = c.dataset.spiro === '1';
+      let ok = true;
+      if (term && !(name.includes(term) || id.includes(term))) ok = false;
+      if (ok && f && (!date || date < f)) ok = false;
+      if (ok && t && (!date || date > t)) ok = false;
+      if (ok && mode === 'complete'      && !(hasAudio && hasSpiro)) ok = false;
+      if (ok && mode === 'missing-audio' && hasAudio)  ok = false;
+      if (ok && mode === 'missing-spiro' && hasSpiro)  ok = false;
+      c.style.display = ok ? '' : 'none';
+      if (ok) visible++;
+    });
+
+    // Sort the visible cards
+    const [key, dir] = sort.value.split('-');
+    const mult = dir === 'asc' ? 1 : -1;
+    cards.slice().sort((a, b) => {
+      const av = key === 'name' ? a.dataset.name : (a.dataset.date || '');
+      const bv = key === 'name' ? b.dataset.name : (b.dataset.date || '');
+      return av < bv ? -1 * mult : av > bv ? 1 * mult : 0;
+    }).forEach(c => grid.appendChild(c));
+
+    count.textContent = `Showing ${visible} of ${cards.length} employee${cards.length !== 1 ? 's' : ''}`;
+    noMatch.style.display = visible === 0 ? 'block' : 'none';
+  }
+
+  [search, from, to, show, sort].forEach(el => {
+    el.addEventListener('input', apply);
+    el.addEventListener('change', apply);
+  });
+  clear.addEventListener('click', () => {
+    search.value = ''; from.value = ''; to.value = '';
+    show.value = 'all'; sort.value = 'date-desc';
+    apply();
+  });
+
+  apply();
+})();
+</script>
 <script src="/js/main.js"></script>
 </body>
 </html>

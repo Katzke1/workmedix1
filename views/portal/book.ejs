@@ -688,8 +688,8 @@
       var msg = '';
       if (!fn || !ln)                         msg = 'Enter both a first name and surname.';
       else if (!idn && !pp)                   msg = 'Enter an SA ID number or a passport number.';
-      else if (idn && !/^\d{13}$/.test(idn))  msg = 'An SA ID number must be 13 digits (or use a passport).';
-      else if (!g)                            msg = 'Please select a gender.';
+      else if (idn) { var idv = saIdCheck(idn); if (!idv.valid) msg = idv.reason.charAt(0).toUpperCase() + idv.reason.slice(1) + ' (or use a passport).'; }
+      if (!msg && !g)                         msg = 'Please select a gender.';
 
       if (msg) {
         if (err) { err.textContent = msg; err.style.display = 'block'; }
@@ -764,27 +764,43 @@
     renumber();
   }
 
-  /* SA ID number → auto-fill DOB + gender (best effort; user can override) */
-  function autofillFromId(card) {
+  /* Full SA ID validation (Luhn + real date) — mirrors lib/za-id.js */
+  function saIdCheck(raw) {
+    var id = String(raw || '').replace(/\s/g, '');
+    if (!/^\d{13}$/.test(id)) return { valid: false, reason: 'SA ID must be 13 digits' };
+    var yy = +id.slice(0, 2), mm = +id.slice(2, 4), dd = +id.slice(4, 6);
+    if (mm < 1 || mm > 12) return { valid: false, reason: 'invalid month in the ID number' };
+    var century = yy <= (new Date().getFullYear() % 100) ? 2000 : 1900;
+    var fy = century + yy;
+    var d = new Date(fy, mm - 1, dd);
+    if (d.getFullYear() !== fy || d.getMonth() !== mm - 1 || d.getDate() !== dd)
+      return { valid: false, reason: 'invalid date of birth in the ID number' };
+    var sum = 0, alt = false;
+    for (var i = id.length - 1; i >= 0; i--) { var n = +id[i]; if (alt) { n *= 2; if (n > 9) n -= 9; } sum += n; alt = !alt; }
+    if (sum % 10 !== 0) return { valid: false, reason: 'the ID number is not valid (checksum failed)' };
+    return {
+      valid: true,
+      dob: fy + '-' + String(mm).padStart(2, '0') + '-' + String(dd).padStart(2, '0'),
+      gender: (+id.slice(6, 10) < 5000) ? 'Female' : 'Male',
+    };
+  }
+
+  /* On ID input: validate, show feedback, and auto-fill DOB + gender when valid */
+  function handleIdInput(card) {
     var idEl = card.querySelector('.emp-id');
     if (!idEl) return;
-    var id = idEl.value.replace(/\s/g, '');
-    if (!/^\d{13}$/.test(id)) return;
-    var yy = parseInt(id.slice(0, 2), 10);
-    var mm = parseInt(id.slice(2, 4), 10);
-    var dd = parseInt(id.slice(4, 6), 10);
-    if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return;
-    var nowYY = new Date().getFullYear() % 100;
-    var century = yy <= nowYY ? 2000 : 1900;
+    var raw = idEl.value.replace(/\s/g, '');
+    idEl.style.borderColor = '';
+    if (raw.length < 13) return;                 // still typing — no verdict yet
+
+    var v = saIdCheck(raw);
+    if (!v.valid) { idEl.style.borderColor = '#ef4444'; return; }
+
+    idEl.style.borderColor = '#16a34a';          // valid — subtle green
     var dobEl = card.querySelector('.emp-dob');
-    if (dobEl && !dobEl.value) {
-      dobEl.value = (century + yy) + '-' +
-        String(mm).padStart(2, '0') + '-' + String(dd).padStart(2, '0');
-    }
+    if (dobEl && !dobEl.value) dobEl.value = v.dob;
     var gEl = card.querySelector('.emp-gender');
-    if (gEl && !gEl.value) {
-      gEl.value = parseInt(id.slice(6, 10), 10) < 5000 ? 'Female' : 'Male';
-    }
+    if (gEl && !gEl.value) gEl.value = v.gender;
   }
 
   if (cardsWrap) {
@@ -793,7 +809,7 @@
       if (rm) removeCard(rm.closest('.emp-card'));
     });
     cardsWrap.addEventListener('input', function (e) {
-      if (e.target.classList.contains('emp-id')) autofillFromId(e.target.closest('.emp-card'));
+      if (e.target.classList.contains('emp-id')) handleIdInput(e.target.closest('.emp-card'));
     });
     if (addBtn) addBtn.addEventListener('click', function () { addCard(true); });
     if (decBtn) decBtn.addEventListener('click', function () { setCount(cardCount() - 1); });

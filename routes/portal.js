@@ -7,6 +7,7 @@ const path                   = require('path');
 const db                     = require('../db');
 const { requireAuth, requireClientAdmin } = require('../middleware/auth');
 const { validateEmployee, validateBooking } = require('../lib/schemas/booking');
+const { validateSaId } = require('../lib/za-id');
 const { createBookingWithEmployees } = require('../db/repos/bookings');
 const { sendNewBookingNotification } = require('../lib/mailer');
 
@@ -111,8 +112,10 @@ router.post('/book', (req, res) => {
       return render(`Employee ${i + 1}: please enter both a first name and surname.`, null);
     if (!idn && !pp)
       return render(`Employee ${i + 1}: enter an SA ID number or a passport number.`, null);
-    if (idn && !/^\d{13}$/.test(idn))
-      return render(`Employee ${i + 1}: an SA ID number must be 13 digits (or use a passport number).`, null);
+    if (idn) {
+      const v = validateSaId(idn);
+      if (!v.valid) return render(`Employee ${i + 1}: ${v.reason} (or use a passport number instead).`, null);
+    }
     if (!g)
       return render(`Employee ${i + 1}: please select a gender.`, null);
 
@@ -184,28 +187,75 @@ router.get('/bookings', (req, res) => {
   });
 });
 
-// ── Results ───────────────────────────────────────────────────────────────────
+// ── Results / Medicals ──────────────────────────────────────────────────────
+// Strictly company-scoped: a user only ever sees results belonging to their own
+// company (via the employee's company, the owner's company, or their own user
+// id). No cross-company access is possible.
 router.get('/results', (req, res) => {
-  const results = db.prepare(`
-    SELECT r.*, b.service_type
+  const uid = req.session.user.id;
+  const cid = req.session.user.company_id || null;
+
+  const rows = db.prepare(`
+    SELECT r.id, r.title, r.file_path, r.report_date, r.uploaded_at,
+           r.source, r.result_type, r.external_id, r.employee_id,
+           e.first_name, e.last_name, e.id_number, e.passport_number, e.job_title,
+           b.service_type
     FROM   results r
-    LEFT JOIN bookings b ON r.booking_id = b.id
-    WHERE  r.user_id = ?
+    LEFT JOIN employees e     ON r.employee_id = e.id
+    LEFT JOIN bookings  b     ON r.booking_id  = b.id
+    LEFT JOIN users     owner ON r.user_id     = owner.id
+    WHERE  e.company_id = ? OR owner.company_id = ? OR r.user_id = ?
     ORDER  BY r.uploaded_at DESC
-  `).all(req.session.user.id);
+  `).all(cid, cid, uid);
+
+  const dpart = s => (s ? String(s).slice(0, 10) : '');
+
+  // Group into per-patient "folders": one audiometry + one spirometry + extras
+  const folders = new Map();
+  const extras  = [];
+  for (const r of rows) {
+    if (!r.employee_id) { extras.push(r); continue; }
+    if (!folders.has(r.employee_id)) {
+      folders.set(r.employee_id, {
+        employee_id: r.employee_id,
+        name      : `${r.first_name || ''} ${r.last_name || ''}`.trim() || 'Unnamed employee',
+        identifier: r.id_number || r.passport_number || '',
+        job_title : r.job_title || '',
+        audio: null, spiro: null, others: [], dateISO: '',
+      });
+    }
+    const f = folders.get(r.employee_id);
+    const when = dpart(r.report_date) || dpart(r.uploaded_at);
+    if (when > f.dateISO) f.dateISO = when;
+    if (r.result_type === 'audio' && !f.audio)      f.audio = r;
+    else if (r.result_type === 'spiro' && !f.spiro)  f.spiro = r;
+    else                                             f.others.push(r);
+  }
 
   res.render('portal/results', {
-    title       : 'My Results | Workmedix',
-    description : 'View and download your screening results.',
-    page        : 'results',
-    results
+    title      : 'Medical Results | Workmedix',
+    description : 'View and download employee screening results.',
+    page       : 'results',
+    patients   : Array.from(folders.values()),
+    extras,
+    totalDocs  : rows.length,
   });
 });
 
 router.get('/results/:id/download', (req, res) => {
-  const row = db.prepare(`SELECT * FROM results WHERE id=? AND user_id=?`)
-               .get(req.params.id, req.session.user.id);
+  const uid = req.session.user.id;
+  const cid = req.session.user.company_id || null;
+  const row = db.prepare(`
+    SELECT r.file_path, r.user_id, e.company_id AS ec, owner.company_id AS oc
+    FROM   results r
+    LEFT JOIN employees e     ON r.employee_id = e.id
+    LEFT JOIN users     owner ON r.user_id     = owner.id
+    WHERE  r.id = ?
+  `).get(req.params.id);
   if (!row || !row.file_path) return res.status(404).send('File not found.');
+  // Authorise: own document, or same company. 404 (not 403) so we never reveal existence.
+  const allowed = row.user_id === uid || (cid != null && (row.ec === cid || row.oc === cid));
+  if (!allowed) return res.status(404).send('File not found.');
   res.download(row.file_path, (err) => {
     if (err && !res.headersSent) res.status(404).send('File not available.');
   });
