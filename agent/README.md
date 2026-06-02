@@ -66,18 +66,31 @@ ending with `Sync done — imported X, skipped Y …`, then "Finished."
 
 ---
 
-## Run it automatically (every 10 minutes)
+## Run it automatically — no window, nothing to click
 
-**Option A — Windows Task Scheduler (recommended):**
-1. Open **Task Scheduler** → **Create Basic Task**.
-2. Name: `Workmedix OccuPlus Sync`. Trigger: **Daily**, then on the next screen
-   set it to repeat **every 10 minutes** for a duration of **1 day** (indefinitely).
-3. Action: **Start a program** → browse to `run-sync.bat` in this folder.
-4. Finish. It now syncs in the background while the PC is on.
+First, turn on the built-in 10-minute loop: in `run-sync.bat`, delete the `REM `
+in front of `set SYNC_INTERVAL_MINUTES=10` (or set it in `.env`). The agent will
+then sync immediately and every 10 minutes on its own.
 
-**Option B — keep it running in a window:**
-Set `SYNC_INTERVAL_MINUTES=10` in `.env`, then run `node occuplus-sync.js`.
-It will sync immediately and then every 10 minutes until you close it.
+**Recommended — Windows Task Scheduler (runs invisibly, even before login):**
+1. Start → type **Task Scheduler** → open it.
+2. Right side → **Create Task…** (not *Basic*).
+3. **General** tab: name it `Workmedix OccuPlus Sync`; select **Run whether user
+   is logged on or not**; tick **Hidden**.
+4. **Triggers** tab → **New…** → Begin the task: **At startup** → OK.
+5. **Actions** tab → **New…** → **Start a program** → **Browse** to `run-sync.bat`
+   → OK.
+6. **OK**. If prompted, enter your Windows password (lets it run in the
+   background). No Windows password? Use **Run only when user is logged on** instead.
+7. Restart to test. It now syncs every 10 minutes with **no window at all**.
+
+Because the 10-minute loop is on, one launch keeps running — so trigger it **At
+startup** (not "every 10 minutes"). If you previously put a shortcut in the
+Startup folder, remove it so it doesn't run twice.
+
+**Simpler alternative — Startup folder (a minimized window stays open):**
+Put a shortcut to `run-sync.bat` in your Startup folder (`Win+R` → `shell:startup`),
+and set the shortcut to **Run: Minimized**.
 
 ---
 
