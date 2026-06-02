@@ -332,10 +332,19 @@ router.post('/jobs/:id', (req, res) => {
 });
 
 router.post('/jobs/:id/status', (req, res) => {
+  // Only ever redirect to a local path — never to an attacker-supplied absolute URL
+  const safeBack = () => {
+    const ref = req.headers.referer || '';
+    try {
+      const url = new URL(ref, `${req.protocol}://${req.get('host')}`);
+      if (url.host === req.get('host')) return url.pathname + url.search;
+    } catch (_) { /* fall through */ }
+    return '/admin/crm/jobs';
+  };
   const allowed = ['quoted','confirmed','in_progress','completed','invoiced','paid','cancelled'];
-  if (!allowed.includes(req.body.status)) return res.redirect(req.headers.referer || '/admin/crm/jobs');
+  if (!allowed.includes(req.body.status)) return res.redirect(safeBack());
   db.prepare('UPDATE crm_jobs SET status=? WHERE id=?').run(req.body.status, req.params.id);
-  res.redirect(req.headers.referer || '/admin/crm/jobs');
+  res.redirect(safeBack());
 });
 
 router.post('/jobs/:id/delete', (req, res) => {

@@ -60,18 +60,32 @@ router.post('/login', (req, res) => {
 
   db.prepare('UPDATE users SET last_login_at=CURRENT_TIMESTAMP WHERE id=?').run(user.id);
 
-  req.session.user = {
-    id           : user.id,
-    name         : user.name,
-    email        : user.email,
-    role         : user.role,
-    company_name : user.company_name,
-    company_id   : user.company_id || null,
-    email_verified: user.email_verified,
-  };
+  // Regenerate the session on login to defeat session-fixation attacks
+  req.session.regenerate((err) => {
+    if (err) {
+      console.error('[auth] session regenerate failed:', err.message);
+      return render('Something went wrong signing you in. Please try again.');
+    }
 
-  const isAdmin = ['admin', 'staff'].includes(user.role);
-  res.redirect(isAdmin ? '/admin' : '/portal');
+    req.session.user = {
+      id            : user.id,
+      name          : user.name,
+      email         : user.email,
+      role          : user.role,
+      company_name  : user.company_name,
+      company_id    : user.company_id || null,
+      email_verified: user.email_verified,
+    };
+
+    req.session.save((saveErr) => {
+      if (saveErr) {
+        console.error('[auth] session save failed:', saveErr.message);
+        return render('Something went wrong signing you in. Please try again.');
+      }
+      const isAdmin = ['admin', 'staff'].includes(user.role);
+      res.redirect(isAdmin ? '/admin' : '/portal');
+    });
+  });
 });
 
 // ── GET /register ─────────────────────────────────────────────────────────────

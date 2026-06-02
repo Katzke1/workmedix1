@@ -5,7 +5,8 @@ const bcrypt   = require('bcryptjs');
 const path     = require('path');
 const fs       = require('fs');
 
-const dbPath = process.env.DB_PATH || path.join(__dirname, 'workmedix.db');
+const dbPath    = process.env.DB_PATH || path.join(__dirname, 'workmedix.db');
+const isProdEnv = process.env.NODE_ENV === 'production';
 
 // Ensure parent directory exists (e.g. /data on Railway)
 fs.mkdirSync(path.dirname(dbPath), { recursive: true });
@@ -152,16 +153,45 @@ if (rateCount === 0) {
 }
 
 // ── Seed admin ────────────────────────────────────────────────────────────────
-const ADMIN_EMAIL = 'admin@workmedix.co.za';
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'admin@workmedix.co.za').toLowerCase().trim();
 const existing    = db.prepare('SELECT id FROM users WHERE email = ?').get(ADMIN_EMAIL);
 
 if (!existing) {
-  const hash = bcrypt.hashSync('admin123', 12);
+  // Resolve the initial admin password safely:
+  //   • ADMIN_PASSWORD env var always wins.
+  //   • In development, fall back to a known dev password for convenience.
+  //   • In production with no env var, generate a strong random password and
+  //     print it ONCE so the operator can grab it from the deploy logs.
+  const crypto = require('crypto');
+  let adminPassword = process.env.ADMIN_PASSWORD;
+  let generated     = false;
+
+  if (!adminPassword) {
+    if (isProdEnv) {
+      adminPassword = crypto.randomBytes(18).toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, 18);
+      generated = true;
+    } else {
+      adminPassword = 'admin123'; // dev convenience only
+    }
+  }
+
+  const hash = bcrypt.hashSync(adminPassword, 12);
   db.prepare(`
     INSERT INTO users (name, email, password_hash, role, company_name, email_verified)
     VALUES (?, ?, ?, 'admin', 'Workmedix', 1)
   `).run('Workmedix Admin', ADMIN_EMAIL, hash);
-  console.log(`✓ Admin created  →  ${ADMIN_EMAIL}  /  admin123`);
+
+  if (generated) {
+    console.log('\n  ============================================================');
+    console.log('  ADMIN ACCOUNT CREATED — SAVE THIS NOW (shown only once)');
+    console.log(`  Email:    ${ADMIN_EMAIL}`);
+    console.log(`  Password: ${adminPassword}`);
+    console.log('  Set ADMIN_PASSWORD in your env to control this, and change');
+    console.log('  the password from the dashboard after first login.');
+    console.log('  ============================================================\n');
+  } else {
+    console.log(`✓ Admin created  →  ${ADMIN_EMAIL}`);
+  }
 } else {
   console.log('✓ Admin already exists');
 }

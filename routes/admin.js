@@ -409,6 +409,9 @@ router.post('/users', (req, res) => {
   if (!name?.trim() || !email?.trim() || !password?.trim()) {
     return res.redirect('/admin/users?err=' + encodeURIComponent('Name, email and password are all required.'));
   }
+  if (password.length < 8) {
+    return res.redirect('/admin/users?err=' + encodeURIComponent('Password must be at least 8 characters.'));
+  }
   const exists = db.prepare('SELECT id FROM users WHERE email=?').get(email.trim().toLowerCase());
   if (exists) {
     return res.redirect('/admin/users?err=' + encodeURIComponent('An account with that email already exists.'));
@@ -436,8 +439,8 @@ router.post('/users/password', (req, res) => {
   if (new_password !== confirm_password) {
     return res.redirect('/admin/users?err=' + encodeURIComponent('New passwords do not match.'));
   }
-  if (!new_password || new_password.length < 6) {
-    return res.redirect('/admin/users?err=' + encodeURIComponent('Password must be at least 6 characters.'));
+  if (!new_password || new_password.length < 8) {
+    return res.redirect('/admin/users?err=' + encodeURIComponent('Password must be at least 8 characters.'));
   }
   const row = db.prepare('SELECT password_hash FROM users WHERE id=?').get(req.session.user.id);
   if (!bcrypt.compareSync(current_password, row.password_hash)) {

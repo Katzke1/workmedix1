@@ -211,8 +211,8 @@ router.post('/profile/password', (req, res) => {
     return render('Current password is incorrect.', null);
   if (new_password !== confirm_password)
     return render('New passwords do not match.', null);
-  if (new_password.length < 6)
-    return render('New password must be at least 6 characters.', null);
+  if (new_password.length < 8)
+    return render('New password must be at least 8 characters.', null);
 
   db.prepare('UPDATE users SET password_hash=? WHERE id=?')
     .run(bcrypt.hashSync(new_password, 12), user.id);

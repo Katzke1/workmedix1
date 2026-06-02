@@ -31,7 +31,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc   : ["'self'"],
-      scriptSrc    : ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      scriptSrc    : ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdn.jsdelivr.net'],
       scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc     : ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://fonts.gstatic.com'],
       fontSrc      : ["'self'", 'https://fonts.gstatic.com', 'data:'],
@@ -129,6 +129,7 @@ const bookingLimiter = rateLimit({
 app.use('/login',           authLimiter);
 app.use('/register',        authLimiter);
 app.use('/forgot-password', authLimiter);
+app.use('/reset-password',  authLimiter);
 app.use('/contact',         contactLimiter);
 app.use('/portal/book',     bookingLimiter);
 
