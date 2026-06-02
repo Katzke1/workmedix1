@@ -29,18 +29,19 @@
               <th class="hide-mobile">Location</th>
               <th>Status</th>
               <th class="hide-mobile">Submitted</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
             <% if (bookings.length === 0) { %>
               <tr>
-                <td class="table-empty" colspan="6">
+                <td class="table-empty" colspan="7">
                   No bookings yet.
                   <a href="/portal/book">Request your first screening →</a>
                 </td>
               </tr>
             <% } else { bookings.forEach((b, i) => { %>
-              <tr>
+              <tr class="row-link" data-href="/portal/bookings/<%= b.id %>" tabindex="0" role="link" aria-label="View booking <%= b.service_type %>">
                 <td style="color:var(--mid-grey);font-size:.85rem;"><%= bookings.length - i %></td>
                 <td><strong><%= b.service_type %></strong>
                   <% if (b.num_people > 0) { %><br><span style="font-size:.78rem;color:var(--mid-grey);"><%= b.num_people %> person<%= b.num_people !== 1 ? 's' : '' %></span><% } %>
@@ -53,6 +54,7 @@
                 <td class="hide-mobile" style="color:var(--mid-grey);font-size:.85rem;white-space:nowrap;">
                   <%= new Date(b.created_at).toLocaleDateString('en-ZA') %>
                 </td>
+                <td style="text-align:right;color:var(--mid-grey);"><span class="row-chevron" aria-hidden="true">›</span></td>
               </tr>
             <% }) } %>
           </tbody>
@@ -91,6 +93,13 @@
   </div>
 </main>
 </div>
+<style>
+  tr.row-link { cursor: pointer; transition: background var(--transition); }
+  tr.row-link:hover td { background: rgba(35,38,242,.04); }
+  tr.row-link:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+  .row-chevron { font-size: 1.3rem; line-height: 1; font-weight: 400; transition: transform var(--transition); display:inline-block; }
+  tr.row-link:hover .row-chevron { transform: translateX(3px); color: var(--primary); }
+</style>
 <script src="/js/main.js"></script>
 </body>
 </html>

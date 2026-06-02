@@ -187,6 +187,49 @@ router.get('/bookings', (req, res) => {
   });
 });
 
+// ── Booking detail ────────────────────────────────────────────────────────────
+router.get('/bookings/:id', (req, res) => {
+  const uid = req.session.user.id;
+  const cid = req.session.user.company_id || null;
+
+  const booking = db.prepare(`
+    SELECT b.*, co.name AS company_name, cs.name AS staff_name
+    FROM   bookings b
+    LEFT JOIN companies  co ON b.company_id = co.id
+    LEFT JOIN crm_staff  cs ON b.staff_id   = cs.id
+    WHERE  b.id = ?
+  `).get(req.params.id);
+
+  // Not found or not yours → back to the list (never reveal another company's booking)
+  if (!booking || !(booking.user_id === uid || (cid != null && booking.company_id === cid))) {
+    return res.redirect('/portal/bookings');
+  }
+
+  const employees = db.prepare(`
+    SELECT be.*, e.first_name, e.last_name, e.id_number, e.passport_number, e.job_title
+    FROM   booking_employees be
+    JOIN   employees e ON be.employee_id = e.id
+    WHERE  be.booking_id = ?
+    ORDER  BY e.last_name, e.first_name
+  `).all(booking.id);
+
+  const repStmt = db.prepare(
+    `SELECT id, result_type, report_date FROM results WHERE employee_id=? AND result_type IN ('audio','spiro')`
+  );
+  employees.forEach(e => {
+    const reps = repStmt.all(e.employee_id);
+    e.audio = reps.find(r => r.result_type === 'audio') || null;
+    e.spiro = reps.find(r => r.result_type === 'spiro') || null;
+  });
+
+  res.render('portal/booking-detail', {
+    title      : `Booking #${booking.id} | Workmedix`,
+    description : 'Your Workmedix booking details.',
+    page       : 'bookings',
+    booking, employees,
+  });
+});
+
 // ── Results / Medicals ──────────────────────────────────────────────────────
 // Strictly company-scoped: a user only ever sees results belonging to their own
 // company (via the employee's company, the owner's company, or their own user

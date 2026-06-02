@@ -501,3 +501,17 @@ document.querySelectorAll('.password-toggle').forEach(btn => {
   window.addEventListener('pageshow', hide);
   window.addEventListener('pagehide', () => { if (timer) clearTimeout(timer); });
 })();
+
+// ── Clickable table rows (tr.row-link[data-href]) ─────────────────────────────
+(function () {
+  document.querySelectorAll('tr.row-link[data-href]').forEach(function (row) {
+    const go = () => { window.location.href = row.dataset.href; };
+    row.addEventListener('click', function (e) {
+      if (e.target.closest('a, button, input, select')) return;  // don't hijack controls
+      go();
+    });
+    row.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); go(); }
+    });
+  });
+})();

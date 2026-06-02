@@ -1,0 +1,99 @@
+<%- include('../partials/head') %>
+<body>
+<div class="app-body">
+<%- include('../partials/portal-sidebar') %>
+<main class="app-main">
+  <div class="app-topbar">
+    <div class="app-topbar-title">
+      <h2>Booking #<%= booking.id %></h2>
+      <p><%= booking.service_type %> · <span class="badge badge-<%= booking.status %>"><%= booking.status.replace(/_/g,' ') %></span></p>
+    </div>
+    <div class="topbar-actions">
+      <a href="/portal/bookings" class="btn btn-outline-dark btn-sm">← Back to bookings</a>
+    </div>
+  </div>
+
+  <div class="app-content">
+    <%
+      const fmtDate = iso => iso
+        ? new Date(iso).toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' })
+        : '—';
+      const screenedCount = employees.filter(e => e.audio || e.spiro).length;
+    %>
+
+    <div class="booking-detail-grid" style="display:grid;grid-template-columns:1fr;gap:1.25rem;max-width:820px;">
+
+      <!-- Details -->
+      <div class="card">
+        <div class="card-header"><h3>Appointment Details</h3></div>
+        <div class="card-body">
+          <dl class="detail-list">
+            <dt>Service</dt><dd><%= booking.service_type %></dd>
+            <dt>Date</dt><dd><%= booking.scheduled_at ? fmtDate(booking.scheduled_at.split('T')[0]) : fmtDate(booking.preferred_date) %></dd>
+            <% if (booking.scheduled_at) { %>
+            <dt>Confirmed time</dt><dd><%= new Date(booking.scheduled_at).toLocaleString('en-ZA', { dateStyle:'medium', timeStyle:'short' }) %></dd>
+            <% } %>
+            <dt>Location</dt><dd><%= (booking.location_text || '—').split('|')[0].trim() %></dd>
+            <dt>Employees</dt><dd><%= employees.length || booking.num_people || 0 %></dd>
+            <% if (booking.staff_name) { %><dt>Practitioner</dt><dd><%= booking.staff_name %></dd><% } %>
+            <% if (booking.notes) { %><dt>Notes</dt><dd><%= booking.notes %></dd><% } %>
+            <dt>Submitted</dt><dd><%= new Date(booking.created_at).toLocaleString('en-ZA', { dateStyle:'medium', timeStyle:'short' }) %></dd>
+            <% if (booking.status === 'cancelled' && booking.cancellation_reason) { %>
+            <dt>Cancelled</dt><dd style="color:#ef4444;"><%= booking.cancellation_reason %></dd>
+            <% } %>
+          </dl>
+        </div>
+      </div>
+
+      <!-- Employees + results -->
+      <div class="card">
+        <div class="card-header" style="align-items:center;">
+          <h3 style="margin-right:auto;">Employees &amp; Reports</h3>
+          <span style="font-size:.82rem;color:var(--mid-grey);"><%= screenedCount %>/<%= employees.length %> with results</span>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <% if (!employees.length) { %>
+            <p style="padding:1.1rem;color:var(--mid-grey);margin:0;">No individual employees were captured for this booking.</p>
+          <% } else { %>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Employee</th><th class="hide-mobile">ID / Passport</th><th>Audiometry</th><th>Spirometry</th></tr></thead>
+              <tbody>
+                <% employees.forEach(e => { %>
+                <tr>
+                  <td>
+                    <strong><%= e.first_name %> <%= e.last_name %></strong>
+                    <% if (e.job_title) { %><div style="font-size:.76rem;color:var(--mid-grey);"><%= e.job_title %></div><% } %>
+                  </td>
+                  <td class="hide-mobile" style="font-family:monospace;font-size:.8rem;"><%= e.id_number || e.passport_number || '—' %></td>
+                  <% [['audio', e.audio], ['spiro', e.spiro]].forEach(([type, rep]) => { %>
+                  <td>
+                    <% if (rep) { %>
+                      <a href="/portal/results/<%= rep.id %>/download" class="btn btn-primary btn-sm">↓ PDF</a>
+                    <% } else { %>
+                      <span style="font-size:.74rem;font-weight:600;color:var(--mid-grey);background:var(--surface-2);padding:.2rem .55rem;border-radius:100px;">Pending</span>
+                    <% } %>
+                  </td>
+                  <% }) %>
+                </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+          <% } %>
+        </div>
+      </div>
+
+      <% if (['pending','confirmed','in_progress'].includes(booking.status)) { %>
+      <div class="alert alert-info">
+        Reports appear here automatically once each employee has been screened. You'll get an email when new results are ready.
+      </div>
+      <% } %>
+
+    </div>
+  </div>
+</main>
+</div>
+<script src="/js/main.js"></script>
+</body>
+</html>
