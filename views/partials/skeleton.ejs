@@ -1,0 +1,5 @@
+<%# Reusable skeleton placeholder — the EJS analog of shadcn's <Skeleton />. %>
+<%# Pass `cls` for variant/width classes, and `style` for exact sizing. %>
+<%# Example: include('partials/skeleton', { cls: 'skel-circle', style: 'width:44px;height:44px;' }) %>
+<%# Example: include('partials/skeleton', { cls: 'skel-line skel-w-75' }) %>
+<div class="skel <%= typeof cls !== 'undefined' ? cls : '' %>" style="<%= typeof style !== 'undefined' ? style : '' %>" aria-hidden="true"></div>

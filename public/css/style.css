@@ -3070,3 +3070,90 @@ tbody tr:last-child td { border-bottom: none !important; }
   line-height: 1;
   letter-spacing: -.03em;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Skeleton loading placeholders
+   Brand-matched, GPU-friendly shimmer (animates transform only).
+   Reusable via the partials/skeleton.ejs partial, and used by the portal/
+   admin page-navigation loader and async <select> loaders below.
+   ───────────────────────────────────────────────────────────────────────── */
+.skel {
+  --skel-base: #e7e9f3;          /* derived from --light-grey (#E4E6F0) */
+  position: relative;
+  overflow: hidden;
+  display: block;
+  background: var(--skel-base);
+  border-radius: var(--radius);
+}
+.skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, .7) 50%,
+    transparent 100%
+  );
+  animation: skel-sweep 1.4s cubic-bezier(.4, 0, .2, 1) infinite;
+}
+@keyframes skel-sweep { to { transform: translateX(100%); } }
+
+/* Respect reduced-motion: swap the moving sheen for a gentle opacity pulse */
+@media (prefers-reduced-motion: reduce) {
+  .skel::after { animation: none; }
+  .skel { animation: skel-pulse 1.6s ease-in-out infinite; }
+  @keyframes skel-pulse { 50% { opacity: .5; } }
+}
+
+/* Variants (the EJS analog of shadcn className sizing) */
+.skel-line   { height: .8rem;  border-radius: 6px; }
+.skel-line + .skel-line { margin-top: .65rem; }
+.skel-title  { height: 1.4rem; border-radius: 7px; }
+.skel-circle { border-radius: 50%; }
+.skel-btn    { height: 2.5rem; width: 9rem; border-radius: var(--radius); }
+
+/* Width helpers */
+.skel-w-100 { width: 100%; }
+.skel-w-75  { width: 75%;  }
+.skel-w-50  { width: 50%;  }
+.skel-w-33  { width: 33%;  }
+.skel-w-25  { width: 25%;  }
+
+/* ── Portal / admin page-navigation skeleton ──────────────────────────────
+   Painted into .app-content during a navigation, then discarded when the
+   destination page loads. The real content is hidden while it shows. */
+.app-content.is-loading-page > *:not(.page-skeleton) { display: none; }
+.page-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  animation: skel-fade .18s ease both;
+}
+@keyframes skel-fade { from { opacity: 0; } to { opacity: 1; } }
+.page-skeleton-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+.page-skeleton .skel-stat  { height: 96px;  border-radius: var(--radius-lg); }
+.page-skeleton .skel-block { height: 360px; border-radius: var(--radius-lg); }
+.page-skeleton .skel-titlebar { height: 1.6rem; width: 240px; border-radius: 7px; }
+@media (max-width: 900px) { .page-skeleton-stats { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .page-skeleton-stats { grid-template-columns: 1fr; } }
+
+/* ── Async <select> loading state ─────────────────────────────────────────
+   Applied to a .form-control while its options are being fetched. Native
+   <select> can't host a pseudo-element sheen, so we use a compliant opacity
+   pulse (transform/opacity-only per the project animation rules). */
+select.form-control.is-loading {
+  color: var(--mid-grey);
+  background: var(--surface-2);
+  pointer-events: none;
+  animation: skel-opacity 1.2s ease-in-out infinite;
+}
+@keyframes skel-opacity { 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) {
+  select.form-control.is-loading { animation: none; }
+}

@@ -80,8 +80,9 @@
 <script>
 function loadResBookings(userId) {
   const sel = document.getElementById('res-booking');
+  if (!userId) { sel.classList.remove('is-loading'); sel.innerHTML = '<option value="">— Select client first —</option>'; return; }
+  sel.classList.add('is-loading');
   sel.innerHTML = '<option value="">Loading…</option>';
-  if (!userId) { sel.innerHTML = '<option value="">— Select client first —</option>'; return; }
   fetch('/admin/results/bookings-for/' + userId)
     .then(r => r.json())
     .then(rows => {
@@ -92,13 +93,16 @@ function loadResBookings(userId) {
         o.textContent = '#' + b.id + ' — ' + b.service_type + ' (' + b.preferred_date + ') — ' + b.status;
         sel.appendChild(o);
       });
-    });
+    })
+    .catch(() => { sel.innerHTML = '<option value="">Could not load bookings</option>'; })
+    .finally(() => sel.classList.remove('is-loading'));
 }
 
 function loadResEmps(userId) {
   const sel = document.getElementById('res-employee');
+  if (!userId) { sel.classList.remove('is-loading'); sel.innerHTML = '<option value="">— Select employee —</option>'; return; }
+  sel.classList.add('is-loading');
   sel.innerHTML = '<option value="">Loading…</option>';
-  if (!userId) { sel.innerHTML = '<option value="">— Select employee —</option>'; return; }
   fetch('/admin/certificates/employees-for/' + userId)
     .then(r => r.json())
     .then(emps => {
@@ -109,7 +113,9 @@ function loadResEmps(userId) {
         o.textContent = e.first_name + ' ' + e.last_name + (e.job_title ? ' (' + e.job_title + ')' : '');
         sel.appendChild(o);
       });
-    });
+    })
+    .catch(() => { sel.innerHTML = '<option value="">Could not load employees</option>'; })
+    .finally(() => sel.classList.remove('is-loading'));
 }
 </script>
 

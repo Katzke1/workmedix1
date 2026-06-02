@@ -141,12 +141,14 @@
   if (!clientSelect || !bookingSelect) return;
 
   clientSelect.addEventListener('change', async function () {
-    bookingSelect.innerHTML = '<option value="">Loading…</option>';
     const clientId = this.value;
     if (!clientId) {
+      bookingSelect.classList.remove('is-loading');
       bookingSelect.innerHTML = '<option value="">— select client first —</option>';
       return;
     }
+    bookingSelect.classList.add('is-loading');
+    bookingSelect.innerHTML = '<option value="">Loading…</option>';
     try {
       const res  = await fetch(`/admin/results/bookings-for/${clientId}`);
       const rows = await res.json();
@@ -157,6 +159,8 @@
         ).join('');
     } catch {
       bookingSelect.innerHTML = '<option value="">Error loading bookings</option>';
+    } finally {
+      bookingSelect.classList.remove('is-loading');
     }
   });
 })();
@@ -422,4 +426,78 @@ document.querySelectorAll('.password-toggle').forEach(btn => {
   window.addEventListener('resize', function () {
     if (window.innerWidth > 768) closeSidebar();
   });
+})();
+
+// ── Portal/admin page-navigation skeleton ────────────────────────────────────
+// Paints a loading skeleton into .app-content during an internal navigation,
+// bridging the blank gap on server-rendered page loads. We never preventDefault
+// — the browser navigates normally and the skeleton is discarded on load.
+(function () {
+  const main = document.querySelector('.app-main');
+  if (!main) return;                                   // only portal/admin pages
+  const content = main.querySelector('.app-content');
+  if (!content) return;
+
+  let timer = null;
+
+  function build() {
+    const sk = document.createElement('div');
+    sk.className = 'page-skeleton';
+    sk.setAttribute('aria-hidden', 'true');
+
+    const title = document.createElement('div');
+    title.className = 'skel skel-titlebar';
+    sk.appendChild(title);
+
+    const stats = document.createElement('div');
+    stats.className = 'page-skeleton-stats';
+    for (let i = 0; i < 4; i++) {
+      const c = document.createElement('div');
+      c.className = 'skel skel-stat';
+      stats.appendChild(c);
+    }
+    sk.appendChild(stats);
+
+    const block = document.createElement('div');
+    block.className = 'skel skel-block';
+    sk.appendChild(block);
+
+    return sk;
+  }
+
+  function show() {
+    if (content.querySelector('.page-skeleton')) return;
+    content.classList.add('is-loading-page');
+    content.appendChild(build());
+  }
+  function hide() {
+    if (timer) { clearTimeout(timer); timer = null; }
+    content.classList.remove('is-loading-page');
+    const sk = content.querySelector('.page-skeleton');
+    if (sk) sk.remove();
+  }
+  // Exposed so the destination page / tests can force the state
+  window.__wmPageSkeleton = { show, hide };
+
+  document.addEventListener('click', function (e) {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const a = e.target.closest('a');
+    if (!a) return;
+
+    const href = a.getAttribute('href') || '';
+    if (!href || a.target === '_blank' || a.hasAttribute('download')) return;
+    if (href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+    if (a.classList.contains('sidebar-logout')) return;   // logout just redirects
+
+    let url;
+    try { url = new URL(href, location.href); } catch (_) { return; }
+    if (url.origin !== location.origin) return;            // external link
+    if (url.pathname === location.pathname && url.search === location.search) return; // same page / download links
+
+    timer = setTimeout(show, 140);                         // delay avoids flash on fast loads
+  });
+
+  // Restore from bfcache (back/forward) should never show a stale skeleton
+  window.addEventListener('pageshow', hide);
+  window.addEventListener('pagehide', () => { if (timer) clearTimeout(timer); });
 })();
