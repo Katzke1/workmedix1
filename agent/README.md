@@ -49,18 +49,20 @@ SYNC_API_KEY = (a long random secret you choose)
 ```
 
 ### 3. Configure the agent
-In this `agent` folder, copy `.env.example` to `.env` and fill it in:
+Right-click **`run-sync.bat`** → **Edit** (opens in Notepad). Fill in the four
+values near the top, then save:
 
 ```
-OCCUPLUS_URL  = http://192.168.1.38:5100      (or http://localhost:5100 if on the OccuPlus PC)
-OCCUPLUS_KEY  = occu-...                        (OccuPlus NEO → Settings → API Integration)
-WORKMEDIX_URL = https://www.workmedix.com
+OCCUPLUS_KEY  = occu-...                  (OccuPlus NEO → Settings → API Integration)
 SYNC_KEY      = (the SAME secret you set on Railway)
 ```
+(`OCCUPLUS_URL` and `WORKMEDIX_URL` are already filled in — leave them.)
+
+> Advanced alternative: copy `.env.example` to `.env` instead of editing the .bat.
 
 ### 4. Test it
-Double-click **`run-sync.bat`** (or run `node occuplus-sync.js`). You should see
-a log ending with `Sync done — imported X, skipped Y …`.
+Double-click **`run-sync.bat`**. A black window opens and you should see a log
+ending with `Sync done — imported X, skipped Y …`, then "Finished."
 
 ---
 
