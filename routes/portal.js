@@ -267,99 +267,95 @@ router.get('/patients/:id', (req, res) => {
 });
 
 // ── Results / Medicals ──────────────────────────────────────────────────────
-// Strictly company-scoped: a user only ever sees results belonging to their own
-// company (via the employee's company, the owner's company, or their own user
-// id). No cross-company access is possible.
+// Driven by the company's EMPLOYEES (all your patients), not just the ones that
+// already have a report — so booked-but-not-yet-screened people show too, with a
+// "not on file" state. Strictly company-scoped: only your own company's people.
+function companyEmployees(cid, uid) {
+  return db.prepare(`
+    SELECT e.id AS employee_id, e.first_name, e.last_name, e.id_number, e.passport_number, e.job_title
+    FROM   employees e
+    WHERE  e.active = 1
+      AND  ( (? IS NOT NULL AND e.company_id = ?)
+             OR e.id IN (
+               SELECT be.employee_id FROM booking_employees be
+               JOIN bookings b ON be.booking_id = b.id WHERE b.user_id = ?
+             ) )
+    ORDER  BY e.last_name, e.first_name
+  `).all(cid, cid, uid);
+}
+
+function buildPatientFolders(employees) {
+  const dpart = s => (s ? String(s).slice(0, 10) : '');
+  const byEmp = new Map();
+  if (employees.length) {
+    const ids = employees.map(e => e.employee_id);
+    const ph  = ids.map(() => '?').join(',');
+    db.prepare(`
+      SELECT id, employee_id, title, report_date, uploaded_at, result_type
+      FROM   results WHERE employee_id IN (${ph})
+      ORDER  BY uploaded_at DESC
+    `).all(...ids).forEach(r => {
+      if (!byEmp.has(r.employee_id)) byEmp.set(r.employee_id, []);
+      byEmp.get(r.employee_id).push(r);
+    });
+  }
+  return employees.map(e => {
+    const f = {
+      employee_id: e.employee_id,
+      name      : `${e.first_name || ''} ${e.last_name || ''}`.trim() || 'Unnamed employee',
+      identifier: e.id_number || e.passport_number || '',
+      job_title : e.job_title || '',
+      audio: null, spiro: null, others: [], dateISO: '',
+    };
+    (byEmp.get(e.employee_id) || []).forEach(r => {
+      const when = dpart(r.report_date) || dpart(r.uploaded_at);
+      if (when > f.dateISO) f.dateISO = when;
+      if (r.result_type === 'audio' && !f.audio)      f.audio = r;
+      else if (r.result_type === 'spiro' && !f.spiro)  f.spiro = r;
+      else                                             f.others.push(r);
+    });
+    return f;
+  });
+}
+
 router.get('/results', (req, res) => {
   const uid = req.session.user.id;
   const cid = req.session.user.company_id || null;
 
-  const rows = db.prepare(`
-    SELECT r.id, r.title, r.file_path, r.report_date, r.uploaded_at,
-           r.source, r.result_type, r.external_id, r.employee_id,
-           e.first_name, e.last_name, e.id_number, e.passport_number, e.job_title,
-           b.service_type
-    FROM   results r
-    LEFT JOIN employees e     ON r.employee_id = e.id
-    LEFT JOIN bookings  b     ON r.booking_id  = b.id
-    LEFT JOIN users     owner ON r.user_id     = owner.id
-    WHERE  e.company_id = ? OR owner.company_id = ? OR r.user_id = ?
+  const patients = buildPatientFolders(companyEmployees(cid, uid));
+
+  // Documents not tied to an employee (manual uploads for this company)
+  const extras = db.prepare(`
+    SELECT r.id, r.title, r.report_date, r.uploaded_at
+    FROM   results r LEFT JOIN users owner ON r.user_id = owner.id
+    WHERE  r.employee_id IS NULL
+      AND  ( r.user_id = ? OR (? IS NOT NULL AND owner.company_id = ?) )
     ORDER  BY r.uploaded_at DESC
-  `).all(cid, cid, uid);
-
-  const dpart = s => (s ? String(s).slice(0, 10) : '');
-
-  // Group into per-patient "folders": one audiometry + one spirometry + extras
-  const folders = new Map();
-  const extras  = [];
-  for (const r of rows) {
-    if (!r.employee_id) { extras.push(r); continue; }
-    if (!folders.has(r.employee_id)) {
-      folders.set(r.employee_id, {
-        employee_id: r.employee_id,
-        name      : `${r.first_name || ''} ${r.last_name || ''}`.trim() || 'Unnamed employee',
-        identifier: r.id_number || r.passport_number || '',
-        job_title : r.job_title || '',
-        audio: null, spiro: null, others: [], dateISO: '',
-      });
-    }
-    const f = folders.get(r.employee_id);
-    const when = dpart(r.report_date) || dpart(r.uploaded_at);
-    if (when > f.dateISO) f.dateISO = when;
-    if (r.result_type === 'audio' && !f.audio)      f.audio = r;
-    else if (r.result_type === 'spiro' && !f.spiro)  f.spiro = r;
-    else                                             f.others.push(r);
-  }
+  `).all(uid, cid, cid);
 
   res.render('portal/results', {
     title      : 'Medical Results | Workmedix',
     description : 'View and download employee screening results.',
     page       : 'results',
-    patients   : Array.from(folders.values()),
-    extras,
-    totalDocs  : rows.length,
+    patients, extras,
+    totalDocs  : patients.length,
   });
 });
 
-// Export the company's medicals to CSV (one row per employee)
+// Export the company's medicals to CSV — one row per patient (incl. unscreened)
 router.get('/results/export.csv', (req, res) => {
   const uid = req.session.user.id;
   const cid = req.session.user.company_id || null;
-  const rows = db.prepare(`
-    SELECT r.report_date, r.uploaded_at, r.result_type, r.employee_id,
-           e.first_name, e.last_name, e.id_number, e.passport_number, e.job_title
-    FROM   results r
-    LEFT JOIN employees e     ON r.employee_id = e.id
-    LEFT JOIN users     owner ON r.user_id     = owner.id
-    WHERE  (e.company_id = ? OR owner.company_id = ? OR r.user_id = ?) AND r.employee_id IS NOT NULL
-    ORDER  BY e.last_name, e.first_name
-  `).all(cid, cid, uid);
-
-  const dpart = s => (s ? String(s).slice(0, 10) : '');
-  const folders = new Map();
-  for (const r of rows) {
-    if (!folders.has(r.employee_id)) {
-      folders.set(r.employee_id, {
-        name: `${r.first_name || ''} ${r.last_name || ''}`.trim(),
-        identifier: r.id_number || r.passport_number || '',
-        job: r.job_title || '', audioDate: '', spiroDate: '',
-      });
-    }
-    const f = folders.get(r.employee_id);
-    const d = dpart(r.report_date) || dpart(r.uploaded_at);
-    if (r.result_type === 'audio' && !f.audioDate) f.audioDate = d;
-    else if (r.result_type === 'spiro' && !f.spiroDate) f.spiroDate = d;
-  }
+  const patients = buildPatientFolders(companyEmployees(cid, uid));
+  const d10 = r => r ? String(r.report_date || r.uploaded_at || '').slice(0, 10) : '';
 
   const esc = v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
   const lines = [['Employee', 'ID / Passport', 'Job Title', 'Audiometry', 'Audio Date', 'Spirometry', 'Spiro Date'].map(esc).join(',')];
-  for (const f of folders.values()) {
-    lines.push([
-      f.name, f.identifier, f.job,
-      f.audioDate ? 'Yes' : 'No', f.audioDate,
-      f.spiroDate ? 'Yes' : 'No', f.spiroDate,
-    ].map(esc).join(','));
-  }
+  patients.forEach(p => lines.push([
+    p.name, p.identifier, p.job_title,
+    p.audio ? 'Yes' : 'No', d10(p.audio),
+    p.spiro ? 'Yes' : 'No', d10(p.spiro),
+  ].map(esc).join(',')));
 
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="workmedix-medicals-${new Date().toISOString().slice(0, 10)}.csv"`);
