@@ -14,6 +14,22 @@ Each run it:
 
 Re-running is safe — Workmedix ignores results it has already imported.
 
+## Mobile screening — install it on the screening laptop
+
+Run this agent **on the OccuPlus laptop itself** (set `OCCUPLUS_URL=http://localhost:5100`).
+That way it works regardless of where the laptop is:
+
+- **Out in the field with no internet:** screening happens as normal; OccuPlus saves
+  the results on the laptop. The agent reads OccuPlus over `localhost`, so it never
+  needs a network to *read* results.
+- **When the laptop gets online** — a hotspot/4G at the site, or back at the office on
+  Wi-Fi — the agent automatically uploads everything that's still pending to the portal.
+- **Nothing is lost while offline.** Results stay safely in OccuPlus and sync up on the
+  next run that has internet. The agent simply retries; it catches up.
+
+So the only requirement to *upload* is that the laptop reaches the internet at some
+point — not that it's on any particular network.
+
 ---
 
 ## One-time setup
