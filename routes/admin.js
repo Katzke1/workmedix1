@@ -7,7 +7,7 @@ const path                        = require('path');
 const bcrypt                      = require('bcryptjs');
 const db                          = require('../db');
 const { requireAdmin }            = require('../middleware/auth');
-const { sendTestEmail }           = require('../lib/mailer');
+const { sendTestEmail, sendBookingStatusEmail } = require('../lib/mailer');
 const { getBookingWithDetails, updateBookingStatus } = require('../db/repos/bookings');
 const { issueCertificate, getExpiringCertificates }   = require('../db/repos/certificates');
 
@@ -148,6 +148,10 @@ router.post('/bookings/:id/status', (req, res) => {
   const { status, cancellation_reason } = req.body;
   const allowed = ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'];
   if (!allowed.includes(status)) return res.redirect(`/admin/bookings/${req.params.id}`);
+
+  const prev    = db.prepare('SELECT status FROM bookings WHERE id=?').get(req.params.id);
+  const changed = prev && prev.status !== status;
+
   const now = new Date().toISOString();
   const sets = ['status=?'];
   const params = [status];
@@ -155,6 +159,22 @@ router.post('/bookings/:id/status', (req, res) => {
   if (status === 'cancelled')  { sets.push('cancelled_at=?', 'cancellation_reason=?'); params.push(now, cancellation_reason?.trim() || null); }
   params.push(req.params.id);
   db.prepare(`UPDATE bookings SET ${sets.join(',')} WHERE id=?`).run(...params);
+
+  // Email the client when their booking becomes confirmed or completed (only on a real change)
+  if (changed && (status === 'confirmed' || status === 'completed')) {
+    try {
+      const b = db.prepare(`
+        SELECT b.*, u.name client_name, u.email client_email
+        FROM   bookings b JOIN users u ON b.user_id = u.id
+        WHERE  b.id = ?
+      `).get(req.params.id);
+      if (b && b.client_email) {
+        sendBookingStatusEmail(b.client_email, b.client_name, status, b)
+          .catch(e => console.error('[admin] booking status email failed:', e.message));
+      }
+    } catch (e) { console.error('[admin] booking status email error:', e.message); }
+  }
+
   res.redirect(`/admin/bookings/${req.params.id}?success=Status+updated.`);
 });
 
