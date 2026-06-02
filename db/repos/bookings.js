@@ -105,12 +105,22 @@ function getBookingWithDetails(bookingId) {
   if (!booking) return null;
 
   booking.employees = db.prepare(`
-    SELECT be.*, e.first_name, e.last_name, e.id_number, e.job_title,
-           e.email emp_email, be.attendance_status
+    SELECT be.*, e.first_name, e.last_name, e.id_number, e.passport_number,
+           e.job_title, e.email emp_email, be.attendance_status
     FROM   booking_employees be
     JOIN   employees e ON be.employee_id = e.id
     WHERE  be.booking_id = ?
   `).all(bookingId);
+
+  // Attach each employee's OccuPlus report status (audio / spiro)
+  const repStmt = db.prepare(
+    `SELECT result_type, id FROM results WHERE employee_id=? AND result_type IN ('audio','spiro')`
+  );
+  booking.employees.forEach(emp => {
+    const reps = repStmt.all(emp.employee_id);
+    emp.audio = reps.find(r => r.result_type === 'audio') || null;
+    emp.spiro = reps.find(r => r.result_type === 'spiro') || null;
+  });
 
   const crmJob = db.prepare(`SELECT id FROM crm_jobs WHERE booking_id=?`).get(bookingId);
   booking.crm_job_id = crmJob ? crmJob.id : null;

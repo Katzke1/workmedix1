@@ -44,6 +44,46 @@
           </div>
         </div>
 
+        <!-- Employee roster + screening status -->
+        <div class="card" style="margin-bottom:1.5rem;">
+          <div class="card-header" style="align-items:center;">
+            <h3 style="margin-right:auto;">Employees &amp; Screening Status</h3>
+            <% const done = booking.employees.filter(e => e.audio || e.spiro).length; %>
+            <span style="font-size:.82rem;color:var(--mid-grey);"><%= done %>/<%= booking.employees.length %> screened</span>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <% if (!booking.employees.length) { %>
+              <p style="padding:1.1rem;color:var(--mid-grey);margin:0;">No individual employees were captured for this booking.</p>
+            <% } else { %>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Employee</th><th class="hide-mobile">ID / Passport</th><th>Audio</th><th>Spiro</th></tr></thead>
+                <tbody>
+                  <% booking.employees.forEach(e => { %>
+                  <tr>
+                    <td>
+                      <strong><%= e.first_name %> <%= e.last_name %></strong>
+                      <% if (e.job_title) { %><div style="font-size:.76rem;color:var(--mid-grey);"><%= e.job_title %></div><% } %>
+                    </td>
+                    <td class="hide-mobile" style="font-family:monospace;font-size:.8rem;"><%= e.id_number || e.passport_number || '—' %></td>
+                    <% [e.audio, e.spiro].forEach(rep => { %>
+                    <td>
+                      <% if (rep) { %>
+                        <span style="display:inline-flex;align-items:center;gap:.25rem;font-size:.74rem;font-weight:700;color:#0b8a4f;background:rgba(16,185,129,.12);padding:.2rem .5rem;border-radius:100px;">✓ Done</span>
+                      <% } else { %>
+                        <span style="font-size:.74rem;font-weight:600;color:var(--mid-grey);background:var(--surface-2);padding:.2rem .5rem;border-radius:100px;">Pending</span>
+                      <% } %>
+                    </td>
+                    <% }) %>
+                  </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+            <% } %>
+          </div>
+        </div>
+
 
         <!-- Create CRM job (visible when completed) -->
         <% if (booking.status === 'completed' && !booking.crm_job_id) { %>

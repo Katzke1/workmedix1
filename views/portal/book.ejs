@@ -677,6 +677,7 @@
     if (countErr) countErr.style.display = 'none';
 
     var firstBad = null;
+    var seen = {};
     cards.forEach(function (card) {
       var fn  = card.querySelector('[name="emp_first_name[]"]').value.trim();
       var ln  = card.querySelector('[name="emp_last_name[]"]').value.trim();
@@ -690,6 +691,13 @@
       else if (!idn && !pp)                   msg = 'Enter an SA ID number or a passport number.';
       else if (idn) { var idv = saIdCheck(idn); if (!idv.valid) msg = idv.reason.charAt(0).toUpperCase() + idv.reason.slice(1) + ' (or use a passport).'; }
       if (!msg && !g)                         msg = 'Please select a gender.';
+
+      // Duplicate ID/passport within this booking
+      var keyId = (idn || pp).toLowerCase();
+      if (!msg && keyId) {
+        if (seen[keyId]) msg = 'This ID / passport is already entered above.';
+        else seen[keyId] = true;
+      }
 
       if (msg) {
         if (err) { err.textContent = msg; err.style.display = 'block'; }

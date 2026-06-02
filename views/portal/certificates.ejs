@@ -20,9 +20,16 @@
     <% } %>
 
     <div class="card">
-      <div class="card-header">
-        <h3>Issued Certificates</h3>
-        <span style="font-size:.85rem;color:var(--mid-grey);"><%= certificates.length %> certificate<%= certificates.length !== 1 ? 's' : '' %></span>
+      <div class="card-header" style="flex-wrap:wrap;gap:.75rem;align-items:center;">
+        <h3 style="margin-right:auto;">Issued Certificates</h3>
+        <input type="text" id="cert-search" class="form-control" placeholder="Search name, title, cert #…"
+               style="max-width:230px;padding:.5rem .7rem;font-size:.85rem;" autocomplete="off">
+        <select id="cert-sort" class="form-control" style="max-width:190px;padding:.5rem .7rem;font-size:.85rem;">
+          <option value="issued-desc">Issued (newest)</option>
+          <option value="issued-asc">Issued (oldest)</option>
+          <option value="expiry-asc">Expiry (soonest)</option>
+          <option value="name-asc">Name (A–Z)</option>
+        </select>
       </div>
       <div class="table-wrap">
         <% if (certificates.length === 0) { %>
@@ -39,12 +46,18 @@
               <th></th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="cert-body">
             <% certificates.forEach(c => { %>
             <% const now = Date.now(); %>
             <% const isExpired  = c.expiry_date && new Date(c.expiry_date) < now; %>
             <% const isExpiring = c.expiry_date && !isExpired && new Date(c.expiry_date) <= new Date(now + 60*24*60*60*1000); %>
-            <tr>
+            <% const ownerName = (c.first_name || c.last_name) ? `${c.first_name||''} ${c.last_name||''}`.trim() : ''; %>
+            <% const issuedISO = c.issued_date || (c.issued_at || '').slice(0,10); %>
+            <tr class="cert-row"
+                data-name="<%= ownerName.toLowerCase() %>"
+                data-text="<%= (c.title + ' ' + (c.certificate_number||'') + ' ' + ownerName).toLowerCase() %>"
+                data-issued="<%= issuedISO %>"
+                data-expiry="<%= c.expiry_date || '' %>">
               <td>
                 <div style="display:flex;align-items:center;gap:.7rem;">
                   <div style="width:38px;height:38px;background:linear-gradient(135deg,#0b6e4f,#00b894);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
@@ -52,6 +65,7 @@
                   </div>
                   <div>
                     <strong><%= c.title %></strong>
+                    <% if (ownerName) { %><div style="font-size:.78rem;color:var(--mid-grey);"><%= ownerName %><%= c.id_number ? ' · ' + c.id_number : '' %></div><% } %>
                   </div>
                 </div>
               </td>
@@ -92,6 +106,33 @@
   </div>
 </main>
 </div>
+<script>
+(function () {
+  const body = document.getElementById('cert-body');
+  if (!body) return;
+  const search = document.getElementById('cert-search');
+  const sort   = document.getElementById('cert-sort');
+  const rows   = Array.from(body.querySelectorAll('.cert-row'));
+
+  function apply() {
+    const term = (search.value || '').trim().toLowerCase();
+    rows.forEach(r => { r.style.display = (!term || r.dataset.text.includes(term)) ? '' : 'none'; });
+
+    const [key, dir] = sort.value.split('-');
+    const mult = dir === 'asc' ? 1 : -1;
+    rows.slice().sort((a, b) => {
+      const av = key === 'name' ? a.dataset.name : (a.dataset[key] || '');
+      const bv = key === 'name' ? b.dataset.name : (b.dataset[key] || '');
+      // empty dates sort last
+      if (key === 'expiry') { if (!av) return 1; if (!bv) return -1; }
+      return av < bv ? -1 * mult : av > bv ? 1 * mult : 0;
+    }).forEach(r => body.appendChild(r));
+  }
+  search.addEventListener('input', apply);
+  sort.addEventListener('change', apply);
+  apply();
+})();
+</script>
 <script src="/js/main.js"></script>
 </body>
 </html>

@@ -27,6 +27,45 @@
       </div>
     </div>
 
+    <!-- OccuPlus integration status -->
+    <%
+      const _ss      = locals.syncStatus || {};
+      const lastSeen = _ss.agent_last_seen ? new Date(_ss.agent_last_seen) : null;
+      const minsAgo  = lastSeen ? Math.floor((Date.now() - lastSeen.getTime()) / 60000) : null;
+      const healthy  = minsAgo != null && minsAgo < 30;
+      const rel = m => m == null ? 'never'
+        : m < 1 ? 'just now' : m < 60 ? m + ' min ago'
+        : m < 1440 ? Math.floor(m / 60) + 'h ago' : Math.floor(m / 1440) + 'd ago';
+      const imported = parseInt(_ss.reports_imported_total || '0', 10);
+      const lastImp  = _ss.last_import_at ? new Date(_ss.last_import_at) : null;
+    %>
+    <div class="sync-status-bar">
+      <span class="sync-dot <%= healthy ? 'on' : 'off' %>"></span>
+      <div class="sync-status-text">
+        <strong>OccuPlus sync agent</strong>
+        <span>
+          <% if (lastSeen) { %>Last checked in <%= rel(minsAgo) %><% if (!healthy) { %> — may be offline<% } %>
+          <% } else { %>Has not connected yet — start the helper app on the screening laptop<% } %>
+        </span>
+      </div>
+      <div class="sync-status-meta">
+        <div><span class="num"><%= imported %></span> report<%= imported !== 1 ? 's' : '' %> imported</div>
+        <% if (lastImp) { %><div style="font-size:.76rem;color:var(--mid-grey);">last <%= lastImp.toLocaleString('en-ZA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) %></div><% } %>
+      </div>
+    </div>
+    <style>
+      .sync-status-bar{display:flex;align-items:center;gap:.85rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:.85rem 1.15rem;margin-bottom:1.25rem;box-shadow:0 1px 2px rgba(15,18,60,.04);}
+      .sync-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;}
+      .sync-dot.on{background:#10b981;box-shadow:0 0 0 4px rgba(16,185,129,.15);animation:syncpulse 2s ease-in-out infinite;}
+      .sync-dot.off{background:#cbd2e0;}
+      @keyframes syncpulse{50%{opacity:.4;}}
+      .sync-status-text{flex:1;min-width:0;}
+      .sync-status-text strong{display:block;font-size:.9rem;}
+      .sync-status-text span{display:block;font-size:.8rem;color:var(--mid-grey);}
+      .sync-status-meta{text-align:right;white-space:nowrap;}
+      .sync-status-meta .num{font-size:1.1rem;font-weight:800;color:var(--primary);}
+    </style>
+
     <!-- Stats row -->
     <div class="stats-grid stats-grid-5">
       <div class="stat-card">

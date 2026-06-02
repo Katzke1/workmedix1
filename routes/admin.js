@@ -89,6 +89,12 @@ router.get('/', (req, res) => {
       AND created_at >= ? AND created_at <= ?
   `).get(prevStart.toISOString().slice(0,10), prevEnd.toISOString().slice(0,10));
 
+  // OccuPlus sync health (from app_meta key/value store)
+  const syncStatus = {};
+  try {
+    db.prepare('SELECT key, value FROM app_meta').all().forEach(r => { syncStatus[r.key] = r.value; });
+  } catch (e) { /* table may not exist yet on a brand-new DB */ }
+
   res.render('admin/dashboard', {
     title          : 'Admin Dashboard | Workmedix',
     description    : 'Workmedix administration dashboard.',
@@ -101,6 +107,7 @@ router.get('/', (req, res) => {
     revenueMonth   : revRow.rev,
     jobsMonth      : revRow.cnt,
     revenuePrev    : revRowPrev.rev,
+    syncStatus,
   });
 });
 

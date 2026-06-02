@@ -20,6 +20,18 @@ function safeEqual(a, b) {
   return crypto.timingSafeEqual(x, y);
 }
 
+// Small key/value helpers for surfacing sync health in the admin UI
+function setMeta(key, value) {
+  db.prepare(`
+    INSERT INTO app_meta (key, value, updated_at) VALUES (?, ?, datetime('now'))
+    ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=datetime('now')
+  `).run(key, String(value));
+}
+function bumpMeta(key) {
+  const cur = db.prepare('SELECT value FROM app_meta WHERE key=?').get(key);
+  setMeta(key, (cur ? parseInt(cur.value, 10) || 0 : 0) + 1);
+}
+
 // ── Auth: every sync request needs the shared key ────────────────────────────
 router.use((req, res, next) => {
   const key = process.env.SYNC_API_KEY;
@@ -27,6 +39,7 @@ router.use((req, res, next) => {
   if (!safeEqual(req.get('X-Sync-Key') || '', key)) {
     return res.status(401).json({ ok: false, error: 'Invalid sync key.' });
   }
+  try { setMeta('agent_last_seen', new Date().toISOString()); } catch (e) {}  // heartbeat
   next();
 });
 
@@ -119,6 +132,8 @@ router.post('/results', (req, res) => {
     userId, link?.booking_id || null, emp.id, finalTitle, fpath,
     test_date ? String(test_date).slice(0, 10) : null, result_type, String(external_id)
   );
+
+  try { setMeta('last_import_at', new Date().toISOString()); bumpMeta('reports_imported_total'); } catch (e) {}
 
   res.json({ ok: true, status: 'imported', result_id: info.lastInsertRowid, employee: `${emp.first_name} ${emp.last_name}` });
 });

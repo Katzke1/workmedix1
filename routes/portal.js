@@ -261,11 +261,20 @@ router.get('/results/:id/download', (req, res) => {
   });
 });
 
-// ── Certificates ──────────────────────────────────────────────────────────────
+// ── Certificates (company-scoped, same isolation model as results) ────────────
 router.get('/certificates', (req, res) => {
-  const certificates = db.prepare(
-    `SELECT * FROM certificates WHERE user_id=? ORDER BY issued_at DESC`
-  ).all(req.session.user.id);
+  const uid = req.session.user.id;
+  const cid = req.session.user.company_id || null;
+  const certificates = db.prepare(`
+    SELECT c.*, e.first_name, e.last_name, e.id_number,
+           ct.name AS cert_type_name
+    FROM   certificates c
+    LEFT JOIN employees e          ON c.employee_id = e.id
+    LEFT JOIN certificate_types ct ON c.certificate_type_id = ct.id
+    LEFT JOIN users owner          ON c.user_id = owner.id
+    WHERE  e.company_id = ? OR owner.company_id = ? OR c.user_id = ?
+    ORDER  BY c.issued_at DESC
+  `).all(cid, cid, uid);
 
   res.render('portal/certificates', {
     title       : 'My Certificates | Workmedix',
@@ -276,9 +285,18 @@ router.get('/certificates', (req, res) => {
 });
 
 router.get('/certificates/:id/download', (req, res) => {
-  const row = db.prepare(`SELECT * FROM certificates WHERE id=? AND user_id=?`)
-               .get(req.params.id, req.session.user.id);
+  const uid = req.session.user.id;
+  const cid = req.session.user.company_id || null;
+  const row = db.prepare(`
+    SELECT c.file_path, c.user_id, e.company_id AS ec, owner.company_id AS oc
+    FROM   certificates c
+    LEFT JOIN employees e     ON c.employee_id = e.id
+    LEFT JOIN users     owner ON c.user_id     = owner.id
+    WHERE  c.id = ?
+  `).get(req.params.id);
   if (!row || !row.file_path) return res.status(404).send('File not found.');
+  const allowed = row.user_id === uid || (cid != null && (row.ec === cid || row.oc === cid));
+  if (!allowed) return res.status(404).send('File not found.');
   res.download(row.file_path, (err) => {
     if (err && !res.headersSent) res.status(404).send('File not available.');
   });
