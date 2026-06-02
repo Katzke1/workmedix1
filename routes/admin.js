@@ -468,4 +468,74 @@ router.post('/users/:id/delete', (req, res) => {
   res.redirect('/admin/users?saved=1');
 });
 
+/* ── Medicals (all companies, grouped per patient) ───────────────────────────── */
+function medicalsData() {
+  const rows = db.prepare(`
+    SELECT r.id, r.report_date, r.uploaded_at, r.result_type, r.employee_id,
+           e.first_name, e.last_name, e.id_number, e.passport_number, e.job_title,
+           co.name AS company_name
+    FROM   results r
+    JOIN   employees e   ON r.employee_id = e.id
+    LEFT JOIN companies co ON e.company_id = co.id
+    WHERE  r.employee_id IS NOT NULL
+    ORDER  BY r.uploaded_at DESC
+  `).all();
+
+  const dpart = s => (s ? String(s).slice(0, 10) : '');
+  const folders = new Map();
+  for (const r of rows) {
+    if (!folders.has(r.employee_id)) {
+      folders.set(r.employee_id, {
+        employee_id: r.employee_id,
+        name      : `${r.first_name || ''} ${r.last_name || ''}`.trim() || 'Unnamed employee',
+        identifier: r.id_number || r.passport_number || '',
+        job_title : r.job_title || '',
+        company   : r.company_name || '—',
+        audio: null, spiro: null, others: [], dateISO: '',
+      });
+    }
+    const f = folders.get(r.employee_id);
+    const when = dpart(r.report_date) || dpart(r.uploaded_at);
+    if (when > f.dateISO) f.dateISO = when;
+    if (r.result_type === 'audio' && !f.audio)      f.audio = r;
+    else if (r.result_type === 'spiro' && !f.spiro)  f.spiro = r;
+    else                                             f.others.push(r);
+  }
+  const patients  = Array.from(folders.values());
+  const companies = [...new Set(patients.map(p => p.company))].filter(c => c && c !== '—').sort();
+  return { patients, companies, total: rows.length };
+}
+
+router.get('/medicals', (req, res) => {
+  const { patients, companies } = medicalsData();
+  res.render('admin/medicals', {
+    title      : 'Medicals | Workmedix Admin',
+    description : 'All screening results across every company.',
+    page       : 'medicals',
+    patients, companies,
+  });
+});
+
+router.get('/medicals/export.csv', (req, res) => {
+  const { patients } = medicalsData();
+  const esc = v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+  const lines = [['Company', 'Employee', 'ID / Passport', 'Job Title', 'Audiometry', 'Audio Date', 'Spirometry', 'Spiro Date'].map(esc).join(',')];
+  patients.forEach(p => lines.push([
+    p.company, p.name, p.identifier, p.job_title,
+    p.audio ? 'Yes' : 'No', p.audio ? (p.audio.report_date || '').slice(0, 10) : '',
+    p.spiro ? 'Yes' : 'No', p.spiro ? (p.spiro.report_date || '').slice(0, 10) : '',
+  ].map(esc).join(',')));
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="workmedix-all-medicals-${new Date().toISOString().slice(0, 10)}.csv"`);
+  res.send('﻿' + lines.join('\r\n'));
+});
+
+router.get('/medicals/:id/download', (req, res) => {
+  const row = db.prepare('SELECT file_path FROM results WHERE id=?').get(req.params.id);
+  if (!row || !row.file_path) return res.status(404).send('File not found.');
+  res.download(row.file_path, (err) => {
+    if (err && !res.headersSent) res.status(404).send('File not available.');
+  });
+});
+
 module.exports = router;

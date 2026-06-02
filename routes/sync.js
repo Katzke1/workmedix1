@@ -10,6 +10,9 @@ const crypto  = require('crypto');
 const fs      = require('fs');
 const path    = require('path');
 const db      = require('../db');
+const { sendResultsReadyEmail } = require('../lib/mailer');
+
+const NOTIFY_THROTTLE_MS = 3 * 60 * 60 * 1000; // at most one "results ready" email per company / 3h
 
 const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, '../uploads');
 
@@ -30,6 +33,22 @@ function setMeta(key, value) {
 function bumpMeta(key) {
   const cur = db.prepare('SELECT value FROM app_meta WHERE key=?').get(key);
   setMeta(key, (cur ? parseInt(cur.value, 10) || 0 : 0) + 1);
+}
+
+// Email the company contact that new results landed — throttled so a big batch
+// doesn't trigger a flood (at most one notification per company per window).
+function maybeNotifyResultsReady(companyId, userId) {
+  try {
+    const key = `notify_at_company_${companyId || 'none'}`;
+    const row = db.prepare('SELECT value FROM app_meta WHERE key=?').get(key);
+    if (row && Date.now() - new Date(row.value).getTime() < NOTIFY_THROTTLE_MS) return;
+    const u = userId ? db.prepare('SELECT email, name FROM users WHERE id=?').get(userId) : null;
+    if (u && u.email) {
+      sendResultsReadyEmail(u.email, (u.name || '').split(' ')[0] || 'there')
+        .catch(e => console.error('[sync] results-ready email failed:', e.message));
+      setMeta(key, new Date().toISOString());
+    }
+  } catch (e) { console.error('[sync] notify error:', e.message); }
 }
 
 // ── Auth: every sync request needs the shared key ────────────────────────────
@@ -134,6 +153,7 @@ router.post('/results', (req, res) => {
   );
 
   try { setMeta('last_import_at', new Date().toISOString()); bumpMeta('reports_imported_total'); } catch (e) {}
+  maybeNotifyResultsReady(emp.company_id, userId);
 
   res.json({ ok: true, status: 'imported', result_id: info.lastInsertRowid, employee: `${emp.first_name} ${emp.last_name}` });
 });

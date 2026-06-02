@@ -242,6 +242,51 @@ router.get('/results', (req, res) => {
   });
 });
 
+// Export the company's medicals to CSV (one row per employee)
+router.get('/results/export.csv', (req, res) => {
+  const uid = req.session.user.id;
+  const cid = req.session.user.company_id || null;
+  const rows = db.prepare(`
+    SELECT r.report_date, r.uploaded_at, r.result_type, r.employee_id,
+           e.first_name, e.last_name, e.id_number, e.passport_number, e.job_title
+    FROM   results r
+    LEFT JOIN employees e     ON r.employee_id = e.id
+    LEFT JOIN users     owner ON r.user_id     = owner.id
+    WHERE  (e.company_id = ? OR owner.company_id = ? OR r.user_id = ?) AND r.employee_id IS NOT NULL
+    ORDER  BY e.last_name, e.first_name
+  `).all(cid, cid, uid);
+
+  const dpart = s => (s ? String(s).slice(0, 10) : '');
+  const folders = new Map();
+  for (const r of rows) {
+    if (!folders.has(r.employee_id)) {
+      folders.set(r.employee_id, {
+        name: `${r.first_name || ''} ${r.last_name || ''}`.trim(),
+        identifier: r.id_number || r.passport_number || '',
+        job: r.job_title || '', audioDate: '', spiroDate: '',
+      });
+    }
+    const f = folders.get(r.employee_id);
+    const d = dpart(r.report_date) || dpart(r.uploaded_at);
+    if (r.result_type === 'audio' && !f.audioDate) f.audioDate = d;
+    else if (r.result_type === 'spiro' && !f.spiroDate) f.spiroDate = d;
+  }
+
+  const esc = v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+  const lines = [['Employee', 'ID / Passport', 'Job Title', 'Audiometry', 'Audio Date', 'Spirometry', 'Spiro Date'].map(esc).join(',')];
+  for (const f of folders.values()) {
+    lines.push([
+      f.name, f.identifier, f.job,
+      f.audioDate ? 'Yes' : 'No', f.audioDate,
+      f.spiroDate ? 'Yes' : 'No', f.spiroDate,
+    ].map(esc).join(','));
+  }
+
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="workmedix-medicals-${new Date().toISOString().slice(0, 10)}.csv"`);
+  res.send('﻿' + lines.join('\r\n'));   // BOM so Excel reads UTF-8
+});
+
 router.get('/results/:id/download', (req, res) => {
   const uid = req.session.user.id;
   const cid = req.session.user.company_id || null;

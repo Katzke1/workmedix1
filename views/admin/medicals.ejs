@@ -1,0 +1,187 @@
+<%- include('../partials/head') %>
+<body>
+<div class="app-body">
+<%- include('../partials/admin-sidebar') %>
+<main class="app-main">
+  <div class="app-topbar">
+    <div class="app-topbar-title">
+      <h2>Medicals</h2>
+      <p>All audiometry &amp; spirometry reports across every company</p>
+    </div>
+  </div>
+
+  <div class="app-content">
+    <%
+      const fmtDate = iso => iso
+        ? new Date(iso).toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' })
+        : '—';
+    %>
+
+    <% if (patients.length === 0) { %>
+      <div class="card"><div class="card-body" style="text-align:center;padding:3rem 1rem;color:var(--mid-grey);">
+        No screening results have been imported yet. They appear here automatically as the OccuPlus sync agent uploads them.
+      </div></div>
+    <% } else { %>
+
+      <div class="med-toolbar">
+        <div class="med-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="med-search" placeholder="Search name, ID, or company…" autocomplete="off">
+        </div>
+        <div class="med-control">
+          <label>Company</label>
+          <select id="med-company">
+            <option value="">All companies</option>
+            <% companies.forEach(c => { %><option value="<%= c.toLowerCase() %>"><%= c %></option><% }) %>
+          </select>
+        </div>
+        <div class="med-control">
+          <label>Done between</label>
+          <div class="med-dates"><input type="date" id="med-from"><span>–</span><input type="date" id="med-to"></div>
+        </div>
+        <div class="med-control">
+          <label>Show</label>
+          <select id="med-show">
+            <option value="all">All</option>
+            <option value="complete">Complete</option>
+            <option value="missing-audio">Missing audio</option>
+            <option value="missing-spiro">Missing spiro</option>
+          </select>
+        </div>
+        <div class="med-control">
+          <label>Sort</label>
+          <select id="med-sort">
+            <option value="date-desc">Date (newest)</option>
+            <option value="date-asc">Date (oldest)</option>
+            <option value="name-asc">Name (A–Z)</option>
+            <option value="company-asc">Company (A–Z)</option>
+          </select>
+        </div>
+        <a href="/admin/medicals/export.csv" class="btn btn-outline-dark btn-sm" style="display:inline-flex;align-items:center;gap:.35rem;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export CSV
+        </a>
+      </div>
+
+      <p class="med-count" id="med-count"></p>
+
+      <div class="med-grid" id="med-grid">
+        <% patients.forEach(p => { %>
+          <article class="med-folder"
+                   data-name="<%= p.name.toLowerCase() %>"
+                   data-id="<%= (p.identifier || '').toLowerCase() %>"
+                   data-company="<%= p.company.toLowerCase() %>"
+                   data-date="<%= p.dateISO %>"
+                   data-audio="<%= p.audio ? 1 : 0 %>"
+                   data-spiro="<%= p.spiro ? 1 : 0 %>">
+            <header class="med-folder-head">
+              <div class="med-avatar"><%= p.name.charAt(0).toUpperCase() %></div>
+              <div class="med-who">
+                <strong><%= p.name %></strong>
+                <span><%= p.company %><%= p.identifier ? ' · ' + p.identifier : '' %></span>
+              </div>
+              <span class="med-date-pill"><%= fmtDate(p.dateISO) %></span>
+            </header>
+            <div class="med-reports">
+              <div class="med-report <%= p.audio ? 'is-available' : 'is-missing' %>">
+                <span class="med-report-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M3 18v-6a9 9 0 0118 0v6"/><path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z"/></svg></span>
+                <div class="med-report-text"><strong>Audiometry</strong><span><%= p.audio ? (p.audio.report_date ? 'Tested ' + fmtDate(p.audio.report_date) : 'On file') : 'No audiometry on file' %></span></div>
+                <% if (p.audio) { %><a class="btn btn-primary btn-sm" href="/admin/medicals/<%= p.audio.id %>/download">↓ PDF</a><% } else { %><span class="med-missing-tag">Not on file</span><% } %>
+              </div>
+              <div class="med-report <%= p.spiro ? 'is-available' : 'is-missing' %>">
+                <span class="med-report-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>
+                <div class="med-report-text"><strong>Spirometry</strong><span><%= p.spiro ? (p.spiro.report_date ? 'Tested ' + fmtDate(p.spiro.report_date) : 'On file') : 'No spirometry on file' %></span></div>
+                <% if (p.spiro) { %><a class="btn btn-primary btn-sm" href="/admin/medicals/<%= p.spiro.id %>/download">↓ PDF</a><% } else { %><span class="med-missing-tag">Not on file</span><% } %>
+              </div>
+              <% p.others.forEach(o => { %>
+              <div class="med-report is-available">
+                <span class="med-report-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+                <div class="med-report-text"><strong>Additional report</strong><span><%= o.report_date ? fmtDate(o.report_date) : 'On file' %></span></div>
+                <a class="btn btn-primary btn-sm" href="/admin/medicals/<%= o.id %>/download">↓ PDF</a>
+              </div>
+              <% }) %>
+            </div>
+          </article>
+        <% }) %>
+      </div>
+      <p class="med-nomatch" id="med-nomatch" style="display:none;">No employees match your filters.</p>
+    <% } %>
+  </div>
+</main>
+</div>
+
+<style>
+.med-toolbar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:.85rem 1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.15rem;margin-bottom:1.1rem;box-shadow:0 1px 2px rgba(15,18,60,.04);}
+.med-control{display:flex;flex-direction:column;gap:.3rem;}
+.med-control label{font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mid-grey);}
+.med-search{position:relative;flex:1 1 220px;}
+.med-search svg{position:absolute;left:.8rem;top:50%;transform:translateY(-50%);stroke:var(--mid-grey);pointer-events:none;}
+.med-toolbar .med-search input[type="text"]{width:100%;padding-left:2.6rem;}
+.med-toolbar input[type="text"],.med-toolbar input[type="date"],.med-toolbar select{border:1.5px solid var(--border);border-radius:var(--radius);padding:.55rem .7rem;font-size:.88rem;background:var(--surface);color:inherit;}
+.med-toolbar input:focus,.med-toolbar select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 4px var(--ring);}
+.med-dates{display:flex;align-items:center;gap:.4rem;}.med-dates span{color:var(--mid-grey);}
+.med-count{font-size:.85rem;color:var(--mid-grey);margin:0 0 1rem .2rem;}
+.med-nomatch{text-align:center;color:var(--mid-grey);padding:2rem;}
+.med-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1rem;}
+.med-folder{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:0 1px 2px rgba(15,18,60,.04),0 6px 18px -12px rgba(15,18,60,.18);transition:transform var(--transition),box-shadow var(--transition);}
+.med-folder:hover{transform:translateY(-2px);box-shadow:0 2px 4px rgba(15,18,60,.05),0 14px 30px -16px rgba(35,38,242,.28);}
+.med-folder-head{display:flex;align-items:center;gap:.7rem;padding:.9rem 1rem;border-bottom:1px solid var(--border);background:linear-gradient(180deg,var(--surface-2),var(--surface));}
+.med-avatar{width:38px;height:38px;border-radius:10px;flex-shrink:0;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;}
+.med-who{min-width:0;flex:1;}.med-who strong{display:block;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.med-who span{display:block;font-size:.78rem;color:var(--mid-grey);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.med-date-pill{flex-shrink:0;font-size:.72rem;font-weight:600;color:var(--primary-dark);background:rgba(35,38,242,.08);padding:.25rem .6rem;border-radius:100px;white-space:nowrap;}
+.med-reports{padding:.65rem .75rem .85rem;display:flex;flex-direction:column;gap:.5rem;}
+.med-report{display:flex;align-items:center;gap:.7rem;padding:.6rem .7rem;border-radius:10px;border:1px solid var(--border);}
+.med-report.is-available{background:var(--surface-2);}
+.med-report.is-missing{background:repeating-linear-gradient(45deg,#fbfbfd,#fbfbfd 8px,#f5f6fb 8px,#f5f6fb 16px);border-style:dashed;}
+.med-report-icon{width:30px;height:30px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.med-report.is-available .med-report-icon{background:rgba(35,38,242,.10);color:var(--primary);}
+.med-report.is-missing .med-report-icon{background:#eef0f6;color:var(--mid-grey);}
+.med-report-text{flex:1;min-width:0;}.med-report-text strong{display:block;font-size:.85rem;}.med-report-text span{display:block;font-size:.76rem;color:var(--mid-grey);}
+.med-report.is-missing .med-report-text strong{color:var(--mid-grey);}
+.med-missing-tag{font-size:.72rem;font-weight:600;color:var(--mid-grey);white-space:nowrap;}
+@media(max-width:560px){.med-grid{grid-template-columns:1fr;}.med-toolbar{flex-direction:column;align-items:stretch;}}
+</style>
+
+<script>
+(function () {
+  const grid = document.getElementById('med-grid');
+  if (!grid) return;
+  const cards = Array.from(grid.querySelectorAll('.med-folder'));
+  const get = id => document.getElementById(id);
+  const search = get('med-search'), company = get('med-company'), from = get('med-from'), to = get('med-to'), show = get('med-show'), sort = get('med-sort'), count = get('med-count'), noMatch = get('med-nomatch');
+
+  function apply() {
+    const term = (search.value || '').trim().toLowerCase();
+    const comp = company.value, f = from.value, t = to.value, mode = show.value;
+    let visible = 0;
+    cards.forEach(c => {
+      const d = c.dataset, hasA = d.audio === '1', hasS = d.spiro === '1';
+      let ok = true;
+      if (term && !(d.name.includes(term) || d.id.includes(term) || d.company.includes(term))) ok = false;
+      if (ok && comp && d.company !== comp) ok = false;
+      if (ok && f && (!d.date || d.date < f)) ok = false;
+      if (ok && t && (!d.date || d.date > t)) ok = false;
+      if (ok && mode === 'complete' && !(hasA && hasS)) ok = false;
+      if (ok && mode === 'missing-audio' && hasA) ok = false;
+      if (ok && mode === 'missing-spiro' && hasS) ok = false;
+      c.style.display = ok ? '' : 'none';
+      if (ok) visible++;
+    });
+    const [key, dir] = sort.value.split('-');
+    const mult = dir === 'asc' ? 1 : -1;
+    cards.slice().sort((a, b) => {
+      const av = key === 'date' ? (a.dataset.date || '') : a.dataset[key] || '';
+      const bv = key === 'date' ? (b.dataset.date || '') : b.dataset[key] || '';
+      return av < bv ? -1 * mult : av > bv ? 1 * mult : 0;
+    }).forEach(c => grid.appendChild(c));
+    count.textContent = `Showing ${visible} of ${cards.length} employee${cards.length !== 1 ? 's' : ''}`;
+    noMatch.style.display = visible === 0 ? 'block' : 'none';
+  }
+  [search, company, from, to, show, sort].forEach(el => { el.addEventListener('input', apply); el.addEventListener('change', apply); });
+  apply();
+})();
+</script>
+<script src="/js/main.js"></script>
+</body>
+</html>
