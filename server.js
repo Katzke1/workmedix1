@@ -70,6 +70,11 @@ if (isProd) {
 app.use(compression());
 app.use(cookieParser());
 
+// ── OccuPlus sync API (machine-to-machine) ─────────────────────────────────────
+// Mounted before session/CSRF; authenticated via the X-Sync-Key header.
+// Its own JSON parser allows larger bodies (base64 PDF reports).
+app.use('/api/sync', express.json({ limit: '25mb' }), require('./routes/sync'));
+
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
