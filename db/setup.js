@@ -192,6 +192,19 @@ if (!existing) {
   } else {
     console.log(`✓ Admin created  →  ${ADMIN_EMAIL}`);
   }
+} else if (process.env.ADMIN_PASSWORD) {
+  // Admin already exists — keep ADMIN_PASSWORD as the source of truth.
+  // Only rewrite the hash when the env password actually differs, so we
+  // don't churn the row on every boot.
+  const row = db.prepare('SELECT password_hash FROM users WHERE id=?').get(existing.id);
+  const matches = bcrypt.compareSync(process.env.ADMIN_PASSWORD, row.password_hash);
+  if (!matches) {
+    const hash = bcrypt.hashSync(process.env.ADMIN_PASSWORD, 12);
+    db.prepare('UPDATE users SET password_hash=? WHERE id=?').run(hash, existing.id);
+    console.log(`✓ Admin password synced from ADMIN_PASSWORD env  →  ${ADMIN_EMAIL}`);
+  } else {
+    console.log('✓ Admin already exists (password matches ADMIN_PASSWORD)');
+  }
 } else {
   console.log('✓ Admin already exists');
 }
