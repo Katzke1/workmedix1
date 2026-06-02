@@ -62,7 +62,7 @@
                 <% employees.forEach(e => { %>
                 <tr>
                   <td>
-                    <strong><%= e.first_name %> <%= e.last_name %></strong>
+                    <a href="/portal/patients/<%= e.employee_id %>" style="font-weight:600;color:var(--primary);text-decoration:none;"><%= e.first_name %> <%= e.last_name %></a>
                     <% if (e.job_title) { %><div style="font-size:.76rem;color:var(--mid-grey);"><%= e.job_title %></div><% } %>
                   </td>
                   <td class="hide-mobile" style="font-family:monospace;font-size:.8rem;"><%= e.id_number || e.passport_number || '—' %></td>

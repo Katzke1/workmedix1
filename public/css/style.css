@@ -3157,3 +3157,46 @@ select.form-control.is-loading {
 @media (prefers-reduced-motion: reduce) {
   select.form-control.is-loading { animation: none; }
 }
+
+/* ── Sidebar settings menu ────────────────────────────────────────────────── */
+.sidebar-footer { position: relative; }
+.sidebar-settings-btn {
+  width: 100%;
+  display: flex; align-items: center; gap: .6rem;
+  background: transparent; border: none; cursor: pointer;
+  padding: .55rem .6rem; border-radius: 10px;
+  color: inherit; text-align: left; font: inherit;
+  transition: background var(--transition);
+}
+.sidebar-settings-btn:hover { background: rgba(255,255,255,.07); }
+.sidebar-settings-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(255,255,255,.25); }
+.sidebar-settings-gear { width: 18px; height: 18px; color: rgba(255,255,255,.45); flex-shrink: 0; transition: transform .3s cubic-bezier(.4,0,.2,1); }
+.sidebar-settings-btn[aria-expanded="true"] .sidebar-settings-gear { transform: rotate(60deg); color: #fff; }
+
+.sidebar-menu {
+  position: absolute;
+  bottom: calc(100% + 8px); left: 0; right: 0;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 12px 34px -10px rgba(8,10,40,.45);
+  padding: .4rem;
+  opacity: 0; transform: translateY(8px) scale(.98); transform-origin: bottom center;
+  pointer-events: none;
+  transition: opacity .18s ease, transform .18s cubic-bezier(.4,0,.2,1);
+  z-index: 60;
+}
+.sidebar-menu.open { opacity: 1; transform: none; pointer-events: auto; }
+.sidebar-menu a {
+  display: flex; align-items: center; gap: .65rem;
+  padding: .6rem .7rem; border-radius: 9px;
+  font-size: .88rem; font-weight: 500; color: #2a2d4a; text-decoration: none;
+  transition: background var(--transition), color var(--transition);
+}
+.sidebar-menu a:hover { background: var(--surface-2); color: var(--primary); }
+.sidebar-menu a svg { width: 16px; height: 16px; color: var(--mid-grey); flex-shrink: 0; }
+.sidebar-menu a:hover svg { color: var(--primary); }
+.sidebar-menu a.danger { color: #e23b3b; }
+.sidebar-menu a.danger svg { color: #e23b3b; }
+.sidebar-menu a.danger:hover { background: #fff0f0; color: #e23b3b; }
+.sidebar-menu-sep { height: 1px; background: var(--border); margin: .35rem .4rem; }

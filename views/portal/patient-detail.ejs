@@ -1,0 +1,93 @@
+<%- include('../partials/head') %>
+<body>
+<div class="app-body">
+<%- include('../partials/portal-sidebar') %>
+<main class="app-main">
+  <div class="app-topbar">
+    <div class="app-topbar-title">
+      <h2><%= emp.first_name %> <%= emp.last_name %></h2>
+      <p><%= emp.job_title || 'Employee' %><%= emp.company_name ? ' · ' + emp.company_name : '' %></p>
+    </div>
+    <div class="topbar-actions">
+      <a href="javascript:history.back()" class="btn btn-outline-dark btn-sm">← Back</a>
+    </div>
+  </div>
+
+  <div class="app-content">
+    <%
+      const fmtDate = iso => iso
+        ? new Date(iso).toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' })
+        : '—';
+      let age = '';
+      if (emp.date_of_birth) {
+        const d = new Date(emp.date_of_birth);
+        if (!isNaN(d)) { age = Math.floor((Date.now() - d.getTime()) / 31557600000); }
+      }
+      const typeLabel = t => t === 'audio' ? 'Audiometry' : t === 'spiro' ? 'Spirometry' : 'Document';
+    %>
+
+    <div style="display:grid;grid-template-columns:1fr;gap:1.25rem;max-width:820px;">
+
+      <!-- Patient details -->
+      <div class="card">
+        <div class="card-header" style="display:flex;align-items:center;gap:.75rem;">
+          <div class="pd-avatar"><%= emp.first_name.charAt(0).toUpperCase() %></div>
+          <h3 style="margin:0;">Patient Details</h3>
+        </div>
+        <div class="card-body">
+          <dl class="detail-list">
+            <dt>Full name</dt><dd><%= emp.first_name %> <%= emp.last_name %></dd>
+            <dt>SA ID number</dt><dd><%= emp.id_number || '—' %></dd>
+            <dt>Passport</dt><dd><%= emp.passport_number || '—' %></dd>
+            <dt>Gender</dt><dd><%= emp.gender || '—' %></dd>
+            <dt>Date of birth</dt><dd><%= fmtDate(emp.date_of_birth) %><%= age !== '' ? ` · ${age} yrs` : '' %></dd>
+            <dt>Job title</dt><dd><%= emp.job_title || '—' %></dd>
+            <dt>Company</dt><dd><%= emp.company_name || '—' %></dd>
+          </dl>
+        </div>
+      </div>
+
+      <!-- Report history -->
+      <div class="card">
+        <div class="card-header" style="align-items:center;">
+          <h3 style="margin-right:auto;">Report History</h3>
+          <span style="font-size:.82rem;color:var(--mid-grey);"><%= results.length %> report<%= results.length !== 1 ? 's' : '' %></span>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <% if (!results.length) { %>
+            <p style="padding:1.1rem;color:var(--mid-grey);margin:0;">No reports on file yet. They appear here automatically once this person is screened.</p>
+          <% } else { %>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Report</th><th>Type</th><th class="hide-mobile">Date</th><th></th></tr></thead>
+              <tbody>
+                <% results.forEach(r => { %>
+                <tr>
+                  <td><strong><%= typeLabel(r.result_type) %></strong><% if (r.source === 'occuplus') { %> <span class="pd-src">OccuPlus</span><% } %></td>
+                  <td>
+                    <% if (r.result_type === 'audio') { %><span class="badge badge-confirmed">Audio</span>
+                    <% } else if (r.result_type === 'spiro') { %><span class="badge badge-in_progress">Spiro</span>
+                    <% } else { %><span class="badge badge-pending">Doc</span><% } %>
+                  </td>
+                  <td class="hide-mobile" style="color:var(--mid-grey);font-size:.85rem;white-space:nowrap;"><%= fmtDate(r.report_date || (r.uploaded_at || '').slice(0,10)) %></td>
+                  <td style="text-align:right;"><a href="/portal/results/<%= r.id %>/download" class="btn btn-primary btn-sm">↓ PDF</a></td>
+                </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+          <% } %>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+</div>
+<style>
+  .pd-avatar { width:40px;height:40px;border-radius:11px;flex-shrink:0;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;font-weight:800;font-size:1.05rem;display:flex;align-items:center;justify-content:center; }
+  .pd-src { font-size:.66rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--primary);background:rgba(35,38,242,.08);padding:.1rem .4rem;border-radius:5px;vertical-align:middle; }
+</style>
+<script src="/js/main.js?v=<%= locals.assetVersion %>"></script>
+</body>
+</html>

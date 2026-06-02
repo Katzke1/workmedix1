@@ -89,7 +89,7 @@
             <header class="med-folder-head">
               <div class="med-avatar"><%= p.name.charAt(0).toUpperCase() %></div>
               <div class="med-who">
-                <strong><%= p.name %></strong>
+                <strong><a href="/portal/patients/<%= p.employee_id %>" style="color:inherit;text-decoration:none;"><%= p.name %></a></strong>
                 <span><%= p.identifier || 'No ID on file' %><%= p.job_title ? ' · ' + p.job_title : '' %></span>
               </div>
               <span class="med-date-pill" title="Date of most recent test"><%= fmtDate(p.dateISO) %></span>

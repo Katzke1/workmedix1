@@ -230,6 +230,42 @@ router.get('/bookings/:id', (req, res) => {
   });
 });
 
+// ── Patient (employee) detail — full info + complete report history ───────────
+router.get('/patients/:id', (req, res) => {
+  const uid = req.session.user.id;
+  const cid = req.session.user.company_id || null;
+
+  const emp = db.prepare(`
+    SELECT e.*, co.name AS company_name
+    FROM   employees e
+    LEFT JOIN companies co ON e.company_id = co.id
+    WHERE  e.id = ?
+  `).get(req.params.id);
+
+  // Company-scoped: must be in your company, or someone you've booked
+  let allowed = (emp && cid != null && emp.company_id === cid);
+  if (emp && !allowed) {
+    allowed = !!db.prepare(`
+      SELECT 1 FROM booking_employees be JOIN bookings b ON be.booking_id = b.id
+      WHERE be.employee_id = ? AND b.user_id = ? LIMIT 1
+    `).get(emp.id, uid);
+  }
+  if (!emp || !allowed) return res.redirect('/portal/results');
+
+  const results = db.prepare(`
+    SELECT id, title, result_type, report_date, uploaded_at, source
+    FROM   results WHERE employee_id = ?
+    ORDER  BY COALESCE(report_date, uploaded_at) DESC, id DESC
+  `).all(emp.id);
+
+  res.render('portal/patient-detail', {
+    title      : `${emp.first_name} ${emp.last_name} | Workmedix`,
+    description : 'Patient details and report history.',
+    page       : 'results',
+    emp, results,
+  });
+});
+
 // ── Results / Medicals ──────────────────────────────────────────────────────
 // Strictly company-scoped: a user only ever sees results belonging to their own
 // company (via the employee's company, the owner's company, or their own user
