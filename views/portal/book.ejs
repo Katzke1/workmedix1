@@ -160,27 +160,36 @@
             </div>
           </div>
 
-          <!-- ── Step 3: Number of Employees ──────────────────────────────────── -->
+          <!-- ── Step 3: Employees ────────────────────────────────────────────── -->
           <div class="book-panel hidden" id="step-3">
             <div class="card">
               <div class="card-header">
-                <h3>Number of Employees</h3>
-                <span class="card-header-sub">How many people will be screened?</span>
+                <h3>Employees to Screen</h3>
+                <span class="card-header-sub">Add each person — these become their patient records</span>
               </div>
               <div class="card-body">
-                <div class="emp-count-wrap">
-                  <div class="form-group" style="max-width:260px;">
-                    <label class="form-label" for="num_employees">Total employees to screen <span class="req">*</span></label>
+
+                <div class="emp-count-bar">
+                  <div>
+                    <label class="form-label" for="num_employees" style="margin-bottom:.35rem;">How many employees? <span class="req">*</span></label>
                     <div class="emp-count-row">
-                      <button type="button" class="emp-stepper-btn" id="emp-decrement">−</button>
-                      <input type="number" id="num_employees" name="num_employees"
-                             class="form-control emp-count-input" min="1" max="500" value="1" required>
-                      <button type="button" class="emp-stepper-btn" id="emp-increment">+</button>
+                      <button type="button" class="emp-stepper-btn" id="emp-decrement" aria-label="Fewer employees">−</button>
+                      <input type="number" id="num_employees" class="form-control emp-count-input" min="1" max="500" value="1" inputmode="numeric">
+                      <button type="button" class="emp-stepper-btn" id="emp-increment" aria-label="More employees">+</button>
                     </div>
-                    <span class="form-hint">Our team will bring the necessary equipment for this headcount.</span>
-                    <p id="emp-count-error" class="field-error" style="display:none;">Please enter at least 1 employee.</p>
                   </div>
+                  <span class="form-hint emp-count-hint">Fill in each person's details below. ID number lets us auto-fill date of birth and gender.</span>
                 </div>
+
+                <p id="emp-count-error" class="field-error" style="display:none;margin-bottom:.75rem;">Please add at least one employee.</p>
+
+                <!-- Dynamically generated employee cards land here -->
+                <div id="employee-cards" class="emp-cards"></div>
+
+                <button type="button" class="btn btn-ghost emp-add-btn" id="emp-add">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Add another employee
+                </button>
 
                 <div class="step-nav" style="margin-top:1.5rem;">
                   <button type="button" class="btn btn-ghost step-back" data-back="2">← Back</button>
@@ -189,6 +198,53 @@
               </div>
             </div>
           </div>
+
+          <!-- Template for one employee card (cloned by JS) -->
+          <template id="emp-card-template">
+            <div class="emp-card">
+              <div class="emp-card-head">
+                <span class="emp-card-num">Employee</span>
+                <button type="button" class="emp-remove" aria-label="Remove this employee" title="Remove">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+              <div class="emp-card-grid">
+                <div class="form-group">
+                  <label class="form-label">First Name <span class="req">*</span></label>
+                  <input type="text" name="emp_first_name[]" class="form-control" autocomplete="off">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Surname <span class="req">*</span></label>
+                  <input type="text" name="emp_last_name[]" class="form-control" autocomplete="off">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">SA ID Number</label>
+                  <input type="text" name="emp_id_number[]" class="form-control emp-id" inputmode="numeric" maxlength="13" placeholder="13-digit ID number" autocomplete="off">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Passport <span class="emp-or">(if no SA ID)</span></label>
+                  <input type="text" name="emp_passport[]" class="form-control" placeholder="Passport number" autocomplete="off">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Gender <span class="req">*</span></label>
+                  <select name="emp_gender[]" class="form-control emp-gender">
+                    <option value="">— Select —</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Date of Birth</label>
+                  <input type="date" name="emp_dob[]" class="form-control emp-dob">
+                </div>
+                <div class="form-group emp-col-span">
+                  <label class="form-label">Job Title / Occupation</label>
+                  <input type="text" name="emp_job_title[]" class="form-control" placeholder="e.g. Forklift Operator" autocomplete="off">
+                </div>
+              </div>
+              <p class="field-error emp-row-error" style="display:none;"></p>
+            </div>
+          </template>
 
           <!-- ── Step 4: Review & Submit ─────────────────────────────────────── -->
           <div class="book-panel hidden" id="step-4">
@@ -432,6 +488,71 @@
   transition: border-color .15s, background .15s;
 }
 .emp-stepper-btn:hover { border-color: var(--primary); background: rgba(35,38,242,.05); color: var(--primary); }
+.emp-stepper-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--ring); }
+.emp-stepper-btn:active { transform: translateY(1px); }
+
+/* ── Employee roster cards ───────────── */
+.emp-count-bar {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+.emp-count-hint { max-width: 340px; line-height: 1.55; }
+.emp-cards { display: flex; flex-direction: column; gap: 1rem; }
+.emp-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 1rem 1.1rem 1.1rem;
+  box-shadow: 0 1px 2px rgba(15,18,60,.04);
+  animation: emp-card-in .2s cubic-bezier(.4,0,.2,1) both;
+}
+@keyframes emp-card-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.emp-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: .85rem;
+}
+.emp-card-num {
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+.emp-remove {
+  width: 28px; height: 28px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--ink-muted);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s, transform .15s;
+}
+.emp-remove:hover { background: #fff0f0; border-color: #f5b5b5; color: #e23b3b; }
+.emp-remove:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(226,59,59,.18); }
+.emp-remove:active { transform: scale(.92); }
+.emp-card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .85rem 1rem;
+}
+.emp-card-grid .form-group { margin-bottom: 0; }
+.emp-col-span { grid-column: 1 / -1; }
+.emp-or { color: var(--ink-muted); font-weight: 400; font-size: .76rem; }
+.emp-row-error { margin-top: .65rem; }
+.emp-add-btn { margin-top: 1rem; display: inline-flex; align-items: center; gap: .4rem; }
+/* When a single card can't be removed, dim its remove button */
+.emp-cards.is-single .emp-remove { opacity: .35; pointer-events: none; }
+@media (max-width: 600px) {
+  .emp-card-grid { grid-template-columns: 1fr; }
+}
 
 /* ── Review grid ─────────────────────── */
 .review-grid {
@@ -548,13 +669,37 @@
     return true;
   }
 
-  /* ── Step 3 validation ─────────────────────────────────────── */
+  /* ── Step 3 validation (per employee card) ─────────────────── */
   function validateStep3() {
-    var inp = document.getElementById('num_employees');
-    var err = document.getElementById('emp-count-error');
-    var v   = parseInt(inp ? inp.value : '0', 10);
-    if (!inp || v < 1) { if (err) err.style.display = 'block'; return false; }
-    if (err) err.style.display = 'none';
+    var cards    = document.querySelectorAll('#employee-cards .emp-card');
+    var countErr = document.getElementById('emp-count-error');
+    if (cards.length === 0) { if (countErr) countErr.style.display = 'block'; return false; }
+    if (countErr) countErr.style.display = 'none';
+
+    var firstBad = null;
+    cards.forEach(function (card) {
+      var fn  = card.querySelector('[name="emp_first_name[]"]').value.trim();
+      var ln  = card.querySelector('[name="emp_last_name[]"]').value.trim();
+      var idn = card.querySelector('[name="emp_id_number[]"]').value.replace(/\s/g, '').trim();
+      var pp  = card.querySelector('[name="emp_passport[]"]').value.trim();
+      var g   = card.querySelector('[name="emp_gender[]"]').value;
+      var err = card.querySelector('.emp-row-error');
+
+      var msg = '';
+      if (!fn || !ln)                         msg = 'Enter both a first name and surname.';
+      else if (!idn && !pp)                   msg = 'Enter an SA ID number or a passport number.';
+      else if (idn && !/^\d{13}$/.test(idn))  msg = 'An SA ID number must be 13 digits (or use a passport).';
+      else if (!g)                            msg = 'Please select a gender.';
+
+      if (msg) {
+        if (err) { err.textContent = msg; err.style.display = 'block'; }
+        if (!firstBad) firstBad = card;
+      } else if (err) {
+        err.style.display = 'none';
+      }
+    });
+
+    if (firstBad) { firstBad.scrollIntoView({ behavior: 'smooth', block: 'center' }); return false; }
     return true;
   }
 
@@ -578,19 +723,84 @@
   });
 
 
-  /* ── Employee count stepper ─────────────────────────────────── */
-  var empInput = document.getElementById('num_employees');
-  var empDec   = document.getElementById('emp-decrement');
-  var empInc   = document.getElementById('emp-increment');
-  if (empDec && empInc && empInput) {
-    empDec.addEventListener('click', function () {
-      var v = parseInt(empInput.value, 10) || 1;
-      if (v > 1) empInput.value = v - 1;
+  /* ── Employee roster cards ──────────────────────────────────── */
+  var cardsWrap  = document.getElementById('employee-cards');
+  var cardTpl    = document.getElementById('emp-card-template');
+  var countInput = document.getElementById('num_employees');
+  var addBtn     = document.getElementById('emp-add');
+  var decBtn     = document.getElementById('emp-decrement');
+  var incBtn     = document.getElementById('emp-increment');
+
+  function cardCount() { return cardsWrap ? cardsWrap.querySelectorAll('.emp-card').length : 0; }
+
+  function renumber() {
+    var cards = cardsWrap.querySelectorAll('.emp-card');
+    cards.forEach(function (c, i) {
+      var label = c.querySelector('.emp-card-num');
+      if (label) label.textContent = 'Employee ' + (i + 1);
     });
-    empInc.addEventListener('click', function () {
-      var v = parseInt(empInput.value, 10) || 1;
-      if (v < 500) empInput.value = v + 1;
+    cardsWrap.classList.toggle('is-single', cards.length <= 1);
+    if (countInput) countInput.value = cards.length;
+  }
+
+  function addCard(focus) {
+    if (!cardTpl) return;
+    var node = cardTpl.content.firstElementChild.cloneNode(true);
+    cardsWrap.appendChild(node);
+    renumber();
+    if (focus) { var fi = node.querySelector('input'); if (fi) fi.focus(); }
+  }
+
+  function removeCard(card) {
+    if (cardCount() <= 1) return;                 // always keep at least one
+    card.remove();
+    renumber();
+  }
+
+  function setCount(n) {
+    n = Math.max(1, Math.min(500, parseInt(n, 10) || 1));
+    while (cardCount() < n) addCard(false);
+    while (cardCount() > n) cardsWrap.lastElementChild.remove();
+    renumber();
+  }
+
+  /* SA ID number → auto-fill DOB + gender (best effort; user can override) */
+  function autofillFromId(card) {
+    var idEl = card.querySelector('.emp-id');
+    if (!idEl) return;
+    var id = idEl.value.replace(/\s/g, '');
+    if (!/^\d{13}$/.test(id)) return;
+    var yy = parseInt(id.slice(0, 2), 10);
+    var mm = parseInt(id.slice(2, 4), 10);
+    var dd = parseInt(id.slice(4, 6), 10);
+    if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return;
+    var nowYY = new Date().getFullYear() % 100;
+    var century = yy <= nowYY ? 2000 : 1900;
+    var dobEl = card.querySelector('.emp-dob');
+    if (dobEl && !dobEl.value) {
+      dobEl.value = (century + yy) + '-' +
+        String(mm).padStart(2, '0') + '-' + String(dd).padStart(2, '0');
+    }
+    var gEl = card.querySelector('.emp-gender');
+    if (gEl && !gEl.value) {
+      gEl.value = parseInt(id.slice(6, 10), 10) < 5000 ? 'Female' : 'Male';
+    }
+  }
+
+  if (cardsWrap) {
+    cardsWrap.addEventListener('click', function (e) {
+      var rm = e.target.closest('.emp-remove');
+      if (rm) removeCard(rm.closest('.emp-card'));
     });
+    cardsWrap.addEventListener('input', function (e) {
+      if (e.target.classList.contains('emp-id')) autofillFromId(e.target.closest('.emp-card'));
+    });
+    if (addBtn) addBtn.addEventListener('click', function () { addCard(true); });
+    if (decBtn) decBtn.addEventListener('click', function () { setCount(cardCount() - 1); });
+    if (incBtn) incBtn.addEventListener('click', function () { setCount(cardCount() + 1); });
+    if (countInput) countInput.addEventListener('change', function () { setCount(this.value); });
+
+    addCard(false);   // start with a single card
   }
 
   /* ── Notes character counter ────────────────────────────────── */
@@ -622,8 +832,18 @@
     if (provEl && provEl.value)        parts.push(provEl.value);
     document.getElementById('rev-site').textContent = parts.length ? parts.join(', ') : '—';
 
-    var empCount = parseInt((document.getElementById('num_employees') || {}).value, 10) || 1;
-    document.getElementById('rev-emps').textContent = empCount + (empCount === 1 ? ' employee' : ' employees');
+    var cards = document.querySelectorAll('#employee-cards .emp-card');
+    var names = [];
+    cards.forEach(function (c) {
+      var fn = c.querySelector('[name="emp_first_name[]"]').value.trim();
+      var ln = c.querySelector('[name="emp_last_name[]"]').value.trim();
+      var full = (fn + ' ' + ln).trim();
+      if (full) names.push(full);
+    });
+    var n = cards.length;
+    var label = n + (n === 1 ? ' employee' : ' employees');
+    if (names.length) label += ' — ' + names.join(', ');
+    document.getElementById('rev-emps').textContent = label;
   }
 
 })();
