@@ -349,7 +349,11 @@ router.get('/results/export.csv', (req, res) => {
   const patients = buildPatientFolders(companyEmployees(cid, uid));
   const d10 = r => r ? String(r.report_date || r.uploaded_at || '').slice(0, 10) : '';
 
-  const esc = v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+  const esc = v => {
+    let s = String(v == null ? '' : v);
+    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;   // neutralise CSV/formula injection in Excel & Sheets
+    return `"${s.replace(/"/g, '""')}"`;
+  };
   const lines = [['Employee', 'ID / Passport', 'Job Title', 'Audiometry', 'Audio Date', 'Spirometry', 'Spiro Date'].map(esc).join(',')];
   patients.forEach(p => lines.push([
     p.name, p.identifier, p.job_title,

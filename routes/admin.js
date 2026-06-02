@@ -538,7 +538,11 @@ router.get('/medicals', (req, res) => {
 
 router.get('/medicals/export.csv', (req, res) => {
   const { patients } = medicalsData();
-  const esc = v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+  const esc = v => {
+    let s = String(v == null ? '' : v);
+    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;   // neutralise CSV/formula injection in Excel & Sheets
+    return `"${s.replace(/"/g, '""')}"`;
+  };
   const lines = [['Company', 'Employee', 'ID / Passport', 'Job Title', 'Audiometry', 'Audio Date', 'Spirometry', 'Spiro Date'].map(esc).join(',')];
   patients.forEach(p => lines.push([
     p.company, p.name, p.identifier, p.job_title,
