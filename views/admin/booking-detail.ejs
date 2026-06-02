@@ -179,6 +179,6 @@ document.querySelector('[name="status"]')?.addEventListener('change', function()
   document.getElementById('cancel-reason-group').style.display = this.value === 'cancelled' ? 'block' : 'none';
 });
 </script>
-<script src="/js/main.js"></script>
+<script src="/js/main.js?v=<%= locals.assetVersion %>"></script>
 </body>
 </html>
