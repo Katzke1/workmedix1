@@ -60,37 +60,25 @@ SYNC_KEY      = (the SAME secret you set on Railway)
 
 > Advanced alternative: copy `.env.example` to `.env` instead of editing the .bat.
 
-### 4. Test it
-Double-click **`run-sync.bat`**. A black window opens and you should see a log
-ending with `Sync done — imported X, skipped Y …`, then "Finished."
+### 4. (Optional) Test it
+Double-click **`run-sync.bat`** to watch a sync run in a window. It syncs, then
+keeps re-syncing every 10 minutes — close the window when you're done testing.
 
 ---
 
-## Run it automatically — no window, nothing to click
+## Run it silently in the background — one click
 
-First, turn on the built-in 10-minute loop: in `run-sync.bat`, delete the `REM `
-in front of `set SYNC_INTERVAL_MINUTES=10` (or set it in `.env`). The agent will
-then sync immediately and every 10 minutes on its own.
+Once your keys are filled in, just **double-click `install-agent.bat`** once.
 
-**Recommended — Windows Task Scheduler (runs invisibly, even before login):**
-1. Start → type **Task Scheduler** → open it.
-2. Right side → **Create Task…** (not *Basic*).
-3. **General** tab: name it `Workmedix OccuPlus Sync`; select **Run whether user
-   is logged on or not**; tick **Hidden**.
-4. **Triggers** tab → **New…** → Begin the task: **At startup** → OK.
-5. **Actions** tab → **New…** → **Start a program** → **Browse** to `run-sync.bat`
-   → OK.
-6. **OK**. If prompted, enter your Windows password (lets it run in the
-   background). No Windows password? Use **Run only when user is logged on** instead.
-7. Restart to test. It now syncs every 10 minutes with **no window at all**.
+That's it. It:
+- registers the sync to start **automatically every time the laptop turns on**, and
+- starts it **right now**, running **completely hidden** (no window, nothing to click).
 
-Because the 10-minute loop is on, one launch keeps running — so trigger it **At
-startup** (not "every 10 minutes"). If you previously put a shortcut in the
-Startup folder, remove it so it doesn't run twice.
+From then on it quietly syncs every 10 minutes whenever the laptop is online.
+**To stop it**, double-click **`uninstall-agent.bat`**.
 
-**Simpler alternative — Startup folder (a minimized window stays open):**
-Put a shortcut to `run-sync.bat` in your Startup folder (`Win+R` → `shell:startup`),
-and set the shortcut to **Run: Minimized**.
+> Under the hood it adds a tiny hidden launcher to your Startup folder — no admin
+> rights or Task Scheduler fiddling required.
 
 ---
 
