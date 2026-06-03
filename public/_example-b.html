@@ -75,13 +75,20 @@
   .svc-row p{color:var(--muted);font-size:.98rem;max-width:52ch;}
   .svc-row .arrow{color:var(--muted);font-size:1.4rem;transition:transform .3s,color .3s;}
   .svc-row:hover .arrow{transform:translateX(6px);color:var(--brand);}
+  /* Dark CTA band — a touch of Example A mixed in */
+  .cta{position:relative;overflow:hidden;color:#fff;background:
+      radial-gradient(120% 120% at 85% -20%, rgba(91,94,247,.4), transparent 55%),
+      linear-gradient(160deg,#0B1030,#070A1C);}
+  .cta-in{padding:84px 0;display:flex;align-items:center;justify-content:space-between;gap:30px;flex-wrap:wrap;position:relative;z-index:1;}
+  .cta h2{font-size:clamp(1.9rem,3.2vw,2.7rem);color:#fff;max-width:20ch;}
+  .cta p{color:rgba(255,255,255,.65);margin-top:8px;}
   @media(max-width:900px){.hero-grid,.svc-grid{grid-template-columns:1fr;gap:48px;} .navlinks{display:none;} .svc-lead{position:static;} .float-card{left:12px;}}
 </style>
 </head>
 <body>
 <div class="hero" id="home">
   <nav><div class="wrap nav-in">
-    <div class="brandmark"><span class="dot"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg></span>WORKMEDIX</div>
+    <a class="brandmark"><img src="/images/logo.png" alt="Workmedix" style="height:38px;width:auto;display:block;"></a>
     <div class="navlinks"><a>About</a><a>Services</a><a>Industries</a><a>Contact</a></div>
     <a class="nav-cta">Client Portal</a>
   </div></nav>
@@ -130,6 +137,13 @@
       <div class="svc-row"><div class="num">03</div><div><h3>On-Site Mobile Screening</h3><p>We bring the clinic to your site — minimal downtime, maximum coverage, anywhere in South Africa.</p></div><div class="arrow">→</div></div>
       <div class="svc-row"><div class="num">04</div><div><h3>Medical Surveillance &amp; Certificates</h3><p>Ongoing programmes with certificates, renewals and reminders handled for you.</p></div><div class="arrow">→</div></div>
     </div>
+  </div>
+</section>
+
+<section class="cta grain">
+  <div class="wrap cta-in">
+    <div><h2>Ready to screen your team?</h2><p>Book on-site occupational health screening anywhere in South Africa.</p></div>
+    <a class="btn btn-fill"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Book a Screening</a>
   </div>
 </section>
 </body>
