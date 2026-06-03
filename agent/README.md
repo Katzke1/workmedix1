@@ -62,7 +62,7 @@ SYNC_KEY      = (the SAME secret you set on Railway)
 
 ### 4. (Optional) Test it
 Double-click **`run-sync.bat`** to watch a sync run in a window. It syncs, then
-keeps re-syncing every 10 minutes — close the window when you're done testing.
+keeps re-syncing every 3 minutes — close the window when you're done testing.
 
 ---
 
@@ -74,7 +74,7 @@ That's it. It:
 - registers the sync to start **automatically every time the laptop turns on**, and
 - starts it **right now**, running **completely hidden** (no window, nothing to click).
 
-From then on it quietly syncs every 10 minutes whenever the laptop is online.
+From then on it quietly syncs every 3 minutes whenever the laptop is online.
 **To stop it**, double-click **`uninstall-agent.bat`**.
 
 > Under the hood it adds a tiny hidden launcher to your Startup folder — no admin

@@ -19,8 +19,8 @@ set WORKMEDIX_URL=https://www.workmedix.com
 REM The shared secret  (must MATCH the SYNC_API_KEY you set on Railway):
 set SYNC_KEY=PASTE-THE-SAME-SECRET-HERE
 
-REM Re-sync automatically every 10 minutes:
-set SYNC_INTERVAL_MINUTES=10
+REM Re-sync automatically every 3 minutes:
+set SYNC_INTERVAL_MINUTES=3
 
 cd /d "%~dp0"
 node occuplus-sync.js
