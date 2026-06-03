@@ -25,6 +25,25 @@
       <% }) %>
     </div>
 
+    <!-- Calendar -->
+    <div class="card" style="margin-bottom:1.25rem;">
+      <div class="card-body">
+        <div class="cal-head">
+          <button type="button" class="cal-nav-btn" id="cal-prev" aria-label="Previous month">‹</button>
+          <strong id="cal-label"></strong>
+          <button type="button" class="cal-nav-btn" id="cal-next" aria-label="Next month">›</button>
+          <button type="button" class="btn btn-outline-dark btn-sm cal-today-btn" id="cal-today">Today</button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+        <div class="cal-legend">
+          <span><i style="background:#f59e0b"></i> Pending</span>
+          <span><i style="background:#2326F2"></i> Confirmed</span>
+          <span><i style="background:#7c3aed"></i> In progress</span>
+          <span><i style="background:#16a34a"></i> Completed</span>
+        </div>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-header">
         <h3>Bookings</h3>
@@ -72,6 +91,73 @@
   </div>
 </main>
 </div>
+<style>
+  .cal-head { display:flex; align-items:center; gap:.75rem; margin-bottom:1rem; }
+  .cal-nav-btn { width:32px; height:32px; border-radius:8px; border:1.5px solid var(--border); background:var(--surface); cursor:pointer; font-size:1.2rem; line-height:1; color:var(--mid-grey); display:flex; align-items:center; justify-content:center; transition:border-color var(--transition),color var(--transition); }
+  .cal-nav-btn:hover { border-color:var(--primary); color:var(--primary); }
+  #cal-label { font-size:1.05rem; min-width:150px; }
+  .cal-today-btn { margin-left:auto; }
+  .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+  .cal-dow { text-align:center; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--mid-grey); padding-bottom:.2rem; }
+  .cal-cell { min-height:90px; border:1px solid var(--border); border-radius:8px; padding:.3rem; background:var(--surface); display:flex; flex-direction:column; gap:3px; overflow:hidden; }
+  .cal-cell.cal-empty { background:transparent; border:none; }
+  .cal-daynum { font-size:.76rem; color:var(--mid-grey); font-weight:600; }
+  .cal-today { border-color:var(--primary); box-shadow:0 0 0 2px var(--ring); }
+  .cal-today .cal-daynum { color:var(--primary); }
+  .cal-chip { display:block; font-size:.66rem; font-weight:600; color:#fff; padding:.14rem .35rem; border-radius:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-decoration:none; transition:opacity var(--transition); }
+  .cal-chip:hover { opacity:.85; }
+  .cal-legend { display:flex; gap:1rem; flex-wrap:wrap; margin-top:.85rem; font-size:.78rem; color:var(--mid-grey); }
+  .cal-legend i { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:.3rem; vertical-align:middle; }
+  @media (max-width:600px){ .cal-cell{ min-height:60px; } .cal-chip{ font-size:.58rem; } #cal-label{ min-width:110px; font-size:.95rem; } }
+</style>
+<script>
+  window.__wmBookings = <%- JSON.stringify(bookings.map(function (b) { return {
+    id: b.id,
+    title: (b.company_name || b.client_name || b.service_type),
+    status: b.status,
+    date: (b.scheduled_at ? String(b.scheduled_at).slice(0,10) : (b.preferred_date || '')),
+  }; })).replace(/</g, '\\u003c') %>;
+
+  (function () {
+    const data = window.__wmBookings || [];
+    const grid = document.getElementById('cal-grid');
+    const label = document.getElementById('cal-label');
+    if (!grid) return;
+    const colors = { pending:'#f59e0b', confirmed:'#2326F2', in_progress:'#7c3aed', completed:'#16a34a', cancelled:'#9aa1b4' };
+    const byDate = {};
+    data.forEach(function (b) { if (b.date) { (byDate[b.date] = byDate[b.date] || []).push(b); } });
+    const today = new Date(); today.setHours(0,0,0,0);
+    let view = new Date(); view.setDate(1); view.setHours(0,0,0,0);
+    function render() {
+      const y = view.getFullYear(), m = view.getMonth();
+      label.textContent = view.toLocaleDateString('en-ZA', { month:'long', year:'numeric' });
+      grid.innerHTML = '';
+      ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(function (d) { const h = document.createElement('div'); h.className = 'cal-dow'; h.textContent = d; grid.appendChild(h); });
+      const startDow = (new Date(y, m, 1).getDay() + 6) % 7;
+      const days = new Date(y, m + 1, 0).getDate();
+      for (let i = 0; i < startDow; i++) { const c = document.createElement('div'); c.className = 'cal-cell cal-empty'; grid.appendChild(c); }
+      for (let d = 1; d <= days; d++) {
+        const cell = document.createElement('div'); cell.className = 'cal-cell';
+        const iso = y + '-' + String(m+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+        if (new Date(y, m, d).getTime() === today.getTime()) cell.classList.add('cal-today');
+        const num = document.createElement('div'); num.className = 'cal-daynum'; num.textContent = d; cell.appendChild(num);
+        (byDate[iso] || []).forEach(function (b) {
+          const chip = document.createElement('a'); chip.className = 'cal-chip';
+          chip.href = '/admin/bookings/' + b.id;
+          chip.style.background = colors[b.status] || '#2326F2';
+          chip.textContent = b.title;
+          chip.title = b.title + ' — ' + (b.status || '').replace('_',' ');
+          cell.appendChild(chip);
+        });
+        grid.appendChild(cell);
+      }
+    }
+    document.getElementById('cal-prev').addEventListener('click', function () { view.setMonth(view.getMonth()-1); render(); });
+    document.getElementById('cal-next').addEventListener('click', function () { view.setMonth(view.getMonth()+1); render(); });
+    document.getElementById('cal-today').addEventListener('click', function () { view = new Date(); view.setDate(1); view.setHours(0,0,0,0); render(); });
+    render();
+  })();
+</script>
 <script src="/js/main.js?v=<%= locals.assetVersion %>"></script>
 </body>
 </html>
