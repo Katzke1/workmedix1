@@ -253,15 +253,18 @@ router.post('/contact', async (req, res) => {
   }, req.body);
   if (!ok) return res.redirect('/?err=contact#contact');
   const { name, company, email, phone, service, message } = value;
-  try {
-    await sendContactNotification({ name, company: company || '', email, phone, service, message });
-    console.log('[contact] notification sent');
-    await sendContactConfirmation({ name, email, service });
-    console.log('[contact] confirmation sent');
-  } catch (e) {
-    console.error('[contact] email error:', e.message);
-    // Still redirect — don't break the user flow if email fails
-  }
+
+  // Fire-and-forget: don't block the HTTP response on the email provider. A slow
+  // or failing Resend call must not slow down (or break) the contact form.
+  // Errors are logged; the user is redirected immediately either way.
+  Promise.allSettled([
+    sendContactNotification({ name, company: company || '', email, phone, service, message }),
+    sendContactConfirmation({ name, email, service }),
+  ]).then(([notify, confirm]) => {
+    if (notify.status  === 'rejected') console.error('[contact] notification email failed:', notify.reason?.message || notify.reason);
+    if (confirm.status === 'rejected') console.error('[contact] confirmation email failed:', confirm.reason?.message || confirm.reason);
+  });
+
   res.redirect('/?msg=contact');
 });
 
