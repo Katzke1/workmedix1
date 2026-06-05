@@ -133,7 +133,18 @@ app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
 app.use('/uploads', express.static(UPLOADS_DIR, { maxAge: '1h' }));
 
 // ── Session ─────────────────────────────────────────────────────────────────────
+// Persist sessions in SQLite (the same DB file, so they live on the same Railway
+// volume) instead of the default in-memory store. This survives restarts/redeploys
+// — users stay logged in — and avoids the documented MemoryStore memory leak.
+// Reuses the existing better-sqlite3 connection (no second DB file / native module).
+// When you outgrow a single instance, swap this store for Redis.
+const SqliteStore = require('better-sqlite3-session-store')(session);
+
 app.use(session({
+  store            : new SqliteStore({
+    client : db,
+    expired: { clear: true, intervalMs: 15 * 60 * 1000 },  // sweep expired sessions every 15 min
+  }),
   secret           : getSessionSecret(),
   resave           : false,
   saveUninitialized: false,
