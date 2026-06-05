@@ -212,3 +212,6 @@ process.on('unhandledRejection', (reason) => {
 app.listen(PORT, () => {
   console.log(`\n  Workmedix running → http://localhost:${PORT}  [${isProd ? 'production' : 'development'}]\n`);
 });
+
+// ── Nightly SQLite backup (safe online backup to the data volume) ────────────────
+require('./lib/backup').scheduleDailyBackup();

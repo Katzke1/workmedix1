@@ -47,6 +47,20 @@ router.get('/test-email', async (req, res) => {
   }
 });
 
+// ── Manual backup trigger ───────────────────────────────────────────────────────
+// Admin-only. Useful to verify backups work, or to snapshot right before a risky
+// change. The nightly job runs automatically; this is just an on-demand run.
+router.get('/backup-now', async (req, res) => {
+  try {
+    const { runBackup } = require('../lib/backup');
+    const r = await runBackup();
+    res.json({ ok: true, file: path.basename(r.file), kb: Math.round(r.bytes / 1024), retained: r.kept });
+  } catch (err) {
+    console.error('[admin] manual backup failed:', err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // ── Admin dashboard ────────────────────────────────────────────────────────────
 router.get('/', (req, res) => {
   const expiringCerts = getExpiringCertificates(60);
