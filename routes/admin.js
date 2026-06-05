@@ -10,6 +10,7 @@ const { requireAdmin }            = require('../middleware/auth');
 const { sendTestEmail, sendBookingStatusEmail } = require('../lib/mailer');
 const { getBookingWithDetails, updateBookingStatus } = require('../db/repos/bookings');
 const { issueCertificate, getExpiringCertificates }   = require('../db/repos/certificates');
+const { validate }                = require('../lib/validate');
 
 const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, '../uploads');
 
@@ -432,42 +433,53 @@ router.get('/users', (req, res) => {
 
 // Create new admin
 router.post('/users', (req, res) => {
-  const { name, email, password } = req.body;
-  if (!name?.trim() || !email?.trim() || !password?.trim()) {
-    return res.redirect('/admin/users?err=' + encodeURIComponent('Name, email and password are all required.'));
-  }
-  if (password.length < 8) {
-    return res.redirect('/admin/users?err=' + encodeURIComponent('Password must be at least 8 characters.'));
-  }
-  const exists = db.prepare('SELECT id FROM users WHERE email=?').get(email.trim().toLowerCase());
+  // Allow-list validation. Note: role is hard-coded 'admin' below — it is never
+  // taken from the request, so no privilege can be mass-assigned via the form.
+  const { ok, value, error: vErr } = validate({
+    name    : { type: 'string', required: true, min: 2, max: 80,  pattern: /^[a-zA-Z\s\-'.]+$/, label: 'Name' },
+    email   : { type: 'email',  required: true, max: 254, label: 'Email' },
+    password: { type: 'string', required: true, min: 8, max: 200, label: 'Password' },
+  }, req.body);
+  if (!ok) return res.redirect('/admin/users?err=' + encodeURIComponent(vErr));
+  const { name, email, password } = value;
+
+  const exists = db.prepare('SELECT id FROM users WHERE email=?').get(email.toLowerCase());
   if (exists) {
     return res.redirect('/admin/users?err=' + encodeURIComponent('An account with that email already exists.'));
   }
   const hash = bcrypt.hashSync(password, 12);
   db.prepare(`INSERT INTO users (name, email, password_hash, role, email_verified) VALUES (?,?,?,'admin',1)`)
-    .run(name.trim(), email.trim().toLowerCase(), hash);
+    .run(name, email.toLowerCase(), hash);
   res.redirect('/admin/users?saved=1');
 });
 
 // Change own email
 router.post('/users/email', (req, res) => {
-  const { email } = req.body;
-  if (!email?.trim()) return res.redirect('/admin/users?err=' + encodeURIComponent('Email cannot be empty.'));
-  const conflict = db.prepare('SELECT id FROM users WHERE email=? AND id!=?').get(email.trim().toLowerCase(), req.session.user.id);
+  const { ok, value, error: vErr } = validate({
+    email: { type: 'email', required: true, max: 254, label: 'Email' },
+  }, req.body);
+  if (!ok) return res.redirect('/admin/users?err=' + encodeURIComponent(vErr));
+  const email = value.email.toLowerCase();
+
+  const conflict = db.prepare('SELECT id FROM users WHERE email=? AND id!=?').get(email, req.session.user.id);
   if (conflict) return res.redirect('/admin/users?err=' + encodeURIComponent('That email is already in use.'));
-  db.prepare('UPDATE users SET email=? WHERE id=?').run(email.trim().toLowerCase(), req.session.user.id);
-  req.session.user.email = email.trim().toLowerCase();
+  db.prepare('UPDATE users SET email=? WHERE id=?').run(email, req.session.user.id);
+  req.session.user.email = email;
   res.redirect('/admin/users?saved=1');
 });
 
 // Change own password
 router.post('/users/password', (req, res) => {
-  const { current_password, new_password, confirm_password } = req.body;
+  const { ok, value, error: vErr } = validate({
+    current_password: { type: 'string', required: true, min: 1, max: 200, label: 'Current password' },
+    new_password    : { type: 'string', required: true, min: 8, max: 200, label: 'New password' },
+    confirm_password: { type: 'string', required: true, min: 1, max: 200, label: 'Confirm password' },
+  }, req.body);
+  if (!ok) return res.redirect('/admin/users?err=' + encodeURIComponent(vErr));
+  const { current_password, new_password, confirm_password } = value;
+
   if (new_password !== confirm_password) {
     return res.redirect('/admin/users?err=' + encodeURIComponent('New passwords do not match.'));
-  }
-  if (!new_password || new_password.length < 8) {
-    return res.redirect('/admin/users?err=' + encodeURIComponent('Password must be at least 8 characters.'));
   }
   const row = db.prepare('SELECT password_hash FROM users WHERE id=?').get(req.session.user.id);
   if (!bcrypt.compareSync(current_password, row.password_hash)) {

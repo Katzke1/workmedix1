@@ -7,6 +7,7 @@ const path                   = require('path');
 const db                     = require('../db');
 const { requireAuth, requireClientAdmin } = require('../middleware/auth');
 const { validateEmployee, validateBooking } = require('../lib/schemas/booking');
+const { validate, sanitiseString } = require('../lib/validate');
 const { validateSaId } = require('../lib/za-id');
 const { createBookingWithEmployees } = require('../db/repos/bookings');
 const { sendNewBookingNotification } = require('../lib/mailer');
@@ -69,16 +70,33 @@ router.post('/book', (req, res) => {
 
   const uid = req.session.user.id;
   let   cid = req.session.user.company_id || null;
-  const { service_id, preferred_date, preferred_time, notes,
-          loc_address, loc_city, loc_province, loc_contact } = req.body;
 
-  if (!service_id || !preferred_date)
+  // ── Scalar fields — sanitise control chars, then strict format/length checks ──
+  // (The per-employee fields below are legitimately multi-value arrays, so they
+  //  are handled separately rather than through the scalar schema validator.)
+  const s = (v) => sanitiseString((v == null || Array.isArray(v)) ? '' : v);
+  const service_id     = s(req.body.service_id);
+  const preferred_date = s(req.body.preferred_date);
+  const preferred_time = s(req.body.preferred_time);
+  const notes          = s(req.body.notes);
+  const loc_address    = s(req.body.loc_address);
+  const loc_city       = s(req.body.loc_city);
+  const loc_province   = s(req.body.loc_province);
+  const loc_contact    = s(req.body.loc_contact);
+
+  if (!/^\d{1,9}$/.test(service_id) || !preferred_date)
     return render('Please select a service and preferred date.', null);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(preferred_date) || Number.isNaN(new Date(preferred_date).getTime()))
+    return render('Please select a valid date.', null);
   if (new Date(preferred_date) < new Date(new Date().toDateString()))
     return render('Please select a future date.', null);
-  if (!loc_address?.trim())
+  if (preferred_time && !/^([01]\d|2[0-3]):[0-5]\d$/.test(preferred_time))
+    return render('Please select a valid time.', null);
+  if (!loc_address)
     return render('Please enter a screening address.', null);
-  if (notes && notes.length > 500)
+  if (loc_address.length > 200 || loc_city.length > 100 || loc_province.length > 100 || loc_contact.length > 120)
+    return render('A location field is too long.', null);
+  if (notes.length > 500)
     return render('Notes may not exceed 500 characters.', null);
 
   const svc = db.prepare(`SELECT * FROM crm_service_rates WHERE id=?`).get(service_id);
@@ -99,25 +117,32 @@ router.post('/book', (req, res) => {
 
   const roster = [];
   for (let i = 0; i < rows; i++) {
-    const fn  = (firstNames[i] || '').trim();
-    const ln  = (lastNames[i]  || '').trim();
-    const idn = (idNumbers[i]  || '').replace(/\s/g, '').trim();
-    const pp  = (passports[i]  || '').trim();
-    const g   = (genders[i]    || '').trim();
-    const dob = (dobs[i]       || '').trim();
-    const jt  = (jobTitles[i]  || '').trim();
+    const fn  = s(firstNames[i]);
+    const ln  = s(lastNames[i]);
+    const idn = s(idNumbers[i]).replace(/\s/g, '');
+    const pp  = s(passports[i]);
+    const g   = s(genders[i]);
+    const dob = s(dobs[i]);
+    const jt  = s(jobTitles[i]);
 
     if (!fn && !ln && !idn && !pp && !g) continue;          // skip blank rows
     if (!fn || !ln)
       return render(`Employee ${i + 1}: please enter both a first name and surname.`, null);
+    // Length caps (oversized-payload defence)
+    if (fn.length > 80 || ln.length > 80 || pp.length > 20 || jt.length > 120)
+      return render(`Employee ${i + 1}: a field is too long.`, null);
     if (!idn && !pp)
       return render(`Employee ${i + 1}: enter an SA ID number or a passport number.`, null);
     if (idn) {
       const v = validateSaId(idn);
       if (!v.valid) return render(`Employee ${i + 1}: ${v.reason} (or use a passport number instead).`, null);
     }
-    if (!g)
-      return render(`Employee ${i + 1}: please select a gender.`, null);
+    if (pp && !/^[A-Za-z0-9\-]{4,20}$/.test(pp))
+      return render(`Employee ${i + 1}: passport number contains invalid characters.`, null);
+    if (dob && !/^\d{4}-\d{2}-\d{2}$/.test(dob))
+      return render(`Employee ${i + 1}: date of birth is invalid.`, null);
+    if (!g || !['male', 'female', 'other'].includes(g.toLowerCase()))
+      return render(`Employee ${i + 1}: please select a valid gender.`, null);
 
     roster.push({
       firstName: fn, lastName: ln,
@@ -440,7 +465,6 @@ router.get('/profile', (req, res) => {
 });
 
 router.post('/profile/password', (req, res) => {
-  const { current_password, new_password, confirm_password } = req.body;
   const user = db.prepare('SELECT * FROM users WHERE id=?').get(req.session.user.id);
 
   const render = (error, success) => res.render('portal/profile', {
@@ -452,14 +476,18 @@ router.post('/profile/password', (req, res) => {
     success
   });
 
-  if (!current_password || !new_password || !confirm_password)
-    return render('All password fields are required.', null);
+  const { ok, value, error: vErr } = validate({
+    current_password: { type: 'string', required: true, min: 1, max: 200, label: 'Current password' },
+    new_password    : { type: 'string', required: true, min: 8, max: 200, label: 'New password' },
+    confirm_password: { type: 'string', required: true, min: 1, max: 200, label: 'Confirm password' },
+  }, req.body);
+  if (!ok) return render(vErr, null);
+  const { current_password, new_password, confirm_password } = value;
+
   if (!bcrypt.compareSync(current_password, user.password_hash))
     return render('Current password is incorrect.', null);
   if (new_password !== confirm_password)
     return render('New passwords do not match.', null);
-  if (new_password.length < 8)
-    return render('New password must be at least 8 characters.', null);
 
   db.prepare('UPDATE users SET password_hash=? WHERE id=?')
     .run(bcrypt.hashSync(new_password, 12), user.id);

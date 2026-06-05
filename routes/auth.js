@@ -7,6 +7,7 @@ const crypto   = require('crypto');
 const db       = require('../db');
 const path     = require('path');
 const { sendVerificationEmail, sendContactNotification, sendContactConfirmation, sendPasswordResetEmail, sendBookingConfirmationEmail } = require('../lib/mailer');
+const { validate } = require('../lib/validate');
 
 // ── Public home ───────────────────────────────────────────────────────────────
 router.get('/', (req, res) => {
@@ -36,8 +37,6 @@ router.get('/login', (req, res) => {
 
 // ── POST /login ───────────────────────────────────────────────────────────────
 router.post('/login', (req, res) => {
-  const { email, password } = req.body;
-
   const render = (error, resendEmail = null) => res.render('auth/login', {
     title       : 'Login | Workmedix',
     description : 'Login to your Workmedix client portal or admin dashboard.',
@@ -46,9 +45,15 @@ router.post('/login', (req, res) => {
     msg         : null,
   });
 
-  if (!email || !password) return render('Please enter your email and password.');
+  // Strict, allow-list input validation (rejects unexpected fields)
+  const { ok, value, error: vErr } = validate({
+    email   : { type: 'email',  required: true, max: 254, label: 'Email' },
+    password: { type: 'string', required: true, min: 1, max: 200, label: 'Password' },
+  }, req.body);
+  if (!ok) return render(vErr);
+  const { email, password } = value;
 
-  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase().trim());
+  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase());
   if (!user || !bcrypt.compareSync(password, user.password_hash)) {
     return render('Invalid email or password.');
   }
@@ -101,8 +106,6 @@ router.get('/register', (req, res) => {
 
 // ── POST /register ────────────────────────────────────────────────────────────
 router.post('/register', (req, res) => {
-  const { name, company_name, email, password, confirm_password } = req.body;
-
   const render = (error) => res.render('auth/register', {
     title       : 'Register | Workmedix',
     description : 'Create your Workmedix client account.',
@@ -110,20 +113,17 @@ router.post('/register', (req, res) => {
     formData    : req.body
   });
 
-  if (!name || !company_name?.trim() || !email || !password || !confirm_password)
-    return render('All fields are required.');
-  if (company_name.trim().length < 2)
-    return render('Please enter your company or organisation name.');
-  if (name.trim().length < 2)
-    return render('Please enter your full name (at least 2 characters).');
-  if (!/^[a-zA-Z\s\-'\.]+$/.test(name.trim()))
-    return render('Name may only contain letters, spaces, hyphens, and apostrophes.');
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim()))
-    return render('Please enter a valid email address.');
-  if (password.length < 8)
-    return render('Password must be at least 8 characters.');
-  if (password !== confirm_password)
-    return render('Passwords do not match.');
+  // Strict, allow-list input validation
+  const { ok, value, error: vErr } = validate({
+    name            : { type: 'string', required: true, min: 2, max: 80,  pattern: /^[a-zA-Z\s\-'.]+$/, label: 'Full name' },
+    company_name    : { type: 'string', required: true, min: 2, max: 120, label: 'Company name' },
+    email           : { type: 'email',  required: true, max: 254, label: 'Email' },
+    password        : { type: 'string', required: true, min: 8, max: 200, label: 'Password' },
+    confirm_password: { type: 'string', required: true, min: 1, max: 200, label: 'Confirm password' },
+  }, req.body);
+  if (!ok) return render(vErr);
+  const { name, company_name, email, password, confirm_password } = value;
+  if (password !== confirm_password) return render('Passwords do not match.');
 
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email.toLowerCase().trim());
   if (existing) return render('An account with this email already exists.');
@@ -193,10 +193,13 @@ router.post('/resend-verification', async (req, res) => {
     prefillEmail: req.body.email || '', error, success,
   });
 
-  const { email } = req.body;
-  if (!email?.trim()) return render('Please enter your email address.', null);
+  const { ok: valid, value, error: vErr } = validate({
+    email: { type: 'email', required: true, max: 254, label: 'Email' },
+  }, req.body);
+  if (!valid) return render(vErr, null);
+  const { email } = value;
 
-  const user = db.prepare('SELECT * FROM users WHERE email=?').get(email.toLowerCase().trim());
+  const user = db.prepare('SELECT * FROM users WHERE email=?').get(email.toLowerCase());
   const ok   = 'If that email is registered and unverified, we\'ve sent a new link. Check your inbox.';
 
   if (user && !user.email_verified) {
@@ -233,14 +236,27 @@ router.get('/verify/:token', (req, res) => {
 
 // ── POST /contact ─────────────────────────────────────────────────────────────
 router.post('/contact', async (req, res) => {
-  const { name, company, email, phone, service, message } = req.body;
-  if (!name?.trim() || !email?.trim() || !phone?.trim() || !message?.trim()) {
-    return res.redirect('/?err=contact#contact');
-  }
+  // Strict, allow-list validation — service is restricted to the known options.
+  const { ok, value } = validate({
+    name   : { type: 'string', required: true,  min: 2, max: 80,   label: 'Name' },
+    company: { type: 'string', required: false,        max: 120,   label: 'Company' },
+    email  : { type: 'email',  required: true,         max: 254,   label: 'Email' },
+    phone  : { type: 'string', required: true,  min: 6, max: 30, pattern: /^[0-9+\-\s()]+$/, label: 'Phone' },
+    service: { type: 'string', required: true,         max: 80, enum: [
+      'Pre-employment Medicals',
+      'Occupational Health Screenings',
+      'Drug & Alcohol Testing',
+      'Fitness for Duty Assessments',
+      'Multiple / Not sure yet',
+    ], label: 'Service' },
+    message: { type: 'string', required: true,  min: 1, max: 5000, label: 'Message' },
+  }, req.body);
+  if (!ok) return res.redirect('/?err=contact#contact');
+  const { name, company, email, phone, service, message } = value;
   try {
-    await sendContactNotification({ name: name.trim(), company: company?.trim() || '', email: email.trim(), phone: phone.trim(), service: service || 'Not specified', message: message.trim() });
+    await sendContactNotification({ name, company: company || '', email, phone, service, message });
     console.log('[contact] notification sent');
-    await sendContactConfirmation({ name: name.trim(), email: email.trim(), service: service || 'our services' });
+    await sendContactConfirmation({ name, email, service });
     console.log('[contact] confirmation sent');
   } catch (e) {
     console.error('[contact] email error:', e.message);
@@ -267,10 +283,13 @@ router.post('/forgot-password', async (req, res) => {
     error, success
   });
 
-  const { email } = req.body;
-  if (!email?.trim()) return render('Please enter your email address.', null);
+  const { ok, value, error: vErr } = validate({
+    email: { type: 'email', required: true, max: 254, label: 'Email' },
+  }, req.body);
+  if (!ok) return render(vErr, null);
+  const { email } = value;
 
-  const user = db.prepare('SELECT * FROM users WHERE email=?').get(email.toLowerCase().trim());
+  const user = db.prepare('SELECT * FROM users WHERE email=?').get(email.toLowerCase());
   const successMsg = 'If an account with that email exists, a reset link has been sent.';
 
   if (user) {
@@ -353,17 +372,20 @@ router.post('/reset-password/:token', (req, res) => {
 
   if (!user) return expiredRender();
 
-  const { new_password, confirm_password } = req.body;
-  if (!new_password || new_password.length < 8 || new_password !== confirm_password) {
-    return res.render('auth/reset-password', {
-      title      : 'Reset Password | Workmedix',
-      description: 'Set a new password for your Workmedix account.',
-      token      : req.params.token,
-      error      : new_password !== confirm_password
-        ? 'Passwords do not match.'
-        : 'Password must be at least 8 characters.',
-    });
-  }
+  const errRender = (error) => res.render('auth/reset-password', {
+    title      : 'Reset Password | Workmedix',
+    description: 'Set a new password for your Workmedix account.',
+    token      : req.params.token,
+    error,
+  });
+
+  const { ok, value, error: vErr } = validate({
+    new_password    : { type: 'string', required: true, min: 8, max: 200, label: 'Password' },
+    confirm_password: { type: 'string', required: true, min: 1, max: 200, label: 'Confirm password' },
+  }, req.body);
+  if (!ok) return errRender(vErr);
+  const { new_password, confirm_password } = value;
+  if (new_password !== confirm_password) return errRender('Passwords do not match.');
 
   const hash = bcrypt.hashSync(new_password, 12);
   db.prepare('UPDATE users SET password_hash=?, password_reset_token=NULL, password_reset_expires_at=NULL WHERE id=?')
