@@ -6,7 +6,7 @@ const path         = require('path');
 const fs           = require('fs');
 const helmet       = require('helmet');
 const compression  = require('compression');
-const rateLimit    = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 
 const cookieParser = require('cookie-parser');
 const { getSessionSecret, validateConfig } = require('./lib/config');
@@ -24,6 +24,48 @@ const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, 'uploads');
 
 ['results', 'certificates'].forEach(sub => {
   fs.mkdirSync(path.join(UPLOADS_DIR, sub), { recursive: true });
+});
+
+// ── Rate limiting (OWASP API4:2023 — unrestricted resource consumption) ─────────
+// Key by authenticated user id where available (fairer to users behind shared /
+// corporate NAT), falling back to the client IP. ipKeyGenerator normalises IPv6.
+const keyByUserOrIp = (req) =>
+  (req.session && req.session.user && req.session.user.id)
+    ? `u:${req.session.user.id}`
+    : ipKeyGenerator(req.ip);
+
+// Graceful 429 — JSON for API/AJAX callers, a friendly page for browsers, with Retry-After.
+function rateLimitHandler(req, res) {
+  const resetMs = req.rateLimit && req.rateLimit.resetTime ? req.rateLimit.resetTime - Date.now() : 0;
+  res.set('Retry-After', String(Math.max(1, Math.ceil((resetMs || 15 * 60 * 1000) / 1000))));
+  const wantsJson = (req.headers.accept || '').includes('application/json')
+                 || (req.headers['content-type'] || '').includes('application/json');
+  if (wantsJson) {
+    return res.status(429).json({ error: 'Too many requests. Please slow down and try again shortly.' });
+  }
+  return res.status(429).render('error', {
+    title      : 'Too many requests | Workmedix',
+    description: 'Rate limit reached.',
+    message    : 'You’ve made too many requests in a short time. Please wait a few minutes and try again.',
+  });
+}
+
+const mkLimiter = (windowMs, max) => rateLimit({
+  windowMs, max,
+  standardHeaders: true, legacyHeaders: false,
+  keyGenerator   : keyByUserOrIp,
+  handler        : rateLimitHandler,
+});
+
+const generalLimiter = mkLimiter(15 * 60 * 1000, 600);   // global safety net (≈40/min)
+const authLimiter    = mkLimiter(15 * 60 * 1000, 20);    // login / register / password reset
+const contactLimiter = mkLimiter(60 * 60 * 1000, 10);    // contact form
+const bookingLimiter = mkLimiter(60 * 60 * 1000, 15);    // booking requests
+const syncLimiter    = rateLimit({                       // machine agent (runs before session → IP only)
+  windowMs       : 5 * 60 * 1000, max: 120,
+  standardHeaders: true, legacyHeaders: false,
+  keyGenerator   : (req) => ipKeyGenerator(req.ip),
+  handler        : rateLimitHandler,
 });
 
 // ── Security headers ────────────────────────────────────────────────────────────
@@ -73,7 +115,7 @@ app.use(cookieParser());
 // ── OccuPlus sync API (machine-to-machine) ─────────────────────────────────────
 // Mounted before session/CSRF; authenticated via the X-Sync-Key header.
 // Its own JSON parser allows larger bodies (base64 PDF reports).
-app.use('/api/sync', express.json({ limit: '25mb' }), require('./routes/sync'));
+app.use('/api/sync', syncLimiter, express.json({ limit: '25mb' }), require('./routes/sync'));
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -114,29 +156,15 @@ app.use((req, res, next) => {
   next();
 });
 
-// ── Rate limiting ──────────────────────────────────────────────────────────────
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, max: 20,
-  message : 'Too many attempts, please try again in 15 minutes.',
-  standardHeaders: true, legacyHeaders: false,
-});
-const contactLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, max: 10,
-  message : 'Too many contact submissions, please try again later.',
-  standardHeaders: true, legacyHeaders: false,
-});
-const bookingLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, max: 5,
-  message : 'Too many booking requests, please try again later.',
-  standardHeaders: true, legacyHeaders: false,
-});
-
-app.use('/login',           authLimiter);
-app.use('/register',        authLimiter);
-app.use('/forgot-password', authLimiter);
-app.use('/reset-password',  authLimiter);
-app.use('/contact',         contactLimiter);
-app.use('/portal/book',     bookingLimiter);
+// ── Apply rate limits ──────────────────────────────────────────────────────────
+app.use('/login',               authLimiter);
+app.use('/register',            authLimiter);
+app.use('/forgot-password',     authLimiter);
+app.use('/reset-password',      authLimiter);
+app.use('/resend-verification', authLimiter);
+app.use('/contact',             contactLimiter);
+app.use('/portal/book',         bookingLimiter);
+app.use(generalLimiter);   // global safety net for every other dynamic route
 
 // ── Routes ──────────────────────────────────────────────────────────────────────
 app.use('/',          require('./routes/auth'));
