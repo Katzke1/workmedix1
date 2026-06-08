@@ -128,11 +128,12 @@ router.post('/results', (req, res) => {
   }
   if (!userId) return res.json({ ok: true, status: 'no_match', reason: 'no portal user for this employee’s company' });
 
-  // Decode + store the PDF
-  let buf;
-  try { buf = Buffer.from(pdf_base64, 'base64'); }
-  catch (e) { return res.status(400).json({ ok: false, error: 'pdf_base64 is not valid base64.' }); }
-  if (!buf.length) return res.status(400).json({ ok: false, error: 'Decoded PDF is empty.' });
+  // Decode the PDF. Buffer.from(.., 'base64') never throws — it silently drops invalid
+  // characters — so validate the decoded bytes instead of relying on a try/catch.
+  const buf = Buffer.from(String(pdf_base64), 'base64');
+  if (!buf.length) return res.status(400).json({ ok: false, error: 'Decoded PDF is empty or not valid base64.' });
+  if (buf.subarray(0, 5).toString('latin1') !== '%PDF-')
+    return res.status(400).json({ ok: false, error: 'Decoded data is not a PDF.' });
 
   const dir = path.join(UPLOADS_DIR, 'results');
   fs.mkdirSync(dir, { recursive: true });
@@ -141,8 +142,8 @@ router.post('/results', (req, res) => {
   fs.writeFileSync(fpath, buf);
 
   const typeLabel  = result_type === 'audio' ? 'Audiometry Report' : 'Spirometry Report';
-  const finalTitle = (title && title.trim())
-    || `${typeLabel}${category ? ` — Category ${category}` : ''} — ${emp.first_name} ${emp.last_name}`;
+  const finalTitle = (typeof title === 'string' && title.trim())
+    || `${typeLabel}${category ? ` — Category ${String(category)}` : ''} — ${emp.first_name} ${emp.last_name}`;
 
   const info = db.prepare(`
     INSERT INTO results (user_id, booking_id, employee_id, title, file_path, report_date, source, result_type, external_id)

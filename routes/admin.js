@@ -276,13 +276,20 @@ router.post('/results', (req, res) => {
 
   uploadResults.single('file')(req, res, (err) => {
     if (err) return render(err.message, null);
-    const { user_id, booking_id, employee_id, title, report_date } = req.body;
-    if (!user_id || !title || !req.file) return render('Client, title, and file are required.', null);
+    // Wrap DB work in try/catch: a throw inside this multer callback is NOT caught
+    // by Express (different tick) and would crash the whole process.
+    try {
+      const { user_id, booking_id, employee_id, title, report_date } = req.body;
+      if (!user_id || !title || !req.file) return render('Client, title, and file are required.', null);
 
-    db.prepare(`INSERT INTO results (user_id, booking_id, employee_id, title, file_path, report_date) VALUES (?,?,?,?,?,?)`)
-      .run(user_id, booking_id || null, employee_id || null, title.trim(),
-           path.join(UPLOADS_DIR, 'results', req.file.filename), report_date || null);
-    render(null, 'Result uploaded successfully.');
+      db.prepare(`INSERT INTO results (user_id, booking_id, employee_id, title, file_path, report_date) VALUES (?,?,?,?,?,?)`)
+        .run(user_id, booking_id || null, employee_id || null, String(title).trim(),
+             path.join(UPLOADS_DIR, 'results', req.file.filename), report_date || null);
+      render(null, 'Result uploaded successfully.');
+    } catch (e) {
+      console.error('[admin] result upload failed:', e.message);
+      render('Could not save the result. Check the selected client/employee and try again.', null);
+    }
   });
 });
 
@@ -317,17 +324,24 @@ router.post('/certificates', (req, res) => {
 
   uploadCerts.single('file')(req, res, (err) => {
     if (err) return render(err.message, null);
-    const { user_id, employee_id, certificate_type_id, title, issued_date, expiry_date } = req.body;
-    if (!user_id || !title) return render('Client and title are required.', null);
+    // Wrap DB work in try/catch: a throw inside this multer callback is NOT caught
+    // by Express (different tick) and would crash the whole process.
+    try {
+      const { user_id, employee_id, certificate_type_id, title, issued_date, expiry_date } = req.body;
+      if (!user_id || !title) return render('Client and title are required.', null);
 
-    const filePath = req.file ? path.join(UPLOADS_DIR, 'certificates', req.file.filename) : null;
+      const filePath = req.file ? path.join(UPLOADS_DIR, 'certificates', req.file.filename) : null;
 
-    const { certNumber } = issueCertificate({
-      userId: user_id, employeeId: employee_id || null, certTypeId: certificate_type_id || null,
-      title: title.trim(), filePath, issuedDate: issued_date || null, expiryDate: expiry_date || null
-    });
+      const { certNumber } = issueCertificate({
+        userId: user_id, employeeId: employee_id || null, certTypeId: certificate_type_id || null,
+        title: String(title).trim(), filePath, issuedDate: issued_date || null, expiryDate: expiry_date || null
+      });
 
-    render(null, `Certificate issued — #${certNumber}`);
+      render(null, `Certificate issued — #${certNumber}`);
+    } catch (e) {
+      console.error('[admin] certificate issue failed:', e.message);
+      render('Could not issue the certificate. Check the selected client/employee and try again.', null);
+    }
   });
 });
 
