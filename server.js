@@ -73,12 +73,13 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc   : ["'self'"],
-      scriptSrc    : ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdn.jsdelivr.net'],
+      scriptSrc    : ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdn.jsdelivr.net', 'https://www.googletagmanager.com'],
       scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc     : ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://fonts.gstatic.com'],
       fontSrc      : ["'self'", 'https://fonts.gstatic.com', 'data:'],
       imgSrc       : ["'self'", 'data:', 'https:'],
-      connectSrc   : ["'self'"],
+      // GA4 (gtag.js) loads from googletagmanager.com and beacons to google-analytics.com
+      connectSrc   : ["'self'", 'https://www.google-analytics.com', 'https://*.google-analytics.com', 'https://*.analytics.google.com', 'https://www.googletagmanager.com'],
       frameSrc     : ["'none'"],
       objectSrc    : ["'none'"],
       upgradeInsecureRequests: isProd ? [] : null,
@@ -164,6 +165,9 @@ app.use(csrfMiddleware);
 app.use((req, res, next) => {
   res.locals.user    = req.session.user || null;
   res.locals.APP_URL = (process.env.APP_URL || `http://localhost:${PORT}`).replace(/\/$/, '');
+  // Google Analytics (GA4): only emit the tag in production so local/dev traffic
+  // doesn't pollute the stats. Override the ID via GA_MEASUREMENT_ID if it changes.
+  res.locals.GA_ID   = isProd ? (process.env.GA_MEASUREMENT_ID || 'G-EXLXVPYQGC') : null;
   next();
 });
 
