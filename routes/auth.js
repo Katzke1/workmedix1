@@ -21,6 +21,10 @@ router.get('/', (req, res) => {
   });
 });
 
+// Common homepage aliases → canonical root (301). Catches guessed or legacy URLs
+// like /home, /index, /index.html and consolidates them to "/" (no duplicate content).
+router.get(['/home', '/index', '/index.html'], (req, res) => res.redirect(301, '/'));
+
 // ── GET /login ────────────────────────────────────────────────────────────────
 router.get('/login', (req, res) => {
   if (req.session.user) {
