@@ -63,8 +63,8 @@
       /* #2326F2 = rgb(35,38,242)  →  vec4(0.137,0.149,0.949)  */
       vec4 col = mix(
         vec4(0.024, 0.031, 0.140, 1.0),   /* #060824  deep ink navy   */
-        vec4(0.086, 0.094, 0.560, 1.0),   /* #16188F  muted deep brand */
-        uv.y * 0.55 + uv.x * 0.45
+        vec4(0.078, 0.086, 0.480, 1.0),   /* #14167A  muted deep brand */
+        clamp(uv.y * 0.30, 0.0, 1.0)       /* vertical only — no left/right band */
       );
       /* Subtle centre radial glow — restrained brand-blue */
       float cd = length((uv - 0.5) * vec2(1.0, 1.8));

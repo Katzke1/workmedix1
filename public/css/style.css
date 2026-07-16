@@ -57,7 +57,7 @@
   --radius-xl : 20px;
 
   --sidebar-w  : 240px;
-  --nav-h      : 88px;
+  --nav-h      : 96px;
   --transition : .22s ease;
 
   /* 8px spacing scale */
@@ -318,7 +318,7 @@ select.form-control { cursor: pointer; }
   top: 0;
   left: 0;
   width: 100%;
-  height: 72px;
+  height: 96px;
   display: flex;
   align-items: center;
   z-index: 999;
@@ -349,9 +349,9 @@ body.has-hero .navbar:not(.scrolled) {
 /* Logo — light + dark versions, swapped by context */
 .nav-brand { display: flex; align-items: center; text-decoration: none; flex-shrink: 0; }
 .nav-brand img {
-  height: 54px;
+  height: 88px;
   width: auto;
-  max-width: 250px;
+  max-width: 360px;
   object-fit: contain;
   object-position: left center;
   transition: opacity .3s ease;
@@ -446,10 +446,9 @@ body.has-hero .navbar:not(.scrolled) .btn-login:hover {
   align-items: center;
   position: relative;
   overflow: hidden;
-  /* WebGL fallback — layered radial glows over deep ink-navy */
+  /* WebGL fallback — one soft glow behind the headline, otherwise even deep navy */
   background:
-    radial-gradient(120% 90% at 85% -10%, rgba(35,38,242,.38) 0%, transparent 55%),
-    radial-gradient(80% 70% at 10% 110%, rgba(20,22,184,.42) 0%, transparent 60%),
+    radial-gradient(90% 80% at 28% 18%, rgba(35,38,242,.20) 0%, transparent 62%),
     var(--hero-ink);
 }
 /* Film grain — breaks up flat gradient banding, adds tactility */
@@ -1331,23 +1330,24 @@ tbody tr:hover td { background: rgba(35,38,242,.04); }
 @media (max-width: 768px) {
   section { padding: 60px 0; }
 
-  /* Nav — mobile white pill */
+  /* Nav — mobile: clean white ribbon */
   .navbar {
-    height: 66px !important;
-    background: rgba(255,255,255,.95) !important;
-    backdrop-filter: blur(32px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(32px) saturate(180%) !important;
-    border-color: rgba(200,220,245,.70) !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.09),
-                inset 0 1px 0 rgba(255,255,255,1) !important;
+    height: 70px !important;
+    background: rgba(255,255,255,.96) !important;
+    backdrop-filter: blur(14px) saturate(160%) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(160%) !important;
+    border-bottom: 1px solid var(--light-grey) !important;
+    box-shadow: none !important;
   }
   .nav-hamburger { display: flex; }
   .navbar .container { position: relative; }
 
-  /* Logo — smaller on mobile since navbar is only 66px */
+  /* Mobile bar is always white → force the dark logo (never the white one) */
+  .nav-logo-light { display: none !important; }
+  .nav-logo-dark  { display: block !important; }
   .nav-brand img {
-    height: 68px !important;
-    max-width: 240px !important;
+    height: 50px !important;
+    max-width: 210px !important;
     filter: none !important;
     opacity: 1 !important;
   }
