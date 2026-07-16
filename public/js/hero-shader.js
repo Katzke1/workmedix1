@@ -62,13 +62,13 @@
       /* #1416B8 = rgb(20,22,184)  →  vec4(0.078,0.086,0.722)  */
       /* #2326F2 = rgb(35,38,242)  →  vec4(0.137,0.149,0.949)  */
       vec4 col = mix(
-        vec4(0.040, 0.044, 0.420, 1.0),   /* #0A0B6B  deep brand ink  */
-        vec4(0.137, 0.149, 0.949, 1.0),   /* #2326F2  brand primary   */
+        vec4(0.024, 0.031, 0.140, 1.0),   /* #060824  deep ink navy   */
+        vec4(0.086, 0.094, 0.560, 1.0),   /* #16188F  muted deep brand */
         uv.y * 0.55 + uv.x * 0.45
       );
-      /* Subtle centre radial glow — tinted brand-blue */
+      /* Subtle centre radial glow — restrained brand-blue */
       float cd = length((uv - 0.5) * vec2(1.0, 1.8));
-      col.rgb += vec3(0.05, 0.06, 0.40) * max(0.0, 1.0 - cd * 1.6);
+      col.rgb += vec3(0.04, 0.05, 0.30) * max(0.0, 1.0 - cd * 1.7);
 
       /* ── Plasma data-stream backing lines ─────────────── */
       /* Warp space slightly for an organic look */
@@ -88,8 +88,8 @@
         float ly   = rand3(ws.x * 0.22 + iTime * 0.14) * hf * 0.6 + off;
         float ln   = glow(ly, hw, ws.y) * 0.4
                    + crisp(ly, hw * 0.2, ws.y);
-        /* brand electric-blue plasma lines */
-        col += vec4(0.24, 0.30, 1.00, 1.0) * ln * r * 0.28;
+        /* brand electric-blue plasma lines — restrained */
+        col += vec4(0.20, 0.26, 0.95, 1.0) * ln * r * 0.16;
       }
 
       /* ── Vignette  (soft dark edges, brighter centre) ── */
