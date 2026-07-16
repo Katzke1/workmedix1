@@ -80,7 +80,7 @@ app.use(helmet({
       imgSrc       : ["'self'", 'data:', 'https:'],
       // GA4 (gtag.js) loads from googletagmanager.com and beacons to google-analytics.com
       connectSrc   : ["'self'", 'https://www.google-analytics.com', 'https://*.google-analytics.com', 'https://*.analytics.google.com', 'https://www.googletagmanager.com'],
-      frameSrc     : ["'none'"],
+      frameSrc     : ["'self'", 'https://www.google.com', 'https://maps.google.com'],   // Google Maps embed
       objectSrc    : ["'none'"],
       upgradeInsecureRequests: isProd ? [] : null,
     },
