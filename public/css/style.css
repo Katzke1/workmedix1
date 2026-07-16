@@ -312,138 +312,105 @@ select.form-control { cursor: pointer; }
 .empty-state h3 { font-size: 1rem; color: var(--ink-muted); margin-bottom: .4rem; }
 .empty-state p  { font-size: .88rem; color: var(--mid-grey); max-width: 320px; }
 
-/* ── 9. Public Navbar — floating white glass pill ───────── */
+/* ── 9. Public Navbar — clean ribbon ─────────────────────── */
 .navbar {
   position: fixed;
-  top: 16px;
-  left: 50%;
-  transform: translateX(-50%) translateY(0);
-  width: calc(100% - 40px);
-  max-width: 1220px;
-  height: 88px;
-  background: rgba(255,255,255,.95);
-  backdrop-filter: blur(32px) saturate(180%);
-  -webkit-backdrop-filter: blur(32px) saturate(180%);
-  /* Glassy bezel: bright border + outer ring + soft atmospheric glow */
-  border: 1px solid rgba(210,228,252,.80);
-  border-radius: 100px;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 72px;
   display: flex;
   align-items: center;
-  padding: 0 0.5rem;
   z-index: 999;
-  box-shadow:
-    0 0 0 1px  rgba(255,255,255,.90),          /* bright inner ring  */
-    0 0 0 3px  rgba(190,215,248,.40),           /* outer glassy halo  */
-    0 0 18px   rgba(140,185,255,.12),           /* soft blue glow     */
-    0 4px 12px rgba(0,0,0,.06),
-    0 10px 36px rgba(0,0,0,.09),
-    inset 0 1px 0 rgba(255,255,255,1);
-  transition: box-shadow .35s ease, transform .4s cubic-bezier(.4,0,.2,1);
-}
-.navbar.scrolled {
-  box-shadow:
-    0 0 0 1px  rgba(255,255,255,.95),
-    0 0 0 3px  rgba(180,210,248,.50),
-    0 0 24px   rgba(100,160,255,.14),
-    0 6px 20px rgba(0,0,0,.09),
-    0 16px 52px rgba(0,0,0,.12),
-    inset 0 1px 0 rgba(255,255,255,1);
+  background: rgba(255,255,255,.9);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border-bottom: 1px solid var(--light-grey);
+  transition: background .3s ease, border-color .3s ease, transform .4s cubic-bezier(.4,0,.2,1);
 }
 .navbar.nav-hidden {
-  transform: translateX(-50%) translateY(calc(-100% - 24px));
+  transform: translateY(-100%);
   pointer-events: none;
 }
 .navbar .container {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 1.5rem;
 }
 
-/* Logo — dark, big */
-.nav-brand {
-  display: flex;
-  align-items: center;
-  text-decoration: none;
-  flex-shrink: 0;
-  margin-right: .75rem;
+/* Transparent while sitting over a dark hero (until scrolled) */
+body.has-hero .navbar:not(.scrolled) {
+  background: transparent;
+  border-bottom-color: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
+
+/* Logo — light + dark versions, swapped by context */
+.nav-brand { display: flex; align-items: center; text-decoration: none; flex-shrink: 0; }
 .nav-brand img {
-  height: 120px;
+  height: 54px;
   width: auto;
-  max-width: 340px;
+  max-width: 250px;
   object-fit: contain;
   object-position: left center;
-  transition: transform .3s ease, opacity .3s ease;
+  transition: opacity .3s ease;
 }
-.nav-brand:hover img { transform: scale(1.03); opacity: .88; }
+.nav-logo-light { display: none; }
+.nav-logo-dark  { display: block; }
+body.has-hero .navbar:not(.scrolled) .nav-logo-light { display: block; }
+body.has-hero .navbar:not(.scrolled) .nav-logo-dark  { display: none; }
 
-/* Separator */
+/* Links */
 .nav-links {
   display: flex;
   align-items: center;
-  gap: .1rem;
+  gap: .3rem;
   list-style: none;
   margin: 0; padding: 0;
 }
-.nav-links::before {
-  content: '';
-  width: 1px;
-  height: 20px;
-  background: rgba(35,38,242,.13);
-  margin-right: 1rem;
-  flex-shrink: 0;
-}
-
-/* Links */
 .nav-links .nav-link {
-  position: relative;
-  color: rgba(35,38,242,.62);
-  font-size: .875rem;
+  color: var(--ink-muted);
+  font-size: .9rem;
   font-weight: 500;
-  padding: .48rem 1rem;
-  border-radius: 50px;
-  letter-spacing: .01em;
-  transition: color .22s ease, background .22s ease;
+  padding: .5rem .85rem;
+  border-radius: 7px;
+  transition: color .2s ease, background .2s ease;
   white-space: nowrap;
 }
-.nav-links .nav-link::after {
-  content: '';
-  position: absolute;
-  bottom: 4px; left: 1rem; right: 1rem;
-  height: 1.5px;
-  background: var(--primary);
-  border-radius: 2px;
-  transform: scaleX(0);
-  transform-origin: center;
-  transition: transform .22s ease;
-}
 .nav-links .nav-link:hover,
-.nav-links .nav-link.active { color: var(--primary); background: rgba(35,38,242,.06); }
-.nav-links .nav-link:hover::after,
-.nav-links .nav-link.active::after { transform: scaleX(1); }
+.nav-links .nav-link.active { color: var(--primary); }
+/* Over hero → white links */
+body.has-hero .navbar:not(.scrolled) .nav-link { color: rgba(255,255,255,.8); }
+body.has-hero .navbar:not(.scrolled) .nav-link:hover { color: #fff; }
 
 /* CTA */
 .nav-links .btn-login {
-  margin-left: .75rem;
+  margin-left: .5rem;
   background: var(--primary);
-  color: #ffffff !important;
-  padding: .52rem 1.45rem;
-  border-radius: 50px;
+  color: #fff !important;
+  padding: .55rem 1.3rem;
+  border-radius: 8px;
   font-weight: 600;
   font-size: .875rem;
-  letter-spacing: .02em;
   border: 1.5px solid var(--primary);
-  box-shadow: 0 2px 14px rgba(35,38,242,.22);
-  transition: background .22s ease, box-shadow .22s ease, transform .22s ease !important;
+  transition: background .2s ease, border-color .2s ease, transform .2s ease, color .2s ease;
 }
-.nav-links .btn-login::after { display: none !important; }
 .nav-links .btn-login:hover {
   background: var(--primary-dark);
   border-color: var(--primary-dark);
   transform: translateY(-1px);
-  box-shadow: 0 6px 22px rgba(35,38,242,.40) !important;
-  color: #ffffff !important;
+  color: #fff !important;
+}
+/* Over hero → outlined white CTA */
+body.has-hero .navbar:not(.scrolled) .btn-login {
+  background: rgba(255,255,255,.10);
+  border-color: rgba(255,255,255,.55);
+}
+body.has-hero .navbar:not(.scrolled) .btn-login:hover {
+  background: #fff;
+  border-color: #fff;
+  color: var(--primary) !important;
 }
 
 /* Hamburger */
@@ -914,7 +881,7 @@ select.form-control { cursor: pointer; }
 
 /* ── 17. Footer ──────────────────────────────────────────── */
 .footer {
-  background: var(--primary-dark);
+  background: var(--hero-ink);
   padding: 70px 0 0;
   color: rgba(255,255,255,.7);
 }
@@ -925,7 +892,7 @@ select.form-control { cursor: pointer; }
   padding-bottom: 3rem;
 }
 .footer-brand img { height: auto; max-width: 280px; margin-bottom: 1.25rem; display: block; object-fit: contain; }
-.footer-brand p   { font-size: .88rem; line-height: 1.7; max-width: 280px; }
+.footer-brand p   { font-size: .88rem; line-height: 1.7; max-width: 280px; color: rgba(255,255,255,.52); }
 .footer-col h4 {
   font-size: .85rem;
   font-weight: 700;
