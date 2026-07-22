@@ -25,11 +25,14 @@
       <!-- Diagnostic: shows exactly what the last barcode scan returned -->
       <div id="rawScan" class="scan-raw" style="display:none;">
         <div class="scan-raw-head">
-          <span>Last scan (diagnostic) — <span id="rawLen">0</span> chars, type <span id="rawFmt">?</span></span>
-          <button type="button" id="rawCopy" class="btn btn-outline-dark btn-sm">Copy</button>
+          <span>Last scan (diagnostic) — <span id="rawLen">0</span> bytes, type <span id="rawFmt">?</span></span>
+          <span style="display:flex;gap:.4rem;">
+            <button type="button" id="rawShare" class="btn btn-outline-dark btn-sm" hidden>Share</button>
+            <button type="button" id="rawCopy" class="btn btn-outline-dark btn-sm">Copy</button>
+          </span>
         </div>
-        <textarea id="rawText" readonly rows="3" spellcheck="false"></textarea>
-        <p class="scan-raw-note">If your ID didn't auto-fill, copy this and send it to support so the scanner can be tuned to your document.</p>
+        <textarea id="rawText" readonly rows="4" spellcheck="false"></textarea>
+        <p class="scan-raw-note">If your ID didn't auto-fill, Copy or Share this and send it to support so the decoder can be built for your card.</p>
       </div>
 
       <!-- ── 1. Session setup ─────────────────────────────────────────── -->

@@ -180,10 +180,26 @@
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t.value).then(done).catch(done);
     else { try { document.execCommand('copy'); } catch (e) {} done(); }
   });
+  if (navigator.share) {
+    $('rawShare').hidden = false;
+    $('rawShare').addEventListener('click', function () {
+      navigator.share({ title: 'Workmedix scan data', text: $('rawText').value }).catch(function () {});
+    });
+  }
 
-  function showRaw(raw, fmt) {
-    $('rawText').value = raw;
-    $('rawLen').textContent = raw.length;
+  // Recover the exact barcode bytes from the reader's string (Chrome returns
+  // byte-mode PDF417 1:1), then base64 them so binary data survives copy/paste.
+  function bytesToB64(str) {
+    try {
+      var bin = '';
+      for (var i = 0; i < str.length; i++) bin += String.fromCharCode(str.charCodeAt(i) & 0xff);
+      return btoa(bin);
+    } catch (e) { return ''; }
+  }
+
+  function showRaw(b64, fmt, byteLen) {
+    $('rawText').value = b64;
+    $('rawLen').textContent = byteLen;
     $('rawFmt').textContent = fmt || '?';
     $('rawScan').style.display = 'block';
   }
@@ -259,11 +275,12 @@
     if (navigator.vibrate) navigator.vibrate(40);
     stopCamera();
     var raw = code.rawValue || '';
-    showRaw(raw, code.format);
-    // Let the server decode the full record — a smart-ID card carries the name +
-    // ID, so we send the whole payload rather than stopping at the ID number.
+    var b64 = bytesToB64(raw);
+    showRaw(b64, code.format, raw.length);
+    // Send both the decoded text and the raw bytes (base64) so the server can
+    // parse the smart-ID card's binary payload, not just readable text.
     msg('Reading…');
-    submitCapture({ booking_id: bookingId, text: raw });
+    submitCapture({ booking_id: bookingId, text: raw, bytes_base64: b64 });
   }
 
   function stopCamera() {

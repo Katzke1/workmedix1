@@ -207,7 +207,7 @@ router.post('/scan/capture', (req, res) => {
   const { ok, value, error } = validate({
     booking_id  : { type: 'int',    required: true, min: 1, label: 'Session' },
     text        : { type: 'string', max: 4000, label: 'Scan' },
-    bytes_base64: { type: 'string', max: 6000, label: 'Scan' },
+    bytes_base64: { type: 'string', max: 20000, label: 'Scan' },
     id_number   : { type: 'string', max: 20,  label: 'ID number' },
     first_name  : { type: 'string', max: 80,  label: 'First name' },
     last_name   : { type: 'string', max: 80,  label: 'Last name' },
