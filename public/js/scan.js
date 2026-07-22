@@ -213,9 +213,9 @@
     // positioning (that was letting the sidebar show through and squashing it).
     document.body.appendChild(cam);
     cam.style.display = 'block';
-    // Request fullscreen on the overlay itself, synchronously, so it keeps the
-    // click's user-activation; lock landscape only once we're actually fullscreen.
-    if (cam.requestFullscreen) cam.requestFullscreen().then(lockLandscape).catch(function () {});
+    // Fullscreen on the overlay itself (kept within the click's user-activation).
+    // No forced orientation lock — it just follows the phone, which is smoother.
+    if (cam.requestFullscreen) cam.requestFullscreen().catch(function () {});
     startCamera();
   }
 
@@ -228,8 +228,10 @@
       var want = ['pdf417'].filter(function (f) { return fmts.indexOf(f) >= 0; });
       detector = new BarcodeDetector({ formats: want.length ? want : ['pdf417'] });
       // Ask for the highest sensible resolution — dense PDF417 needs the detail.
+      // 1080p preview keeps things smooth; the Capture button grabs a full-res
+      // still (takePhoto) for the actual decode, so we don't need a heavy 4K feed.
       return navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 3840 }, height: { ideal: 2160 } },
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
       });
     }).then(function (s) {
       stream = s;
@@ -298,9 +300,15 @@
     if (!detector) return;
     msg('Capturing…');
     var getFrame;
-    if (imageCapture && imageCapture.grabFrame) getFrame = imageCapture.grabFrame();
-    else if (imageCapture && imageCapture.takePhoto) getFrame = imageCapture.takePhoto().then(function (b) { return createImageBitmap(b); });
-    else getFrame = Promise.resolve($('camVideo'));
+    if (imageCapture && imageCapture.takePhoto) {
+      // Full sensor resolution + a real autofocus pass — best chance on dense PDF417.
+      getFrame = imageCapture.takePhoto().then(function (b) { return createImageBitmap(b); })
+        .catch(function () { return imageCapture.grabFrame ? imageCapture.grabFrame() : $('camVideo'); });
+    } else if (imageCapture && imageCapture.grabFrame) {
+      getFrame = imageCapture.grabFrame();
+    } else {
+      getFrame = Promise.resolve($('camVideo'));
+    }
     getFrame.then(function (src) { return detector.detect(src); })
       .then(function (codes) {
         if (codes && codes.length) return onScan(codes[0]);
