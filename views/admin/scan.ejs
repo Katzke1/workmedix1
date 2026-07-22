@@ -81,6 +81,7 @@
             <!-- Live camera (full-screen scanner) -->
             <div id="cam" class="scan-cam" style="display:none;">
               <video id="camVideo" playsinline muted autoplay></video>
+              <div id="camRes" class="scan-cam-res"></div>
               <div class="scan-cam-mask">
                 <div class="scan-cam-reticle"><span class="scan-cam-laser"></span></div>
                 <p class="scan-cam-hint">Line the barcode up inside the box — fill the frame and hold steady</p>
@@ -168,7 +169,9 @@
   .scan-derived { margin-top:.5rem; font-size:.82rem; font-weight:600; color:var(--success-color); background:var(--success-bg); border-radius:var(--radius); padding:.5rem .7rem; }
   .scan-derived.bad { color:var(--danger-color); background:var(--danger-bg); }
   .scan-cam { position:fixed; inset:0; z-index:3000; background:#000; }
+  .scan-cam:fullscreen { width:100vw; height:100vh; }
   .scan-cam video { width:100%; height:100%; object-fit:cover; display:block; }
+  .scan-cam-res { position:absolute; top:calc(.55rem + env(safe-area-inset-top)); left:.8rem; color:rgba(255,255,255,.75); font-size:.72rem; font-family:ui-monospace,Menlo,Consolas,monospace; text-shadow:0 1px 3px #000; }
   .scan-cam-mask { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:1rem; pointer-events:none; }
   .scan-cam-reticle { position:relative; width:88vw; max-width:840px; height:210px; max-height:44vh; border:3px solid rgba(255,255,255,.92); border-radius:18px; box-shadow:0 0 0 100vmax rgba(0,0,0,.55); overflow:hidden; }
   .scan-cam-laser { position:absolute; left:5%; right:5%; top:0; height:2px; background:linear-gradient(90deg,transparent,#4f7dff,transparent); box-shadow:0 0 12px 2px rgba(79,125,255,.85); animation:scanLaser 1.9s ease-in-out infinite; }

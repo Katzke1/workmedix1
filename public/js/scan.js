@@ -170,7 +170,7 @@
     }
   }
 
-  $('scanBtn').addEventListener('click', startCamera);
+  $('scanBtn').addEventListener('click', openScanner);
   $('camClose').addEventListener('click', stopCamera);
   $('camTorch').addEventListener('click', toggleTorch);
   document.addEventListener('fullscreenchange', function () { if (!document.fullscreenElement && scanning) stopCamera(); });
@@ -204,11 +204,21 @@
     $('rawScan').style.display = 'block';
   }
 
+  function openScanner() {
+    if (!('BarcodeDetector' in window)) return;
+    var cam = $('cam');
+    // Move the overlay to <body> so no transformed ancestor can trap its fixed
+    // positioning (that was letting the sidebar show through and squashing it).
+    document.body.appendChild(cam);
+    cam.style.display = 'block';
+    // Request fullscreen on the overlay itself, synchronously, so it keeps the
+    // click's user-activation; lock landscape only once we're actually fullscreen.
+    if (cam.requestFullscreen) cam.requestFullscreen().then(lockLandscape).catch(function () {});
+    startCamera();
+  }
+
   function startCamera() {
     if (!('BarcodeDetector' in window)) return;
-    // Fullscreen for a real scanner feel (best-effort; needs the click gesture).
-    var root = document.documentElement;
-    if (root.requestFullscreen) root.requestFullscreen().catch(function () {});
     BarcodeDetector.getSupportedFormats().then(function (fmts) {
       var want = ['pdf417', 'qr_code', 'code_128', 'code_39', 'itf', 'data_matrix'].filter(function (f) { return fmts.indexOf(f) >= 0; });
       detector = new BarcodeDetector({ formats: want.length ? want : fmts });
@@ -222,8 +232,6 @@
       tuneTrack();
       var v = $('camVideo');
       v.srcObject = s;
-      $('cam').style.display = 'block';
-      lockLandscape();
       return v.play();
     }).then(function () {
       scanning = true;
@@ -243,6 +251,10 @@
       track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(function () {});
     }
     if (caps.torch) $('camTorch').hidden = false;
+    try {
+      var st = track.getSettings ? track.getSettings() : {};
+      if (st.width) $('camRes').textContent = st.width + '×' + st.height + (imageCapture ? ' (hi-res)' : '');
+    } catch (e) {}
   }
 
   function toggleTorch() {
