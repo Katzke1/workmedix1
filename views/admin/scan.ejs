@@ -22,6 +22,16 @@
 
       <div id="msg" class="alert" style="display:none;" role="status" aria-live="polite"></div>
 
+      <!-- Diagnostic: shows exactly what the last barcode scan returned -->
+      <div id="rawScan" class="scan-raw" style="display:none;">
+        <div class="scan-raw-head">
+          <span>Last scan (diagnostic) — <span id="rawLen">0</span> chars, type <span id="rawFmt">?</span></span>
+          <button type="button" id="rawCopy" class="btn btn-outline-dark btn-sm">Copy</button>
+        </div>
+        <textarea id="rawText" readonly rows="3" spellcheck="false"></textarea>
+        <p class="scan-raw-note">If your ID didn't auto-fill, copy this and send it to support so the scanner can be tuned to your document.</p>
+      </div>
+
       <!-- ── 1. Session setup ─────────────────────────────────────────── -->
       <section id="sessionSetup" class="card scan-card">
         <div class="card-header"><h3>Start a screening session</h3></div>
@@ -162,6 +172,11 @@
   .scan-list .meta { font-size:.78rem; color:var(--ink-muted); }
   .scan-list .zap { margin-left:auto; font-size:.72rem; color:var(--success-color); font-weight:700; white-space:nowrap; }
   .scan-empty { padding:1.4rem 1.15rem; text-align:center; color:var(--ink-muted); font-size:.85rem; }
+  .scan-raw { background:#0b1020; color:#cbd5e1; border-radius:var(--radius-lg); padding:.8rem .9rem; margin-bottom:1rem; }
+  .scan-raw-head { display:flex; align-items:center; justify-content:space-between; gap:.6rem; font-size:.76rem; color:#94a3b8; margin-bottom:.5rem; }
+  .scan-raw-head .btn { flex-shrink:0; }
+  #rawText { width:100%; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.74rem; line-height:1.4; color:#e2e8f0; background:#060912; border:1px solid #1e293b; border-radius:var(--radius); padding:.5rem .6rem; resize:vertical; }
+  .scan-raw-note { font-size:.72rem; color:#94a3b8; margin:.5rem 0 0; }
   @media (max-width: 480px) { .scan-row { grid-template-columns: 1fr; } }
 </style>
 <script src="/js/scan.js?v=<%= locals.assetVersion %>"></script>

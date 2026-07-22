@@ -169,6 +169,19 @@
 
   $('scanBtn').addEventListener('click', startCamera);
   $('camClose').addEventListener('click', stopCamera);
+  $('rawCopy').addEventListener('click', function () {
+    var t = $('rawText'); t.focus(); t.select();
+    var done = function () { msg('Copied — paste it to support.'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t.value).then(done).catch(done);
+    else { try { document.execCommand('copy'); } catch (e) {} done(); }
+  });
+
+  function showRaw(raw, fmt) {
+    $('rawText').value = raw;
+    $('rawLen').textContent = raw.length;
+    $('rawFmt').textContent = fmt || '?';
+    $('rawScan').style.display = 'block';
+  }
 
   function startCamera() {
     if (!('BarcodeDetector' in window)) return;
@@ -204,6 +217,7 @@
     if (navigator.vibrate) navigator.vibrate(40);
     stopCamera();
     var raw = code.rawValue || '';
+    showRaw(raw, code.format);
     // Fast path: the barcode already carries a plain 13-digit ID → derive live.
     var m = raw.replace(/\D/g, '').match(/\d{13}/);
     if (m && parseSaId(m[0]).valid) {
