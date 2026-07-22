@@ -122,11 +122,13 @@
         if (navigator.vibrate) navigator.vibrate(60);
         msg('Added ' + r.employee.first_name + ' ' + r.employee.last_name + ' — sending to OccuPlus.');
       } else if (r.needsName && r.decoded) {
-        // A scan gave us an ID but no usable name — prefill and ask for it.
+        // A scan gave us an ID (and maybe part of the name) — prefill and ask for the rest.
         if (r.decoded.idNumber) { $('idNumber').value = r.decoded.idNumber; $('idNumber').dispatchEvent(new Event('input')); }
+        if (r.decoded.lastName)  $('lastName').value  = r.decoded.lastName;
+        if (r.decoded.firstName) $('firstName').value = r.decoded.firstName;
         if (r.decoded.gender) $('genderSel').value = r.decoded.gender;
-        $('firstName').focus();
-        msg('Read the ID — please add the name.', 'error');
+        ($('firstName').value ? $('lastName') : $('firstName')).focus();
+        msg('Read the ID — please check the name.', 'error');
       } else {
         msg(r.error || 'Could not add this person.', 'error');
       }
@@ -218,16 +220,8 @@
     stopCamera();
     var raw = code.rawValue || '';
     showRaw(raw, code.format);
-    // Fast path: the barcode already carries a plain 13-digit ID → derive live.
-    var m = raw.replace(/\D/g, '').match(/\d{13}/);
-    if (m && parseSaId(m[0]).valid) {
-      $('idNumber').value = m[0];
-      $('idNumber').dispatchEvent(new Event('input'));
-      $('firstName').focus();
-      msg('Read ID ' + m[0] + ' — add the name.', 'success');
-      return;
-    }
-    // Otherwise let the server try to decode it (licence, etc).
+    // Let the server decode the full record — a smart-ID card carries the name +
+    // ID, so we send the whole payload rather than stopping at the ID number.
     msg('Reading…');
     submitCapture({ booking_id: bookingId, text: raw });
   }
