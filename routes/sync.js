@@ -90,6 +90,58 @@ router.get('/roster', (req, res) => {
   res.json({ ok: true, count: employees.length, employees });
 });
 
+// ── Instant intake — long-poll for newly scanned-in people ───────────────────
+// The agent holds this request open; the moment someone is scanned in on
+// /admin/scan it returns them (in the same shape as /roster) so the agent can
+// register them in OccuPlus within ~1s. We check the DB every second for up to
+// ~25s, then return empty so the agent reconnects. `after` is the highest
+// booking_employees.id the agent has already handled.
+const intakeQuery = db.prepare(`
+  SELECT be.id            AS cursor,
+         e.id             AS employee_id,
+         e.first_name     AS FirstName,
+         e.last_name      AS Surname,
+         e.id_number      AS IdNumber,
+         e.passport_number AS PassportNumber,
+         e.gender         AS Gender,
+         e.date_of_birth  AS DateOfBirth,
+         e.job_title      AS Occupation,
+         co.name          AS Company
+  FROM booking_employees be
+  JOIN bookings  b  ON be.booking_id  = b.id
+  JOIN employees e  ON be.employee_id = e.id
+  LEFT JOIN companies co ON e.company_id = co.id
+  WHERE be.id > ?
+    AND b.status IN ('pending','confirmed','in_progress','completed')
+  ORDER BY be.id ASC
+  LIMIT 50
+`);
+
+router.get('/intake/next', async (req, res) => {
+  // `after=now` seeds a fresh agent to the current tip (skip replaying history —
+  // the periodic /roster sync already covers the backlog).
+  if (req.query.after === 'now') {
+    const m = db.prepare('SELECT COALESCE(MAX(id),0) m FROM booking_employees').get().m;
+    return res.json({ ok: true, cursor: m, employees: [] });
+  }
+  const after = parseInt(req.query.after, 10) || 0;
+  const deadline = Date.now() + 25000;
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+  let aborted = false;
+  req.on('close', () => { aborted = true; });
+
+  while (!aborted) {
+    const rows = intakeQuery.all(after);
+    if (rows.length) {
+      return res.json({ ok: true, cursor: rows[rows.length - 1].cursor, employees: rows });
+    }
+    if (Date.now() >= deadline) break;
+    await sleep(1000);
+  }
+  if (!res.writableEnded && !aborted) res.json({ ok: true, cursor: after, employees: [] });
+});
+
 // ── Ingest one result PDF (audio or spiro) ───────────────────────────────────
 router.post('/results', (req, res) => {
   const { id_number, result_type, external_id, test_date, category, title, pdf_base64 } = req.body || {};

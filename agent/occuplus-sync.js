@@ -35,7 +35,9 @@ const OCCUPLUS_KEY  =  process.env.OCCUPLUS_KEY  || '';
 const WORKMEDIX_URL = (process.env.WORKMEDIX_URL || '').replace(/\/+$/, '');
 const SYNC_KEY      =  process.env.SYNC_KEY      || '';
 const INTERVAL_MIN  =  parseInt(process.env.SYNC_INTERVAL_MINUTES || '0', 10);
+const INSTANT       = (process.env.INSTANT_INTAKE || 'on').toLowerCase() !== 'off';
 const RESULT_TYPES  = ['audio', 'spiro'];
+const CURSOR_FILE   = path.join(__dirname, '.intake-cursor');
 
 function log(...a) { console.log(new Date().toISOString().slice(11, 19), ...a); }
 
@@ -157,6 +159,55 @@ async function pullResults(emp, stats) {
   }
 }
 
+// ── Cursor persistence for the instant intake loop ───────────────────────────
+function readCursor() {
+  try { const v = parseInt(fs.readFileSync(CURSOR_FILE, 'utf8').trim(), 10); return Number.isInteger(v) ? v : null; }
+  catch { return null; }
+}
+function writeCursor(v) {
+  try { fs.writeFileSync(CURSOR_FILE, String(v)); } catch (e) { /* best effort */ }
+}
+
+// ── Instant intake ───────────────────────────────────────────────────────────
+// Holds a long-poll open to Workmedix and registers each scanned-in person in
+// OccuPlus the moment they arrive (~1s), independently of the periodic full sync.
+// Only outbound calls, so nothing on the clinic network is exposed.
+async function instantLoop() {
+  let cursor = readCursor();
+  if (cursor == null) {
+    // First run — seed to the current tip so we don't replay the whole history
+    // (the periodic /roster sync already covers the backlog).
+    const seed = await wm('/api/sync/intake/next?after=now').catch(() => null);
+    cursor = (seed && seed.body && Number.isInteger(seed.body.cursor)) ? seed.body.cursor : 0;
+    writeCursor(cursor);
+  }
+  log(`Instant intake: watching for new scan-ins (from #${cursor}).`);
+
+  for (;;) {
+    let r;
+    try {
+      r = await wm(`/api/sync/intake/next?after=${cursor}`);
+    } catch (e) {
+      log('instant intake: connection error, retrying in 5s —', e.message);
+      await new Promise(res => setTimeout(res, 5000));
+      continue;
+    }
+    if (r.status !== 200 || !r.body || !r.body.ok) {
+      await new Promise(res => setTimeout(res, 5000));
+      continue;
+    }
+    for (const emp of (r.body.employees || [])) {
+      try { await ensurePatient(emp); log(`  ⚡ instant: ${emp.FirstName} ${emp.Surname} (${emp.IdNumber || emp.PassportNumber}) → OccuPlus`); }
+      catch (e) { log(`  instant register failed for ${emp.IdNumber || emp.PassportNumber}: ${e.message}`); }
+    }
+    if (Number.isInteger(r.body.cursor) && r.body.cursor > cursor) {
+      cursor = r.body.cursor;
+      writeCursor(cursor);
+    }
+    // An empty response just means the ~25s hold elapsed — reconnect immediately.
+  }
+}
+
 // ── One full sync pass ───────────────────────────────────────────────────────
 async function runOnce() {
   log(`Sync start — OccuPlus ${OCCUPLUS_URL}, Workmedix ${WORKMEDIX_URL}`);
@@ -193,5 +244,9 @@ async function runOnce() {
   if (INTERVAL_MIN > 0) {
     log(`Looping every ${INTERVAL_MIN} min (Ctrl+C to stop).`);
     setInterval(() => { runOnce().catch(e => log('run error:', e.message)); }, INTERVAL_MIN * 60 * 1000);
+  }
+  if (INSTANT) {
+    log('Instant intake enabled — new scan-ins register in OccuPlus within ~1s.');
+    instantLoop().catch(e => log('instant loop stopped:', e.message));
   }
 })();

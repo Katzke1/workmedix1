@@ -8,9 +8,12 @@ const bcrypt                      = require('bcryptjs');
 const db                          = require('../db');
 const { requireAdmin }            = require('../middleware/auth');
 const { sendTestEmail, sendBookingStatusEmail } = require('../lib/mailer');
-const { getBookingWithDetails, updateBookingStatus } = require('../db/repos/bookings');
+const { getBookingWithDetails, updateBookingStatus, upsertEmployee } = require('../db/repos/bookings');
 const { issueCertificate, getExpiringCertificates }   = require('../db/repos/certificates');
 const { validate }                = require('../lib/validate');
+const { validateSaId }            = require('../lib/za-id');
+const { decodeScan, dlDecodeAvailable } = require('../lib/za-dl');
+const { validateEmployee }        = require('../lib/schemas/booking');
 
 const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, '../uploads');
 
@@ -124,6 +127,144 @@ router.get('/', (req, res) => {
     revenuePrev    : revRowPrev.rev,
     syncStatus,
   });
+});
+
+// ── Scan-in intake (mobile) ─────────────────────────────────────────────────────
+// Fast on-site capture: pick a company/site/service once, then scan or type each
+// person's ID. Every capture creates/updates an employee and attaches them to a
+// single "walk-in" booking for that company+site+day, which the OccuPlus sync
+// agent picks up (near-instantly via /api/sync/intake/next) and registers.
+const INTAKE_MARKER = '[walk-in intake]';
+
+router.get('/scan', (req, res) => {
+  const companies = db.prepare(`SELECT id, name FROM companies WHERE active=1 ORDER BY name`).all();
+  const services  = db.prepare(`SELECT id, service_name FROM crm_service_rates ORDER BY sort_order, service_name`).all();
+  res.render('admin/scan', {
+    title      : 'Scan In | Workmedix Admin',
+    description : 'Scan patient IDs on-site and register them instantly.',
+    page       : 'scan',
+    user       : req.session.user,
+    companies, services,
+    dlAvailable: dlDecodeAvailable(),
+  });
+});
+
+// Sites for a company (AJAX — populates the site dropdown)
+router.get('/scan/sites-for/:companyId', (req, res) => {
+  const rows = db.prepare(`SELECT id, label, city FROM sites WHERE company_id=? ORDER BY label`).all(req.params.companyId);
+  res.json(rows);
+});
+
+// Start (or reuse) today's walk-in booking for a company/site/service
+router.post('/scan/session', (req, res) => {
+  const { ok, value, error } = validate({
+    company_id : { type: 'int', required: true, min: 1, label: 'Company' },
+    site_id    : { type: 'int', min: 1, label: 'Site' },
+    service_id : { type: 'int', min: 1, label: 'Service' },
+  }, req.body);
+  if (!ok) return res.status(400).json({ ok: false, error });
+
+  const company = db.prepare(`SELECT id, name, primary_contact_user_id FROM companies WHERE id=?`).get(value.company_id);
+  if (!company) return res.status(400).json({ ok: false, error: 'Unknown company.' });
+
+  const service = value.service_id
+    ? db.prepare(`SELECT id, service_name FROM crm_service_rates WHERE id=?`).get(value.service_id)
+    : null;
+  const serviceType = service ? service.service_name : 'On-site Screening';
+
+  // Reuse an existing walk-in booking for the same company+site created today, so
+  // re-opening the page mid-day doesn't spawn duplicate bookings.
+  const existing = db.prepare(`
+    SELECT id FROM bookings
+    WHERE company_id=? AND IFNULL(site_id,0)=IFNULL(?,0)
+      AND date(created_at)=date('now') AND notes LIKE ?
+    ORDER BY id DESC LIMIT 1
+  `).get(value.company_id, value.site_id || null, `%${INTAKE_MARKER}%`);
+
+  let bookingId;
+  if (existing) {
+    bookingId = existing.id;
+  } else {
+    // bookings.user_id is NOT NULL — attach to the company's portal contact if it
+    // has one (so results surface in their portal), else the staff member on duty.
+    const userId = company.primary_contact_user_id || req.session.user.id;
+    bookingId = db.prepare(`
+      INSERT INTO bookings (user_id, company_id, site_id, service_id, service_type,
+                            preferred_date, scheduled_at, status, num_people, notes)
+      VALUES (?, ?, ?, ?, ?, date('now'), datetime('now'), 'in_progress', 0, ?)
+    `).run(
+      userId, value.company_id, value.site_id || null, value.service_id || null,
+      serviceType, `On-site walk-in screening ${INTAKE_MARKER}`
+    ).lastInsertRowid;
+  }
+
+  const count = db.prepare(`SELECT COUNT(*) c FROM booking_employees WHERE booking_id=?`).get(bookingId).c;
+  res.json({ ok: true, booking_id: bookingId, company: company.name, service: serviceType, count });
+});
+
+// Capture one person → employee + link to the booking
+router.post('/scan/capture', (req, res) => {
+  const { ok, value, error } = validate({
+    booking_id  : { type: 'int',    required: true, min: 1, label: 'Session' },
+    text        : { type: 'string', max: 4000, label: 'Scan' },
+    bytes_base64: { type: 'string', max: 6000, label: 'Scan' },
+    id_number   : { type: 'string', max: 20,  label: 'ID number' },
+    first_name  : { type: 'string', max: 80,  label: 'First name' },
+    last_name   : { type: 'string', max: 80,  label: 'Last name' },
+    job_title   : { type: 'string', max: 80,  label: 'Job title' },
+    gender      : { type: 'string', max: 10,  enum: ['Male', 'Female'], label: 'Gender' },
+  }, req.body);
+  if (!ok) return res.status(400).json({ ok: false, error });
+
+  const booking = db.prepare(`SELECT id, company_id FROM bookings WHERE id=?`).get(value.booking_id);
+  if (!booking || !booking.company_id) return res.status(400).json({ ok: false, error: 'Invalid session — start one first.' });
+
+  // Resolve identity: decode a scan if present, then let manual fields override.
+  let decoded = null;
+  if (value.text || value.bytes_base64) {
+    decoded = decodeScan({ text: value.text || null, bytesBase64: value.bytes_base64 || null });
+  }
+  const idNumber  = (value.id_number || (decoded && decoded.idNumber) || '').replace(/\s/g, '') || null;
+  const firstName = value.first_name || (decoded && decoded.firstName) || '';
+  const lastName  = value.last_name  || (decoded && decoded.lastName)  || '';
+
+  // Derive DOB + gender from a valid ID when we have one.
+  let dob = null, gender = value.gender || (decoded && decoded.gender) || null;
+  if (idNumber) {
+    const v = validateSaId(idNumber);
+    if (!v.valid) return res.status(400).json({ ok: false, error: `That ID number is not valid — ${v.reason}.` });
+    dob = v.dob; gender = gender || v.gender;
+  }
+
+  // OccuPlus needs FirstName + Surname — require names (reuses the booking schema).
+  const empCheck = validateEmployee({ first_name: firstName, last_name: lastName, id_number: idNumber || undefined });
+  if (!empCheck.valid) {
+    const msg = Object.values(empCheck.errors)[0] || 'Please provide a first and last name.';
+    return res.status(400).json({ ok: false, error: msg, decoded: decoded || null, needsName: !firstName || !lastName });
+  }
+
+  try {
+    const employeeId = upsertEmployee(booking.company_id, {
+      idNumber, firstName, lastName, gender,
+      dateOfBirth: dob, jobTitle: value.job_title || null,
+    });
+    db.prepare(`INSERT OR IGNORE INTO booking_employees (booking_id, employee_id, attendance_status) VALUES (?,?,'attended')`)
+      .run(booking.id, employeeId);
+    const count = db.prepare(`SELECT COUNT(*) c FROM booking_employees WHERE booking_id=?`).get(booking.id).c;
+    db.prepare(`UPDATE bookings SET num_people=? WHERE id=?`).run(count, booking.id);
+
+    res.json({
+      ok: true, count,
+      employee: {
+        id: employeeId, first_name: firstName, last_name: lastName,
+        id_number: idNumber || '', gender: gender || '', dob: dob || '',
+        source: (decoded && decoded.source) || 'manual',
+      },
+    });
+  } catch (e) {
+    console.error('[admin] scan capture failed:', e.message);
+    res.status(500).json({ ok: false, error: 'Could not save this person. Please try again.' });
+  }
 });
 
 // ── Bookings ──────────────────────────────────────────────────────────────────

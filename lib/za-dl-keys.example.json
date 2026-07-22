@@ -1,0 +1,6 @@
+{
+  "_readme": "Optional: enables decoding the ENCRYPTED barcode on SA driver's licences (surname + initials + ID). Copy this file to lib/za-dl-keys.json and paste the RSA public keys (hex modulus + exponent). Get them from an open SADL decoder project (e.g. github: RuanBritz/Decode_SA_Drivers_Licence, dalion619/sadl-pdf417-decryption) or use a commercial SDK (Dynamsoft/barKoder/Scandit) instead and skip this. Without this file, scan-in still works via the 13-digit ID number (typed or any barcode carrying it) — DOB and gender are derived automatically. za-dl-keys.json is gitignored; never commit real keys.",
+  "key128v1": { "n": "<128-byte / 1024-bit modulus as hex>", "e": "10001" },
+  "key128v2": { "n": "<128-byte / 1024-bit modulus as hex (v2 licences)>", "e": "10001" },
+  "key74":    { "n": "<74-byte modulus as hex>", "e": "10001" }
+}

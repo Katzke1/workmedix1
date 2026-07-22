@@ -14,6 +14,18 @@ Each run it:
 
 Re-running is safe — Workmedix ignores results it has already imported.
 
+## Instant scan-in
+
+Staff can scan patients in from a phone at **/admin/scan** on the website. The moment
+someone is scanned in, this agent registers them in OccuPlus — usually within a second —
+by holding a long-poll open to Workmedix (`/api/sync/intake/next`). It's **on by default**;
+set `INSTANT_INTAKE=off` to turn it off. The periodic roster sync below still runs as a
+safety net and pulls results back.
+
+> **Upgrading an already-running agent:** replace `occuplus-sync.js` with this new version
+> and restart it (double-click `uninstall-agent.bat`, then `install-agent.bat` — or just
+> re-run `run-sync.bat`). No new config is required.
+
 ## Mobile screening — install it on the screening laptop
 
 Run this agent **on the OccuPlus laptop itself** (set `OCCUPLUS_URL=http://localhost:5100`).

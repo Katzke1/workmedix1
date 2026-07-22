@@ -128,4 +128,4 @@ function getBookingWithDetails(bookingId) {
   return booking;
 }
 
-module.exports = { createBookingWithEmployees, updateBookingStatus, getBookingWithDetails };
+module.exports = { upsertEmployee, createBookingWithEmployees, updateBookingStatus, getBookingWithDetails };

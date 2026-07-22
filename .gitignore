@@ -30,3 +30,9 @@ Thumbs.db
 .idea/
 .session-secret
 db/backups/
+
+# Optional SA driver's-licence RSA keys — NEVER commit real keys
+lib/za-dl-keys.json
+
+# Agent runtime state (instant-intake cursor)
+agent/.intake-cursor
