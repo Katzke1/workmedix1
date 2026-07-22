@@ -155,7 +155,8 @@
   }
 
   // ── Camera scanning (BarcodeDetector — native on Android Chrome) ──
-  var stream = null, scanning = false, detector = null;
+  var stream = null, scanning = false, detector = null, track = null, imageCapture = null, torchOn = false;
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
   function capabilityNote() {
     var note = $('dlNote');
@@ -171,6 +172,8 @@
 
   $('scanBtn').addEventListener('click', startCamera);
   $('camClose').addEventListener('click', stopCamera);
+  $('camTorch').addEventListener('click', toggleTorch);
+  document.addEventListener('fullscreenchange', function () { if (!document.fullscreenElement && scanning) stopCamera(); });
   $('rawCopy').addEventListener('click', function () {
     var t = $('rawText'); t.focus(); t.select();
     var done = function () { msg('Copied — paste it to support.'); };
@@ -187,31 +190,68 @@
 
   function startCamera() {
     if (!('BarcodeDetector' in window)) return;
+    // Fullscreen for a real scanner feel (best-effort; needs the click gesture).
+    var root = document.documentElement;
+    if (root.requestFullscreen) root.requestFullscreen().catch(function () {});
     BarcodeDetector.getSupportedFormats().then(function (fmts) {
       var want = ['pdf417', 'qr_code', 'code_128', 'code_39', 'itf', 'data_matrix'].filter(function (f) { return fmts.indexOf(f) >= 0; });
       detector = new BarcodeDetector({ formats: want.length ? want : fmts });
-      return navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      // Ask for the highest sensible resolution — dense PDF417 needs the detail.
+      return navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 2560 }, height: { ideal: 1440 } },
+      });
     }).then(function (s) {
       stream = s;
+      track = s.getVideoTracks()[0];
+      tuneTrack();
       var v = $('camVideo');
       v.srcObject = s;
       $('cam').style.display = 'block';
+      lockLandscape();
       return v.play();
     }).then(function () {
       scanning = true;
-      tick();
+      loop();
     }).catch(function (err) {
       msg('Camera unavailable: ' + (err && err.message ? err.message : 'permission denied') + '. Type the ID instead.', 'error');
       stopCamera();
     });
   }
 
-  function tick() {
+  // Continuous autofocus + torch availability + a high-res still-frame grabber.
+  function tuneTrack() {
+    if (!track) return;
+    try { if (window.ImageCapture) imageCapture = new ImageCapture(track); } catch (e) { imageCapture = null; }
+    var caps = track.getCapabilities ? track.getCapabilities() : {};
+    if (caps.focusMode && caps.focusMode.indexOf && caps.focusMode.indexOf('continuous') >= 0) {
+      track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(function () {});
+    }
+    if (caps.torch) $('camTorch').hidden = false;
+  }
+
+  function toggleTorch() {
+    if (!track) return;
+    torchOn = !torchOn;
+    track.applyConstraints({ advanced: [{ torch: torchOn }] }).catch(function () {});
+  }
+
+  function lockLandscape() {
+    try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(function () {}); } catch (e) {}
+  }
+
+  // Detect on high-res still frames when available (much better on dense PDF417),
+  // falling back to the live video element.
+  function loop() {
     if (!scanning || !detector) return;
-    detector.detect($('camVideo')).then(function (codes) {
-      if (codes && codes.length) return onScan(codes[0]);
-      requestAnimationFrame(tick);
-    }).catch(function () { requestAnimationFrame(tick); });
+    var work = imageCapture
+      ? imageCapture.grabFrame().catch(function () { return $('camVideo'); })
+      : Promise.resolve($('camVideo'));
+    work.then(function (src) { return detector.detect(src); })
+      .then(function (codes) {
+        if (codes && codes.length) return onScan(codes[0]);
+        return sleep(180).then(loop);
+      })
+      .catch(function () { sleep(180).then(loop); });
   }
 
   function onScan(code) {
@@ -228,7 +268,12 @@
 
   function stopCamera() {
     scanning = false;
+    torchOn = false;
     if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; }
+    track = null; imageCapture = null;
+    $('camTorch').hidden = true;
+    try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) {}
+    if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function () {});
     $('cam').style.display = 'none';
   }
 

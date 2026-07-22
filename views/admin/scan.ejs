@@ -75,12 +75,17 @@
             </button>
             <p class="scan-dl-note" id="dlNote"></p>
 
-            <!-- Live camera -->
+            <!-- Live camera (full-screen scanner) -->
             <div id="cam" class="scan-cam" style="display:none;">
-              <video id="camVideo" playsinline muted></video>
-              <div class="scan-cam-frame"></div>
-              <button id="camClose" class="scan-cam-close" type="button" aria-label="Close camera">✕</button>
-              <div id="camStatus" class="scan-cam-status">Point at the barcode on the ID or licence…</div>
+              <video id="camVideo" playsinline muted autoplay></video>
+              <div class="scan-cam-mask">
+                <div class="scan-cam-reticle"><span class="scan-cam-laser"></span></div>
+                <p class="scan-cam-hint">Line the barcode up inside the box — fill the frame and hold steady</p>
+              </div>
+              <div class="scan-cam-bar">
+                <button id="camClose" class="scan-cam-btn" type="button">Cancel</button>
+                <button id="camTorch" class="scan-cam-btn" type="button" hidden>💡&nbsp;Light</button>
+              </div>
             </div>
 
             <div class="scan-or"><span>or enter details</span></div>
@@ -159,11 +164,17 @@
   .scan-or span { padding:0 .8rem; text-transform:uppercase; letter-spacing:.06em; }
   .scan-derived { margin-top:.5rem; font-size:.82rem; font-weight:600; color:var(--success-color); background:var(--success-bg); border-radius:var(--radius); padding:.5rem .7rem; }
   .scan-derived.bad { color:var(--danger-color); background:var(--danger-bg); }
-  .scan-cam { position:relative; margin-top:1rem; border-radius:var(--radius-lg); overflow:hidden; background:#000; aspect-ratio: 4/3; }
+  .scan-cam { position:fixed; inset:0; z-index:3000; background:#000; }
   .scan-cam video { width:100%; height:100%; object-fit:cover; display:block; }
-  .scan-cam-frame { position:absolute; inset:14% 10%; border:3px solid rgba(255,255,255,.85); border-radius:12px; box-shadow:0 0 0 100vmax rgba(0,0,0,.35); }
-  .scan-cam-close { position:absolute; top:.5rem; right:.5rem; width:36px; height:36px; border:none; border-radius:50%; background:rgba(0,0,0,.55); color:#fff; font-size:1rem; cursor:pointer; }
-  .scan-cam-status { position:absolute; left:0; right:0; bottom:0; padding:.6rem .8rem; background:rgba(0,0,0,.6); color:#fff; font-size:.82rem; text-align:center; }
+  .scan-cam-mask { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:1rem; pointer-events:none; }
+  .scan-cam-reticle { position:relative; width:88vw; max-width:840px; height:210px; max-height:44vh; border:3px solid rgba(255,255,255,.92); border-radius:18px; box-shadow:0 0 0 100vmax rgba(0,0,0,.55); overflow:hidden; }
+  .scan-cam-laser { position:absolute; left:5%; right:5%; top:0; height:2px; background:linear-gradient(90deg,transparent,#4f7dff,transparent); box-shadow:0 0 12px 2px rgba(79,125,255,.85); animation:scanLaser 1.9s ease-in-out infinite; }
+  @keyframes scanLaser { 0%{transform:translateY(4px);opacity:.5} 50%{transform:translateY(200px);opacity:1} 100%{transform:translateY(4px);opacity:.5} }
+  .scan-cam-hint { margin-top:1.15rem; color:#fff; font-size:.92rem; font-weight:500; text-align:center; max-width:22rem; text-shadow:0 1px 5px rgba(0,0,0,.85); }
+  .scan-cam-bar { position:absolute; left:0; right:0; bottom:0; display:flex; gap:.8rem; justify-content:center; padding:1rem 1rem calc(1rem + env(safe-area-inset-bottom)); background:linear-gradient(to top,rgba(0,0,0,.7),transparent); }
+  .scan-cam-btn { pointer-events:auto; border:none; border-radius:999px; padding:.75rem 1.7rem; font-size:1rem; font-weight:600; background:rgba(255,255,255,.18); color:#fff; -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); cursor:pointer; transition:transform .12s; }
+  .scan-cam-btn:active { transform:scale(.96); }
+  @media (prefers-reduced-motion:reduce) { .scan-cam-laser { animation:none; } }
   .scan-list { list-style:none; margin:0; padding:0; }
   .scan-list li { display:flex; align-items:center; gap:.7rem; padding:.7rem 1.15rem; border-top:1px solid var(--border); }
   .scan-list li:first-child { border-top:none; }
