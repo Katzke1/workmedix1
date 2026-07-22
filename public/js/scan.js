@@ -172,6 +172,8 @@
 
   $('scanBtn').addEventListener('click', openScanner);
   $('camClose').addEventListener('click', stopCamera);
+  $('camCapture').addEventListener('click', capturePhoto);
+  $('camVideo').addEventListener('click', focusTap);
   $('camTorch').addEventListener('click', toggleTorch);
   document.addEventListener('fullscreenchange', function () { if (!document.fullscreenElement && scanning) stopCamera(); });
   $('rawCopy').addEventListener('click', function () {
@@ -224,7 +226,7 @@
       detector = new BarcodeDetector({ formats: want.length ? want : fmts });
       // Ask for the highest sensible resolution — dense PDF417 needs the detail.
       return navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 2560 }, height: { ideal: 1440 } },
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 3840 }, height: { ideal: 2160 } },
       });
     }).then(function (s) {
       stream = s;
@@ -269,17 +271,39 @@
 
   // Detect on high-res still frames when available (much better on dense PDF417),
   // falling back to the live video element.
+  // Live auto-scan on the (4K) video frames — light enough to keep the preview
+  // smooth. The Capture button does a high-res grab for tricky reads.
   function loop() {
     if (!scanning || !detector) return;
-    var work = imageCapture
-      ? imageCapture.grabFrame().catch(function () { return $('camVideo'); })
-      : Promise.resolve($('camVideo'));
-    work.then(function (src) { return detector.detect(src); })
+    detector.detect($('camVideo')).then(function (codes) {
+      if (codes && codes.length) return onScan(codes[0]);
+      sleep(250).then(loop);
+    }).catch(function () { sleep(300).then(loop); });
+  }
+
+  // Tap the preview to force a focus pass (helps a lot on close, dense barcodes).
+  function focusTap() {
+    if (!track) return;
+    msg('Focusing…');
+    track.applyConstraints({ advanced: [{ focusMode: 'single-shot' }] })
+      .then(function () { setTimeout(function () { if (track) track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(function () {}); }, 1400); })
+      .catch(function () {});
+  }
+
+  // Manual capture: grab a full-resolution still and decode that.
+  function capturePhoto() {
+    if (!detector) return;
+    msg('Capturing…');
+    var getFrame;
+    if (imageCapture && imageCapture.grabFrame) getFrame = imageCapture.grabFrame();
+    else if (imageCapture && imageCapture.takePhoto) getFrame = imageCapture.takePhoto().then(function (b) { return createImageBitmap(b); });
+    else getFrame = Promise.resolve($('camVideo'));
+    getFrame.then(function (src) { return detector.detect(src); })
       .then(function (codes) {
         if (codes && codes.length) return onScan(codes[0]);
-        return sleep(180).then(loop);
+        msg('No barcode found — fill the box with the barcode and tap Capture again.', 'error');
       })
-      .catch(function () { sleep(180).then(loop); });
+      .catch(function () { msg('Could not capture — try again.', 'error'); });
   }
 
   function onScan(code) {
