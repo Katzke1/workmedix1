@@ -228,10 +228,10 @@
       var want = ['pdf417'].filter(function (f) { return fmts.indexOf(f) >= 0; });
       detector = new BarcodeDetector({ formats: want.length ? want : ['pdf417'] });
       // Ask for the highest sensible resolution — dense PDF417 needs the detail.
-      // 1080p preview keeps things smooth; the Capture button grabs a full-res
-      // still (takePhoto) for the actual decode, so we don't need a heavy 4K feed.
+      // Sharp 1440p preview. We no longer scan every frame in the background
+      // (that was the lag) — the read happens on Capture via a full-res still.
       return navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 2560 }, height: { ideal: 1440 } },
       });
     }).then(function (s) {
       stream = s;
@@ -241,8 +241,8 @@
       v.srcObject = s;
       return v.play();
     }).then(function () {
+      // Preview is live; the read happens on Capture (no per-frame scan = no lag).
       scanning = true;
-      loop();
     }).catch(function (err) {
       msg('Camera unavailable: ' + (err && err.message ? err.message : 'permission denied') + '. Type the ID instead.', 'error');
       stopCamera();
