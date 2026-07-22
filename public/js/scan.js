@@ -222,8 +222,11 @@
   function startCamera() {
     if (!('BarcodeDetector' in window)) return;
     BarcodeDetector.getSupportedFormats().then(function (fmts) {
-      var want = ['pdf417', 'qr_code', 'code_128', 'code_39', 'itf', 'data_matrix'].filter(function (f) { return fmts.indexOf(f) >= 0; });
-      detector = new BarcodeDetector({ formats: want.length ? want : fmts });
+      // PDF417 ONLY. The ID card's name, sex and full ID all live in the PDF417;
+      // excluding the linear Code 39 stops the reader grabbing that easy, nameless
+      // barcode sitting right next to it.
+      var want = ['pdf417'].filter(function (f) { return fmts.indexOf(f) >= 0; });
+      detector = new BarcodeDetector({ formats: want.length ? want : ['pdf417'] });
       // Ask for the highest sensible resolution — dense PDF417 needs the detail.
       return navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: 'environment' }, width: { ideal: 3840 }, height: { ideal: 2160 } },
