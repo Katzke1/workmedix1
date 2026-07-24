@@ -113,16 +113,21 @@
     $('addBtn').disabled = true;
     post('/admin/scan/capture', body).then(function (r) {
       $('addBtn').disabled = false;
+      var camOpen = $('cam').style.display !== 'none';
       if (r.ok) {
+        beep();
+        if (camOpen) { flash('ok'); stopCamera(); }
         addToList(r.employee);
         $('count').textContent = r.count;
         $('listCount').textContent = r.count;
         resetForm();
-        $('idNumber').focus();
+        if (!camOpen) $('idNumber').focus();
         if (navigator.vibrate) navigator.vibrate(60);
         msg('Added ' + r.employee.first_name + ' ' + r.employee.last_name + ' — sending to OccuPlus.');
       } else if (r.needsName && r.decoded) {
-        // A scan gave us an ID (and maybe part of the name) — prefill and ask for the rest.
+        // Read worked (got the ID) — beep, close, prefill and ask for the name.
+        beep();
+        if (camOpen) { flash('ok'); stopCamera(); }
         if (r.decoded.idNumber) { $('idNumber').value = r.decoded.idNumber; $('idNumber').dispatchEvent(new Event('input')); }
         if (r.decoded.lastName)  $('lastName').value  = r.decoded.lastName;
         if (r.decoded.firstName) $('firstName').value = r.decoded.firstName;
@@ -130,7 +135,10 @@
         ($('firstName').value ? $('lastName') : $('firstName')).focus();
         msg('Read the ID — please check the name.', 'error');
       } else {
-        msg(r.error || 'Could not add this person.', 'error');
+        // No usable read — ehhrr and keep scanning (or show the error for manual entry).
+        errr();
+        if (camOpen) { flash('bad'); resumeScan(); }
+        else msg(r.error || 'Could not add this person.', 'error');
       }
     });
   }
@@ -156,6 +164,32 @@
 
   // ── Camera scanning (BarcodeDetector — native on Android Chrome) ──
   var stream = null, scanning = false, detector = null, track = null, imageCapture = null, torchOn = false, photoCaps = null, busy = false;
+  var scanCanvas = document.createElement('canvas');
+  var scanCtx = scanCanvas.getContext('2d');
+  var audioCtx = null, lastRaw = '';
+
+  // ── Sounds (generated, no asset files) ──
+  function initAudio() {
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (AC && !audioCtx) audioCtx = new AC();
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    } catch (e) {}
+  }
+  function tone(freq, dur, type, vol, delay) {
+    if (!audioCtx) return;
+    try {
+      var t = audioCtx.currentTime + (delay || 0);
+      var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = type || 'sine'; o.frequency.value = freq;
+      o.connect(g); g.connect(audioCtx.destination);
+      g.gain.setValueAtTime(vol || 0.2, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.start(t); o.stop(t + dur);
+    } catch (e) {}
+  }
+  function beep() { tone(1046, 0.09, 'sine', 0.25, 0); tone(1400, 0.11, 'sine', 0.25, 0.085); }   // rising "beep!" = read
+  function errr() { tone(150, 0.3, 'square', 0.2, 0); }                                            // low "ehhrr" = no read
 
   function capabilityNote() {
     var note = $('dlNote');
@@ -171,9 +205,7 @@
 
   $('scanBtn').addEventListener('click', openScanner);
   $('camClose').addEventListener('click', stopCamera);
-  $('camShutter').addEventListener('click', capture);
   $('camVideo').addEventListener('click', focusTap);
-  $('camTorch').addEventListener('click', toggleTorch);
   document.addEventListener('fullscreenchange', function () { if (!document.fullscreenElement && scanning) stopCamera(); });
   $('rawCopy').addEventListener('click', function () {
     var t = $('rawText'); t.focus(); t.select();
@@ -207,6 +239,7 @@
 
   function openScanner() {
     if (!('BarcodeDetector' in window)) return;
+    initAudio();   // unlock sound within the tap gesture
     var cam = $('cam');
     // Move the overlay to <body> so no transformed ancestor can trap its fixed
     // positioning (that was letting the sidebar show through and squashing it).
@@ -241,7 +274,8 @@
       return v.play();
     }).then(function () {
       scanning = true;
-      loop();   // continuous auto-scan (what gave the good reads); shutter is a backup
+      lastRaw = '';
+      loop();   // continuous auto-scan on the framed region
     }).catch(function (err) {
       msg('Camera unavailable: ' + (err && err.message ? err.message : 'permission denied') + '. Type the ID instead.', 'error');
       stopCamera();
@@ -256,11 +290,6 @@
     if (caps.focusMode && caps.focusMode.indexOf && caps.focusMode.indexOf('continuous') >= 0) {
       track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(function () {});
     }
-    if (caps.torch) $('camTorch').hidden = false;
-    // Learn the max still-photo resolution so the shutter grabs the sharpest frame.
-    if (imageCapture && imageCapture.getPhotoCapabilities) {
-      imageCapture.getPhotoCapabilities().then(function (pc) { photoCaps = pc; }).catch(function () {});
-    }
   }
 
   function toggleTorch() {
@@ -273,14 +302,22 @@
     try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(function () {}); } catch (e) {}
   }
 
-  // Continuous auto-scan on the live 4K frames — hold the barcode in view and it
-  // reads on its own (this is the setup that read reliably). Shutter is a backup.
+  // Continuous auto-scan, but only on the central framed region, downscaled to cap
+  // the work — keeps the crisp 4K preview while making detection fast (smooth).
   function loop() {
     if (!scanning || !detector) return;
-    detector.detect($('camVideo')).then(function (codes) {
+    var v = $('camVideo'), vw = v.videoWidth, vh = v.videoHeight;
+    if (!vw) { setTimeout(loop, 150); return; }
+    var cw = Math.round(vw * 0.86), ch = Math.round(vh * 0.55);
+    var sx = (vw - cw) >> 1, sy = (vh - ch) >> 1;
+    var scale = Math.min(1, 1600 / cw);
+    scanCanvas.width = Math.round(cw * scale);
+    scanCanvas.height = Math.round(ch * scale);
+    scanCtx.drawImage(v, sx, sy, cw, ch, 0, 0, scanCanvas.width, scanCanvas.height);
+    detector.detect(scanCanvas).then(function (codes) {
       if (codes && codes.length) return onScan(codes[0]);
-      setTimeout(loop, 250);
-    }).catch(function () { setTimeout(loop, 300); });
+      setTimeout(loop, 120);
+    }).catch(function () { setTimeout(loop, 220); });
   }
 
   // Tap the preview to nudge focus.
@@ -334,16 +371,19 @@
   }
 
   function onScan(code) {
-    scanning = false;
-    if (navigator.vibrate) navigator.vibrate(40);
-    stopCamera();
     var raw = code.rawValue || '';
+    if (!raw) { setTimeout(loop, 130); return; }
+    if (raw === lastRaw) { setTimeout(loop, 300); return; }   // same barcode still in view — keep scanning
+    lastRaw = raw;
     var b64 = bytesToB64(raw);
     showRaw(b64, code.format, raw.length);
-    // Send both the decoded text and the raw bytes (base64) so the server can
-    // parse the smart-ID card's binary payload, not just readable text.
-    msg('Reading…');
+    // submitCapture decides: beep + close on a read, ehhrr + keep scanning on a miss.
     submitCapture({ booking_id: bookingId, text: raw, bytes_base64: b64 });
+  }
+
+  function resumeScan() {
+    setTimeout(function () { lastRaw = ''; }, 1200);   // let the same code retry after repositioning
+    setTimeout(loop, 300);
   }
 
   function stopCamera() {
@@ -352,7 +392,6 @@
     busy = false;
     if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; }
     track = null; imageCapture = null; photoCaps = null;
-    $('camTorch').hidden = true;
     try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) {}
     if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function () {});
     $('cam').style.display = 'none';
