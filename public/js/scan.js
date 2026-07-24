@@ -227,11 +227,10 @@
       // barcode sitting right next to it.
       var want = ['pdf417'].filter(function (f) { return fmts.indexOf(f) >= 0; });
       detector = new BarcodeDetector({ formats: want.length ? want : ['pdf417'] });
-      // Ask for the highest sensible resolution — dense PDF417 needs the detail.
-      // Sharp 1440p preview. We no longer scan every frame in the background
-      // (that was the lag) — the read happens on Capture via a full-res still.
+      // Full 4K feed — this is what gave the sharp, reliable reads. Dense PDF417
+      // needs the detail; continuous auto-scan runs on these frames.
       return navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 2560 }, height: { ideal: 1440 } },
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 3840 }, height: { ideal: 2160 } },
       });
     }).then(function (s) {
       stream = s;
@@ -241,8 +240,8 @@
       v.srcObject = s;
       return v.play();
     }).then(function () {
-      // Preview is live; the read happens on Capture (no per-frame scan = no lag).
       scanning = true;
+      loop();   // continuous auto-scan (what gave the good reads); shutter is a backup
     }).catch(function (err) {
       msg('Camera unavailable: ' + (err && err.message ? err.message : 'permission denied') + '. Type the ID instead.', 'error');
       stopCamera();
@@ -272,6 +271,16 @@
 
   function lockLandscape() {
     try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(function () {}); } catch (e) {}
+  }
+
+  // Continuous auto-scan on the live 4K frames — hold the barcode in view and it
+  // reads on its own (this is the setup that read reliably). Shutter is a backup.
+  function loop() {
+    if (!scanning || !detector) return;
+    detector.detect($('camVideo')).then(function (codes) {
+      if (codes && codes.length) return onScan(codes[0]);
+      setTimeout(loop, 250);
+    }).catch(function () { setTimeout(loop, 300); });
   }
 
   // Tap the preview to nudge focus.
