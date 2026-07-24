@@ -155,8 +155,7 @@
   }
 
   // ── Camera scanning (BarcodeDetector — native on Android Chrome) ──
-  var stream = null, scanning = false, detector = null, track = null, imageCapture = null, torchOn = false;
-  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  var stream = null, scanning = false, detector = null, track = null, imageCapture = null, torchOn = false, photoCaps = null, busy = false;
 
   function capabilityNote() {
     var note = $('dlNote');
@@ -172,7 +171,7 @@
 
   $('scanBtn').addEventListener('click', openScanner);
   $('camClose').addEventListener('click', stopCamera);
-  $('camCapture').addEventListener('click', capturePhoto);
+  $('camShutter').addEventListener('click', capture);
   $('camVideo').addEventListener('click', focusTap);
   $('camTorch').addEventListener('click', toggleTorch);
   document.addEventListener('fullscreenchange', function () { if (!document.fullscreenElement && scanning) stopCamera(); });
@@ -213,9 +212,10 @@
     // positioning (that was letting the sidebar show through and squashing it).
     document.body.appendChild(cam);
     cam.style.display = 'block';
-    // Fullscreen on the overlay itself (kept within the click's user-activation).
-    // No forced orientation lock — it just follows the phone, which is smoother.
-    if (cam.requestFullscreen) cam.requestFullscreen().catch(function () {});
+    // Fullscreen on the overlay itself (kept within the click's user-activation),
+    // then lock to landscape for a wide scanning view.
+    if (cam.requestFullscreen) cam.requestFullscreen().then(lockLandscape).catch(lockLandscape);
+    else lockLandscape();
     startCamera();
   }
 
@@ -258,10 +258,10 @@
       track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(function () {});
     }
     if (caps.torch) $('camTorch').hidden = false;
-    try {
-      var st = track.getSettings ? track.getSettings() : {};
-      if (st.width) $('camRes').textContent = st.width + '×' + st.height + (imageCapture ? ' (hi-res)' : '');
-    } catch (e) {}
+    // Learn the max still-photo resolution so the shutter grabs the sharpest frame.
+    if (imageCapture && imageCapture.getPhotoCapabilities) {
+      imageCapture.getPhotoCapabilities().then(function (pc) { photoCaps = pc; }).catch(function () {});
+    }
   }
 
   function toggleTorch() {
@@ -274,47 +274,54 @@
     try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(function () {}); } catch (e) {}
   }
 
-  // Detect on high-res still frames when available (much better on dense PDF417),
-  // falling back to the live video element.
-  // Live auto-scan on the (4K) video frames — light enough to keep the preview
-  // smooth. The Capture button does a high-res grab for tricky reads.
-  function loop() {
-    if (!scanning || !detector) return;
-    detector.detect($('camVideo')).then(function (codes) {
-      if (codes && codes.length) return onScan(codes[0]);
-      sleep(250).then(loop);
-    }).catch(function () { sleep(300).then(loop); });
-  }
-
-  // Tap the preview to force a focus pass (helps a lot on close, dense barcodes).
+  // Tap the preview to nudge focus.
   function focusTap() {
     if (!track) return;
-    msg('Focusing…');
     track.applyConstraints({ advanced: [{ focusMode: 'single-shot' }] })
-      .then(function () { setTimeout(function () { if (track) track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(function () {}); }, 1400); })
+      .then(function () { setTimeout(function () { if (track) track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(function () {}); }, 1500); })
       .catch(function () {});
   }
 
-  // Manual capture: grab a full-resolution still and decode that.
-  function capturePhoto() {
-    if (!detector) return;
-    msg('Capturing…');
-    var getFrame;
+  // Shutter: focus, then grab the sharpest full-resolution still and decode it.
+  function capture() {
+    if (busy || !detector) return;
+    busy = true;
+    if (navigator.vibrate) navigator.vibrate(20);
+    if (track) track.applyConstraints({ advanced: [{ focusMode: 'single-shot' }] }).catch(function () {});
+    setTimeout(function () {
+      grabSharp().then(function (src) { return detector.detect(src); })
+        .then(function (codes) {
+          busy = false;
+          if (codes && codes.length) { flash('ok'); onScan(codes[0]); }
+          else flash('bad');
+        })
+        .catch(function () { busy = false; flash('bad'); });
+    }, 550);
+  }
+
+  // Highest-resolution still we can get: a full-res photo, else a video frame.
+  function grabSharp() {
     if (imageCapture && imageCapture.takePhoto) {
-      // Full sensor resolution + a real autofocus pass — best chance on dense PDF417.
-      getFrame = imageCapture.takePhoto().then(function (b) { return createImageBitmap(b); })
+      var opts = {};
+      if (photoCaps && photoCaps.imageWidth && photoCaps.imageWidth.max) {
+        opts.imageWidth = photoCaps.imageWidth.max;
+        if (photoCaps.imageHeight && photoCaps.imageHeight.max) opts.imageHeight = photoCaps.imageHeight.max;
+      }
+      return imageCapture.takePhoto(opts).then(function (b) { return createImageBitmap(b); })
         .catch(function () { return imageCapture.grabFrame ? imageCapture.grabFrame() : $('camVideo'); });
-    } else if (imageCapture && imageCapture.grabFrame) {
-      getFrame = imageCapture.grabFrame();
-    } else {
-      getFrame = Promise.resolve($('camVideo'));
     }
-    getFrame.then(function (src) { return detector.detect(src); })
-      .then(function (codes) {
-        if (codes && codes.length) return onScan(codes[0]);
-        msg('No barcode found — fill the box with the barcode and tap Capture again.', 'error');
-      })
-      .catch(function () { msg('Could not capture — try again.', 'error'); });
+    if (imageCapture && imageCapture.grabFrame) return imageCapture.grabFrame();
+    return Promise.resolve($('camVideo'));
+  }
+
+  // Green flash = read; red flash + buzz = try again. No text.
+  function flash(kind) {
+    var r = $('camReticle');
+    if (!r) return;
+    r.classList.remove('ok', 'bad');
+    void r.offsetWidth;
+    r.classList.add(kind);
+    if (kind === 'bad' && navigator.vibrate) navigator.vibrate([40, 60, 40]);
   }
 
   function onScan(code) {
@@ -333,8 +340,9 @@
   function stopCamera() {
     scanning = false;
     torchOn = false;
+    busy = false;
     if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; }
-    track = null; imageCapture = null;
+    track = null; imageCapture = null; photoCaps = null;
     $('camTorch').hidden = true;
     try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) {}
     if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function () {});

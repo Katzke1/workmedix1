@@ -78,19 +78,18 @@
             </button>
             <p class="scan-dl-note" id="dlNote"></p>
 
-            <!-- Live camera (full-screen scanner) -->
+            <!-- Full-screen scanner — icons only, no text -->
             <div id="cam" class="scan-cam" style="display:none;">
               <video id="camVideo" playsinline muted autoplay></video>
-              <div id="camRes" class="scan-cam-res"></div>
               <div class="scan-cam-mask">
-                <div class="scan-cam-reticle"><span class="scan-cam-laser"></span></div>
-                <p class="scan-cam-hint">Aim at the BIG square barcode (not the thin lines) · tap to focus · then Capture</p>
+                <div id="camReticle" class="scan-cam-reticle">
+                  <i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+                  <span class="scan-cam-laser"></span>
+                </div>
               </div>
-              <div class="scan-cam-bar">
-                <button id="camClose" class="scan-cam-btn" type="button">Cancel</button>
-                <button id="camCapture" class="scan-cam-btn scan-cam-btn-primary" type="button">Capture</button>
-                <button id="camTorch" class="scan-cam-btn" type="button" hidden>💡&nbsp;Light</button>
-              </div>
+              <button id="camClose" class="scan-cam-icon scan-cam-close" type="button" aria-label="Close">✕</button>
+              <button id="camTorch" class="scan-cam-icon scan-cam-torch" type="button" aria-label="Light" hidden>💡</button>
+              <button id="camShutter" class="scan-cam-shutter" type="button" aria-label="Capture"><span></span></button>
             </div>
 
             <div class="scan-or"><span>or enter details</span></div>
@@ -169,19 +168,27 @@
   .scan-or span { padding:0 .8rem; text-transform:uppercase; letter-spacing:.06em; }
   .scan-derived { margin-top:.5rem; font-size:.82rem; font-weight:600; color:var(--success-color); background:var(--success-bg); border-radius:var(--radius); padding:.5rem .7rem; }
   .scan-derived.bad { color:var(--danger-color); background:var(--danger-bg); }
-  .scan-cam { position:fixed; inset:0; z-index:3000; background:#000; }
-  .scan-cam:fullscreen { width:100vw; height:100vh; }
+  .scan-cam { position:fixed; inset:0; z-index:3000; background:#000; overflow:hidden; }
   .scan-cam video { width:100%; height:100%; object-fit:cover; display:block; }
-  .scan-cam-res { position:absolute; top:calc(.55rem + env(safe-area-inset-top)); left:.8rem; color:rgba(255,255,255,.75); font-size:.72rem; font-family:ui-monospace,Menlo,Consolas,monospace; text-shadow:0 1px 3px #000; }
-  .scan-cam-mask { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:1rem; pointer-events:none; }
-  .scan-cam-reticle { position:relative; width:88vw; max-width:840px; height:210px; max-height:44vh; border:3px solid rgba(255,255,255,.92); border-radius:18px; box-shadow:0 0 0 100vmax rgba(0,0,0,.55); overflow:hidden; }
-  .scan-cam-laser { position:absolute; left:5%; right:5%; top:0; height:2px; background:linear-gradient(90deg,transparent,#4f7dff,transparent); box-shadow:0 0 12px 2px rgba(79,125,255,.85); animation:scanLaser 1.9s ease-in-out infinite; }
-  @keyframes scanLaser { 0%{transform:translateY(4px);opacity:.5} 50%{transform:translateY(200px);opacity:1} 100%{transform:translateY(4px);opacity:.5} }
-  .scan-cam-hint { margin-top:1.15rem; color:#fff; font-size:.92rem; font-weight:500; text-align:center; max-width:22rem; text-shadow:0 1px 5px rgba(0,0,0,.85); }
-  .scan-cam-bar { position:absolute; left:0; right:0; bottom:0; display:flex; gap:.8rem; justify-content:center; padding:1rem 1rem calc(1rem + env(safe-area-inset-bottom)); background:linear-gradient(to top,rgba(0,0,0,.7),transparent); }
-  .scan-cam-btn { pointer-events:auto; border:none; border-radius:999px; padding:.75rem 1.7rem; font-size:1rem; font-weight:600; background:rgba(255,255,255,.18); color:#fff; -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); cursor:pointer; transition:transform .12s; }
-  .scan-cam-btn:active { transform:scale(.96); }
-  .scan-cam-btn-primary { background:var(--primary); padding:.8rem 2.4rem; box-shadow:0 6px 18px rgba(35,38,242,.5); }
+  .scan-cam-mask { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; }
+  .scan-cam-reticle { position:relative; width:82vw; max-width:900px; height:54vh; max-height:520px; box-shadow:0 0 0 100vmax rgba(0,0,0,.5); border-radius:16px; }
+  .scan-cam-reticle .c { position:absolute; width:34px; height:34px; border:4px solid #fff; }
+  .scan-cam-reticle .tl { top:-2px; left:-2px; border-right:none; border-bottom:none; border-top-left-radius:16px; }
+  .scan-cam-reticle .tr { top:-2px; right:-2px; border-left:none; border-bottom:none; border-top-right-radius:16px; }
+  .scan-cam-reticle .bl { bottom:-2px; left:-2px; border-right:none; border-top:none; border-bottom-left-radius:16px; }
+  .scan-cam-reticle .br { bottom:-2px; right:-2px; border-left:none; border-top:none; border-bottom-right-radius:16px; }
+  .scan-cam-reticle.ok  { animation:reticleOk .55s ease; }
+  .scan-cam-reticle.bad { animation:reticleBad .55s ease; }
+  @keyframes reticleOk  { 0%,100%{box-shadow:0 0 0 100vmax rgba(0,0,0,.5)} 40%{box-shadow:0 0 0 100vmax rgba(16,140,90,.55)} }
+  @keyframes reticleBad { 0%,100%{box-shadow:0 0 0 100vmax rgba(0,0,0,.5)} 40%{box-shadow:0 0 0 100vmax rgba(200,30,50,.5)} }
+  .scan-cam-laser { position:absolute; left:4%; right:4%; top:0; height:3px; background:linear-gradient(90deg,transparent,#4f7dff,transparent); box-shadow:0 0 14px 2px rgba(79,125,255,.9); animation:scanLaser 2s ease-in-out infinite; }
+  @keyframes scanLaser { 0%{transform:translateY(6px);opacity:.5} 50%{transform:translateY(50vh);opacity:1} 100%{transform:translateY(6px);opacity:.5} }
+  .scan-cam-icon { position:absolute; top:calc(.7rem + env(safe-area-inset-top)); width:46px; height:46px; border:none; border-radius:50%; background:rgba(0,0,0,.5); color:#fff; font-size:1.15rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .scan-cam-close { right:.9rem; }
+  .scan-cam-torch { left:.9rem; }
+  .scan-cam-shutter { position:absolute; left:50%; transform:translateX(-50%); bottom:calc(1.5rem + env(safe-area-inset-bottom)); width:78px; height:78px; border-radius:50%; border:5px solid rgba(255,255,255,.92); background:transparent; cursor:pointer; padding:0; }
+  .scan-cam-shutter span { display:block; width:100%; height:100%; border-radius:50%; background:#fff; transform:scale(.86); transition:transform .12s; }
+  .scan-cam-shutter:active span { transform:scale(.72); }
   @media (prefers-reduced-motion:reduce) { .scan-cam-laser { animation:none; } }
   .scan-list { list-style:none; margin:0; padding:0; }
   .scan-list li { display:flex; align-items:center; gap:.7rem; padding:.7rem 1.15rem; border-top:1px solid var(--border); }
