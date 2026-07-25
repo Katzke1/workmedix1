@@ -260,10 +260,13 @@
       // barcode sitting right next to it.
       var want = ['pdf417'].filter(function (f) { return fmts.indexOf(f) >= 0; });
       detector = new BarcodeDetector({ formats: want.length ? want : ['pdf417'] });
-      // 1440p — sharp enough to read a dense PDF417 that fills the frame, but far
-      // lighter than 4K so the preview stays smooth and autofocus is fast.
-      return navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 2560 }, height: { ideal: 1440 } },
+      // Probe once to unlock camera permission + device labels.
+      return navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } });
+    }).then(function (probe) {
+      return navigator.mediaDevices.enumerateDevices().then(function (devices) {
+        var id = pickBackCamera(devices);
+        probe.getTracks().forEach(function (t) { t.stop(); });   // release the probe stream
+        return openMain(id);
       });
     }).then(function (s) {
       stream = s;
@@ -284,7 +287,33 @@
     });
   }
 
-  // Continuous autofocus + torch availability + a high-res still-frame grabber.
+  // Open the chosen camera (else any rear cam) at 1440p, asking for continuous AF.
+  function openMain(id) {
+    var vc = { width: { ideal: 2560 }, height: { ideal: 1440 }, advanced: [{ focusMode: 'continuous' }] };
+    if (id) vc.deviceId = { exact: id }; else vc.facingMode = { ideal: 'environment' };
+    return navigator.mediaDevices.getUserMedia({ video: vc }).catch(function () {
+      return navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 2560 }, height: { ideal: 1440 } } });
+    });
+  }
+
+  // Pick the MAIN rear camera. Auxiliary lenses (ultra-wide / tele / depth / macro)
+  // are often FIXED-FOCUS — that's why it wouldn't autofocus. Prefer a back camera
+  // with no wide/tele/etc. qualifier, lowest index.
+  function pickBackCamera(devices) {
+    var vids = devices.filter(function (d) { return d.kind === 'videoinput'; });
+    var backs = vids.filter(function (d) { return /back|rear|environment/i.test(d.label); });
+    if (!backs.length) backs = vids;
+    var main = backs.filter(function (d) { return !/wide|ultra|tele|depth|macro|mono|fisheye|zoom/i.test(d.label); });
+    var pool = main.length ? main : backs;
+    pool.sort(function (a, b) {
+      var na = parseInt((a.label.match(/\d+/) || ['99'])[0], 10);
+      var nb = parseInt((b.label.match(/\d+/) || ['99'])[0], 10);
+      return na - nb;
+    });
+    return pool[0] ? pool[0].deviceId : null;
+  }
+
+  // Continuous autofocus + a high-res still-frame grabber.
   function tuneTrack() {
     if (!track) return;
     try { if (window.ImageCapture) imageCapture = new ImageCapture(track); } catch (e) { imageCapture = null; }
