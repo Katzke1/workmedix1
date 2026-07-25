@@ -166,7 +166,7 @@
   var stream = null, scanning = false, detector = null, track = null, imageCapture = null, torchOn = false, photoCaps = null, busy = false;
   var scanCanvas = document.createElement('canvas');
   var scanCtx = scanCanvas.getContext('2d');
-  var audioCtx = null, lastRaw = '', focusTimer = null;
+  var audioCtx = null, lastRaw = '';
 
   // ── Sounds (generated, no asset files) ──
   function initAudio() {
@@ -260,10 +260,10 @@
       // barcode sitting right next to it.
       var want = ['pdf417'].filter(function (f) { return fmts.indexOf(f) >= 0; });
       detector = new BarcodeDetector({ formats: want.length ? want : ['pdf417'] });
-      // Full 4K feed — this is what gave the sharp, reliable reads. Dense PDF417
-      // needs the detail; continuous auto-scan runs on these frames.
+      // 1440p — sharp enough to read a dense PDF417 that fills the frame, but far
+      // lighter than 4K so the preview stays smooth and autofocus is fast.
       return navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 3840 }, height: { ideal: 2160 } },
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 2560 }, height: { ideal: 1440 } },
       });
     }).then(function (s) {
       stream = s;
@@ -276,8 +276,7 @@
       scanning = true;
       lastRaw = '';
       applyFocus();
-      clearInterval(focusTimer);
-      focusTimer = setInterval(applyFocus, 3000);   // re-assert continuous AF so it never sticks
+      setTimeout(applyFocus, 900);   // one more nudge once the lens is ready (no hunting timer)
       loop();
     }).catch(function (err) {
       msg('Camera unavailable: ' + (err && err.message ? err.message : 'permission denied') + '. Type the ID instead.', 'error');
@@ -323,8 +322,8 @@
     scanCtx.drawImage(v, sx, sy, cw, ch, 0, 0, scanCanvas.width, scanCanvas.height);
     detector.detect(scanCanvas).then(function (codes) {
       if (codes && codes.length) return onScan(codes[0]);
-      setTimeout(loop, 120);
-    }).catch(function () { setTimeout(loop, 220); });
+      setTimeout(loop, 250);
+    }).catch(function () { setTimeout(loop, 300); });
   }
 
 
@@ -356,7 +355,6 @@
 
   function stopCamera() {
     scanning = false;
-    clearInterval(focusTimer);
     torchOn = false;
     busy = false;
     if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; }
