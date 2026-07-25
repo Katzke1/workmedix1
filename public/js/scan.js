@@ -255,10 +255,11 @@
   function startCamera() {
     if (!('BarcodeDetector' in window)) return;
     BarcodeDetector.getSupportedFormats().then(function (fmts) {
-      // PDF417 ONLY. The ID card's name, sex and full ID all live in the PDF417;
-      // excluding the linear Code 39 stops the reader grabbing that easy, nameless
-      // barcode sitting right next to it.
-      var want = ['pdf417'].filter(function (f) { return fmts.indexOf(f) >= 0; });
+      // PDF417 for smart-ID cards + licences; linear formats for the barcoded ID
+      // book. We PREFER the PDF417 when a frame has both (see loop) so the smart
+      // card never falls back to its nameless Code 39.
+      var wanted = ['pdf417', 'code_39', 'code_128', 'itf'];
+      var want = wanted.filter(function (f) { return fmts.indexOf(f) >= 0; });
       detector = new BarcodeDetector({ formats: want.length ? want : ['pdf417'] });
       // Probe once to unlock camera permission + device labels.
       return navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } });
@@ -350,7 +351,11 @@
     scanCanvas.height = Math.round(ch * scale);
     scanCtx.drawImage(v, sx, sy, cw, ch, 0, 0, scanCanvas.width, scanCanvas.height);
     detector.detect(scanCanvas).then(function (codes) {
-      if (codes && codes.length) return onScan(codes[0]);
+      if (codes && codes.length) {
+        var best = null;
+        for (var i = 0; i < codes.length; i++) { if (codes[i].format === 'pdf417') { best = codes[i]; break; } }
+        return onScan(best || codes[0]);   // prefer the PDF417; else the ID book's linear code
+      }
       setTimeout(loop, 250);
     }).catch(function () { setTimeout(loop, 300); });
   }
