@@ -166,7 +166,7 @@
   var stream = null, scanning = false, detector = null, track = null, imageCapture = null, torchOn = false, photoCaps = null, busy = false;
   var scanCanvas = document.createElement('canvas');
   var scanCtx = scanCanvas.getContext('2d');
-  var audioCtx = null, lastRaw = '';
+  var audioCtx = null, lastRaw = '', focusTimer = null;
 
   // ── Sounds (generated, no asset files) ──
   function initAudio() {
@@ -205,7 +205,7 @@
 
   $('scanBtn').addEventListener('click', openScanner);
   $('camClose').addEventListener('click', stopCamera);
-  $('camVideo').addEventListener('click', focusTap);
+  $('camVideo').addEventListener('click', applyFocus);
   document.addEventListener('fullscreenchange', function () { if (!document.fullscreenElement && scanning) stopCamera(); });
   $('rawCopy').addEventListener('click', function () {
     var t = $('rawText'); t.focus(); t.select();
@@ -275,7 +275,10 @@
     }).then(function () {
       scanning = true;
       lastRaw = '';
-      loop();   // continuous auto-scan on the framed region
+      applyFocus();
+      clearInterval(focusTimer);
+      focusTimer = setInterval(applyFocus, 3000);   // re-assert continuous AF so it never sticks
+      loop();
     }).catch(function (err) {
       msg('Camera unavailable: ' + (err && err.message ? err.message : 'permission denied') + '. Type the ID instead.', 'error');
       stopCamera();
@@ -286,10 +289,14 @@
   function tuneTrack() {
     if (!track) return;
     try { if (window.ImageCapture) imageCapture = new ImageCapture(track); } catch (e) { imageCapture = null; }
-    var caps = track.getCapabilities ? track.getCapabilities() : {};
-    if (caps.focusMode && caps.focusMode.indexOf && caps.focusMode.indexOf('continuous') >= 0) {
-      track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(function () {});
-    }
+    applyFocus();
+  }
+
+  // Keep the lens in continuous autofocus — applied on start, on tap, and on a
+  // timer so it can never get stuck (single-shot locking was the focus bug).
+  function applyFocus() {
+    if (!track) return;
+    try { track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(function () {}); } catch (e) {}
   }
 
   function toggleTorch() {
@@ -320,45 +327,6 @@
     }).catch(function () { setTimeout(loop, 220); });
   }
 
-  // Tap the preview to nudge focus.
-  function focusTap() {
-    if (!track) return;
-    track.applyConstraints({ advanced: [{ focusMode: 'single-shot' }] })
-      .then(function () { setTimeout(function () { if (track) track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(function () {}); }, 1500); })
-      .catch(function () {});
-  }
-
-  // Shutter: focus, then grab the sharpest full-resolution still and decode it.
-  function capture() {
-    if (busy || !detector) return;
-    busy = true;
-    if (navigator.vibrate) navigator.vibrate(20);
-    if (track) track.applyConstraints({ advanced: [{ focusMode: 'single-shot' }] }).catch(function () {});
-    setTimeout(function () {
-      grabSharp().then(function (src) { return detector.detect(src); })
-        .then(function (codes) {
-          busy = false;
-          if (codes && codes.length) { flash('ok'); onScan(codes[0]); }
-          else flash('bad');
-        })
-        .catch(function () { busy = false; flash('bad'); });
-    }, 550);
-  }
-
-  // Highest-resolution still we can get: a full-res photo, else a video frame.
-  function grabSharp() {
-    if (imageCapture && imageCapture.takePhoto) {
-      var opts = {};
-      if (photoCaps && photoCaps.imageWidth && photoCaps.imageWidth.max) {
-        opts.imageWidth = photoCaps.imageWidth.max;
-        if (photoCaps.imageHeight && photoCaps.imageHeight.max) opts.imageHeight = photoCaps.imageHeight.max;
-      }
-      return imageCapture.takePhoto(opts).then(function (b) { return createImageBitmap(b); })
-        .catch(function () { return imageCapture.grabFrame ? imageCapture.grabFrame() : $('camVideo'); });
-    }
-    if (imageCapture && imageCapture.grabFrame) return imageCapture.grabFrame();
-    return Promise.resolve($('camVideo'));
-  }
 
   // Green flash = read; red flash + buzz = try again. No text.
   function flash(kind) {
@@ -388,6 +356,7 @@
 
   function stopCamera() {
     scanning = false;
+    clearInterval(focusTimer);
     torchOn = false;
     busy = false;
     if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; }
