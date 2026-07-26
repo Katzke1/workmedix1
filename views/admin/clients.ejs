@@ -11,6 +11,27 @@
   </div>
 
   <div class="app-content">
+    <% if (locals.success) { %><div class="alert alert-success" data-autodismiss><%= success %></div><% } %>
+    <% if (locals.error)   { %><div class="alert alert-danger"><%= error %></div><% } %>
+
+    <details class="card" style="margin-bottom:1.25rem;">
+      <summary style="cursor:pointer;padding:1rem 1.15rem;font-weight:600;color:var(--primary);">+ Add Client</summary>
+      <div class="card-body" style="padding-top:0;">
+        <form method="POST" action="/admin/clients/create">
+          <%- include('../partials/csrf') %>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Full Name *</label><input type="text" name="name" class="form-control" required></div>
+            <div class="form-group"><label class="form-label">Email *</label><input type="email" name="email" class="form-control" required></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Company</label><input type="text" name="company_name" class="form-control"></div>
+            <div class="form-group"><label class="form-label">Temporary Password *</label><input type="text" name="password" class="form-control" minlength="8" required></div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Add Client</button>
+        </form>
+      </div>
+    </details>
+
     <div class="card">
       <div class="card-header">
         <h3>Client Directory</h3>
@@ -56,7 +77,13 @@
                   <%= new Date(c.created_at).toLocaleDateString('en-ZA') %>
                 </td>
                 <td>
-                  <a href="/admin/clients/<%= c.id %>" class="btn btn-outline-dark btn-sm">View →</a>
+                  <div style="display:flex;gap:.4rem;justify-content:flex-end;">
+                    <a href="/admin/clients/<%= c.id %>" class="btn btn-outline-dark btn-sm">View</a>
+                    <form method="POST" action="/admin/clients/<%= c.id %>/delete" style="display:inline;" onsubmit="return confirm('Remove <%= c.name %>? This deletes their account and their own bookings.')">
+                      <%- include('../partials/csrf') %>
+                      <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                    </form>
+                  </div>
                 </td>
               </tr>
             <% }) } %>

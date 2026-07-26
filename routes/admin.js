@@ -549,8 +549,37 @@ router.get('/clients', (req, res) => {
     title       : 'Manage Clients | Workmedix Admin',
     description : 'View and manage all registered client accounts.',
     page        : 'clients',
-    clients
+    clients,
+    success     : req.query.saved ? 'Client added.' : req.query.deleted ? 'Client removed.' : null,
+    error       : req.query.err ? decodeURIComponent(req.query.err) : null,
   });
+});
+
+// Add a client account. Defined before POST /clients/:id so "create" isn't
+// captured as an :id.
+router.post('/clients/create', (req, res) => {
+  const { ok, value, error } = validate({
+    name        : { type: 'string', required: true, min: 2, max: 80, pattern: /^[a-zA-Z\s\-'.]+$/, label: 'Name' },
+    email       : { type: 'email',  required: true, max: 254, label: 'Email' },
+    company_name: { type: 'string', max: 120, label: 'Company' },
+    password    : { type: 'string', required: true, min: 8, max: 200, label: 'Password' },
+  }, req.body);
+  if (!ok) return res.redirect('/admin/clients?err=' + encodeURIComponent(error));
+
+  const email = value.email.toLowerCase();
+  if (db.prepare('SELECT id FROM users WHERE email=?').get(email))
+    return res.redirect('/admin/clients?err=' + encodeURIComponent('An account with that email already exists.'));
+
+  const hash = bcrypt.hashSync(value.password, 12);
+  db.prepare(`INSERT INTO users (name, email, password_hash, role, company_name, email_verified) VALUES (?,?,?,'client',?,1)`)
+    .run(value.name, email, hash, value.company_name || null);
+  res.redirect('/admin/clients?saved=1');
+});
+
+// Remove a client account (never an admin/staff account).
+router.post('/clients/:id/delete', (req, res) => {
+  db.prepare(`DELETE FROM users WHERE id=? AND role NOT IN ('admin','staff')`).run(req.params.id);
+  res.redirect('/admin/clients?deleted=1');
 });
 
 router.get('/clients/:id', (req, res) => {
