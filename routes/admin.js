@@ -271,8 +271,8 @@ router.post('/scan/capture', (req, res) => {
 
 // ── Manage Patients — every scanned-in person, filterable by site & date ────────
 function patientsData() {
-  return db.prepare(`
-    SELECT be.id AS scan_id,
+  const rows = db.prepare(`
+    SELECT be.id AS scan_id, e.id AS employee_id,
            e.first_name, e.last_name, e.id_number, e.passport_number,
            e.gender, e.date_of_birth, e.job_title,
            COALESCE(co.name, '—') AS site,
@@ -284,6 +284,16 @@ function patientsData() {
     LEFT JOIN companies co ON e.company_id = co.id
     ORDER  BY be.id DESC
   `).all();
+  // One row per person — dedupe by ID/passport, keeping the most recent scan.
+  const seen = new Set();
+  const out = [];
+  for (const r of rows) {
+    const key = (r.id_number || r.passport_number || ('emp:' + r.employee_id)).replace(/\s/g, '').toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(r);
+  }
+  return out;
 }
 
 router.get('/patients', (req, res) => {
@@ -310,6 +320,43 @@ router.get('/patients/export.csv', (req, res) => {
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="workmedix-patients-${new Date().toISOString().slice(0, 10)}.csv"`);
   res.send('﻿' + lines.join('\r\n'));
+});
+
+// Patient detail — full info + every scan of this person (across all sites).
+// Defined after /patients/export.csv so that path isn't captured as an :id.
+router.get('/patients/:id', (req, res) => {
+  const emp = db.prepare(`
+    SELECT e.*, COALESCE(co.name, '—') AS site
+    FROM   employees e LEFT JOIN companies co ON e.company_id = co.id
+    WHERE  e.id = ?
+  `).get(req.params.id);
+  if (!emp) return res.redirect('/admin/patients');
+
+  // Aggregate every scan for this person (same ID may exist under several sites).
+  const ident = emp.id_number || emp.passport_number || null;
+  let empIds = [emp.id];
+  if (ident) {
+    const ids = db.prepare(`SELECT id FROM employees WHERE id_number=? OR passport_number=?`).all(ident, ident).map(r => r.id);
+    if (ids.length) empIds = ids;
+  }
+  const ph = empIds.map(() => '?').join(',');
+  const scans = db.prepare(`
+    SELECT COALESCE(co.name, '—') AS site, b.service_type, be.attendance_status,
+           date(COALESCE(b.scheduled_at, b.created_at)) AS scan_date
+    FROM   booking_employees be
+    JOIN   bookings  b  ON be.booking_id  = b.id
+    JOIN   employees e  ON be.employee_id = e.id
+    LEFT JOIN companies co ON e.company_id = co.id
+    WHERE  be.employee_id IN (${ph})
+    ORDER  BY be.id DESC
+  `).all(...empIds);
+
+  res.render('admin/patient-detail', {
+    title      : `${emp.first_name} ${emp.last_name} | Workmedix Admin`,
+    description : 'Patient record and scan history.',
+    page       : 'patients',
+    emp, scans,
+  });
 });
 
 // ── Bookings ──────────────────────────────────────────────────────────────────

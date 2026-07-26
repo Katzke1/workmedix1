@@ -62,6 +62,7 @@
                  const name = ((r.first_name || '') + ' ' + (r.last_name || '')).trim() || 'Unnamed';
                  const idv  = r.id_number || r.passport_number || ''; %>
             <tr class="pt-row"
+                data-href="/admin/patients/<%= r.employee_id %>"
                 data-name="<%= name.toLowerCase() %>"
                 data-id="<%= idv.toLowerCase() %>"
                 data-site="<%= (r.site || '').toLowerCase() %>"
@@ -95,7 +96,9 @@
 .pt-control label{font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mid-grey);}
 .pt-search{position:relative;flex:1 1 220px;}
 .pt-search svg{position:absolute;left:.8rem;top:50%;transform:translateY(-50%);stroke:var(--mid-grey);pointer-events:none;}
-.pt-search input{width:100%;padding-left:2.6rem;}
+.pt-toolbar .pt-search input{width:100%;padding-left:2.6rem;}
+.pt-row{cursor:pointer;}
+.pt-row:hover td{background:var(--surface-2);}
 .pt-toolbar input,.pt-toolbar select{border:1.5px solid var(--border);border-radius:var(--radius);padding:.55rem .7rem;font-size:.88rem;background:var(--surface);color:inherit;}
 .pt-toolbar input:focus,.pt-toolbar select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 4px var(--ring);}
 .pt-dates{display:flex;align-items:center;gap:.4rem;}.pt-dates span{color:var(--mid-grey);}
@@ -108,6 +111,7 @@
   var body = document.getElementById('pt-body');
   if (!body) return;
   var rows = Array.prototype.slice.call(body.querySelectorAll('.pt-row'));
+  rows.forEach(function (r) { r.addEventListener('click', function () { if (r.dataset.href) location.href = r.dataset.href; }); });
   var g = function (id) { return document.getElementById(id); };
   var search = g('pt-search'), site = g('pt-site'), service = g('pt-service'), from = g('pt-from'), to = g('pt-to'), count = g('pt-count'), noMatch = g('pt-nomatch');
   function apply() {
