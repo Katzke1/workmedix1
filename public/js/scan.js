@@ -17,7 +17,6 @@
   var bookingId = null;
 
   // ── Populate selects ─────────────────────────────────────────────
-  companies.forEach(function (c) { add($('companySel'), c.id, c.name); });
   services.forEach(function (s) { add($('serviceSel'), s.id, s.service_name); });
   function add(sel, val, txt) { var o = document.createElement('option'); o.value = val; o.textContent = txt; sel.appendChild(o); }
 
@@ -33,37 +32,22 @@
   }
 
   // ── Session setup ────────────────────────────────────────────────
-  $('companySel').addEventListener('change', function () {
-    var id = this.value;
-    var site = $('siteSel');
-    site.innerHTML = '<option value="">— (optional) —</option>';
-    site.disabled = true;
-    refreshStart();
-    if (!id) return;
-    fetch('/admin/scan/sites-for/' + encodeURIComponent(id), { headers: { 'Accept': 'application/json' } })
-      .then(function (r) { return r.json(); })
-      .then(function (rows) {
-        rows.forEach(function (s) { add(site, s.id, s.label + (s.city ? ' — ' + s.city : '')); });
-        site.disabled = rows.length === 0;
-      }).catch(function () {});
-  });
+  $('siteName').addEventListener('input', refreshStart);
   $('consent').addEventListener('change', refreshStart);
-  function refreshStart() { $('startBtn').disabled = !($('companySel').value && $('consent').checked); }
+  function refreshStart() { $('startBtn').disabled = !($('siteName').value.trim() && $('consent').checked); }
 
   $('startBtn').addEventListener('click', function () {
-    var body = { company_id: +$('companySel').value };
-    if ($('siteSel').value) body.site_id = +$('siteSel').value;
+    var body = { site_name: $('siteName').value.trim() };
     if ($('serviceSel').value) body.service_id = +$('serviceSel').value;
     post('/admin/scan/session', body).then(function (r) {
       if (!r.ok) return msg(r.error || 'Could not start session.', 'error');
       bookingId = r.booking_id;
-      $('sessCompany').textContent = r.company;
+      $('sessCompany').textContent = r.site;
       $('sessService').textContent = r.service;
       $('count').textContent = r.count;
       $('sessionSetup').style.display = 'none';
       $('sessionActive').style.display = 'block';
       capabilityNote();
-      $('idNumber').focus();
     });
   });
 

@@ -1,0 +1,134 @@
+<%- include('../partials/head') %>
+<body>
+<div class="app-body">
+<%- include('../partials/admin-sidebar') %>
+<main class="app-main">
+  <div class="app-topbar">
+    <div class="app-topbar-title">
+      <h2>Manage Patients</h2>
+      <p>Every scanned-in patient across all sites</p>
+    </div>
+    <div class="topbar-actions">
+      <a href="/admin/scan" class="btn btn-primary btn-sm">+ Scan In</a>
+    </div>
+  </div>
+
+  <div class="app-content">
+    <% const fmtDate = iso => iso ? new Date(iso).toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'; %>
+
+    <% if (rows.length === 0) { %>
+      <div class="card"><div class="card-body" style="text-align:center;padding:3rem 1rem;color:var(--mid-grey);">
+        No patients scanned in yet. Go to <a href="/admin/scan">Scan In</a> to start a session.
+      </div></div>
+    <% } else { %>
+
+    <div class="pt-toolbar">
+      <div class="pt-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="pt-search" placeholder="Search name or ID…" autocomplete="off">
+      </div>
+      <div class="pt-control">
+        <label>Site</label>
+        <select id="pt-site"><option value="">All sites</option>
+          <% sites.forEach(s => { %><option value="<%= s.toLowerCase() %>"><%= s %></option><% }) %>
+        </select>
+      </div>
+      <div class="pt-control">
+        <label>Service</label>
+        <select id="pt-service"><option value="">All services</option>
+          <% services.forEach(s => { %><option value="<%= s.toLowerCase() %>"><%= s %></option><% }) %>
+        </select>
+      </div>
+      <div class="pt-control">
+        <label>Scanned between</label>
+        <div class="pt-dates"><input type="date" id="pt-from"><span>–</span><input type="date" id="pt-to"></div>
+      </div>
+      <a href="/admin/patients/export.csv" class="btn btn-outline-dark btn-sm" style="display:inline-flex;align-items:center;gap:.35rem;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export CSV
+      </a>
+    </div>
+
+    <p class="pt-count" id="pt-count"></p>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Patient</th><th>ID number</th><th>Sex</th><th>DOB</th><th>Site</th><th>Service</th><th>Scanned</th></tr>
+          </thead>
+          <tbody id="pt-body">
+            <% rows.forEach(r => {
+                 const name = ((r.first_name || '') + ' ' + (r.last_name || '')).trim() || 'Unnamed';
+                 const idv  = r.id_number || r.passport_number || ''; %>
+            <tr class="pt-row"
+                data-name="<%= name.toLowerCase() %>"
+                data-id="<%= idv.toLowerCase() %>"
+                data-site="<%= (r.site || '').toLowerCase() %>"
+                data-service="<%= (r.service_type || '').toLowerCase() %>"
+                data-date="<%= r.scan_date || '' %>">
+              <td>
+                <strong><%= name %></strong>
+                <% if (r.job_title) { %><br><span style="font-size:.78rem;color:var(--mid-grey);"><%= r.job_title %></span><% } %>
+              </td>
+              <td style="font-variant-numeric:tabular-nums;"><%= idv || '—' %></td>
+              <td><%= r.gender || '—' %></td>
+              <td><%= r.date_of_birth || '—' %></td>
+              <td><%= r.site %></td>
+              <td style="font-size:.85rem;"><%= r.service_type || '—' %></td>
+              <td style="white-space:nowrap;color:var(--mid-grey);font-size:.85rem;"><%= fmtDate(r.scan_date) %></td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <p class="pt-nomatch" id="pt-nomatch" style="display:none;text-align:center;color:var(--mid-grey);padding:2rem;">No patients match your filters.</p>
+    <% } %>
+  </div>
+</main>
+</div>
+
+<style>
+.pt-toolbar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:.85rem 1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.15rem;margin-bottom:1.1rem;box-shadow:0 1px 2px rgba(15,18,60,.04);}
+.pt-control{display:flex;flex-direction:column;gap:.3rem;}
+.pt-control label{font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mid-grey);}
+.pt-search{position:relative;flex:1 1 220px;}
+.pt-search svg{position:absolute;left:.8rem;top:50%;transform:translateY(-50%);stroke:var(--mid-grey);pointer-events:none;}
+.pt-search input{width:100%;padding-left:2.6rem;}
+.pt-toolbar input,.pt-toolbar select{border:1.5px solid var(--border);border-radius:var(--radius);padding:.55rem .7rem;font-size:.88rem;background:var(--surface);color:inherit;}
+.pt-toolbar input:focus,.pt-toolbar select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 4px var(--ring);}
+.pt-dates{display:flex;align-items:center;gap:.4rem;}.pt-dates span{color:var(--mid-grey);}
+.pt-count{font-size:.85rem;color:var(--mid-grey);margin:0 0 1rem .2rem;}
+@media(max-width:560px){.pt-toolbar{flex-direction:column;align-items:stretch;}}
+</style>
+
+<script>
+(function () {
+  var body = document.getElementById('pt-body');
+  if (!body) return;
+  var rows = Array.prototype.slice.call(body.querySelectorAll('.pt-row'));
+  var g = function (id) { return document.getElementById(id); };
+  var search = g('pt-search'), site = g('pt-site'), service = g('pt-service'), from = g('pt-from'), to = g('pt-to'), count = g('pt-count'), noMatch = g('pt-nomatch');
+  function apply() {
+    var term = (search.value || '').trim().toLowerCase(), si = site.value, se = service.value, f = from.value, t = to.value, vis = 0;
+    rows.forEach(function (r) {
+      var d = r.dataset, ok = true;
+      if (term && d.name.indexOf(term) < 0 && d.id.indexOf(term) < 0) ok = false;
+      if (ok && si && d.site !== si) ok = false;
+      if (ok && se && d.service !== se) ok = false;
+      if (ok && f && (!d.date || d.date < f)) ok = false;
+      if (ok && t && (!d.date || d.date > t)) ok = false;
+      r.style.display = ok ? '' : 'none';
+      if (ok) vis++;
+    });
+    count.textContent = 'Showing ' + vis + ' of ' + rows.length + ' patient' + (rows.length !== 1 ? 's' : '');
+    noMatch.style.display = vis === 0 ? 'block' : 'none';
+  }
+  [search, site, service, from, to].forEach(function (el) { el.addEventListener('input', apply); el.addEventListener('change', apply); });
+  apply();
+})();
+</script>
+<script src="/js/main.js?v=<%= locals.assetVersion %>"></script>
+</body>
+</html>

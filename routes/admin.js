@@ -158,48 +158,50 @@ router.get('/scan/sites-for/:companyId', (req, res) => {
 // Start (or reuse) today's walk-in booking for a company/site/service
 router.post('/scan/session', (req, res) => {
   const { ok, value, error } = validate({
-    company_id : { type: 'int', required: true, min: 1, label: 'Company' },
-    site_id    : { type: 'int', min: 1, label: 'Site' },
+    site_name  : { type: 'string', required: true, min: 2, max: 120, label: 'Site name' },
     service_id : { type: 'int', min: 1, label: 'Service' },
   }, req.body);
   if (!ok) return res.status(400).json({ ok: false, error });
 
-  const company = db.prepare(`SELECT id, name, primary_contact_user_id FROM companies WHERE id=?`).get(value.company_id);
-  if (!company) return res.status(400).json({ ok: false, error: 'Unknown company.' });
+  const siteName = value.site_name;
+  // The site (e.g. "7400 - Riverstone") is the client unit here — find-or-create a
+  // company keyed by that name so employees.company_id / grouping still work.
+  let company = db.prepare(`SELECT id, name, primary_contact_user_id FROM companies WHERE name=?`).get(siteName);
+  if (!company) {
+    const cid = db.prepare(`INSERT INTO companies (name, active) VALUES (?, 1)`).run(siteName).lastInsertRowid;
+    company = { id: cid, name: siteName, primary_contact_user_id: null };
+  }
 
   const service = value.service_id
     ? db.prepare(`SELECT id, service_name FROM crm_service_rates WHERE id=?`).get(value.service_id)
     : null;
   const serviceType = service ? service.service_name : 'On-site Screening';
 
-  // Reuse an existing walk-in booking for the same company+site created today, so
-  // re-opening the page mid-day doesn't spawn duplicate bookings.
+  // Reuse today's walk-in booking for this site so re-opening the page doesn't
+  // spawn duplicate bookings.
   const existing = db.prepare(`
     SELECT id FROM bookings
-    WHERE company_id=? AND IFNULL(site_id,0)=IFNULL(?,0)
-      AND date(created_at)=date('now') AND notes LIKE ?
+    WHERE company_id=? AND date(created_at)=date('now') AND notes LIKE ?
     ORDER BY id DESC LIMIT 1
-  `).get(value.company_id, value.site_id || null, `%${INTAKE_MARKER}%`);
+  `).get(company.id, `%${INTAKE_MARKER}%`);
 
   let bookingId;
   if (existing) {
     bookingId = existing.id;
   } else {
-    // bookings.user_id is NOT NULL — attach to the company's portal contact if it
-    // has one (so results surface in their portal), else the staff member on duty.
     const userId = company.primary_contact_user_id || req.session.user.id;
     bookingId = db.prepare(`
-      INSERT INTO bookings (user_id, company_id, site_id, service_id, service_type,
+      INSERT INTO bookings (user_id, company_id, service_id, service_type, location_text,
                             preferred_date, scheduled_at, status, num_people, notes)
       VALUES (?, ?, ?, ?, ?, date('now'), datetime('now'), 'in_progress', 0, ?)
     `).run(
-      userId, value.company_id, value.site_id || null, value.service_id || null,
-      serviceType, `On-site walk-in screening ${INTAKE_MARKER}`
+      userId, company.id, value.service_id || null, serviceType, siteName,
+      `On-site walk-in screening ${INTAKE_MARKER}`
     ).lastInsertRowid;
   }
 
   const count = db.prepare(`SELECT COUNT(*) c FROM booking_employees WHERE booking_id=?`).get(bookingId).c;
-  res.json({ ok: true, booking_id: bookingId, company: company.name, service: serviceType, count });
+  res.json({ ok: true, booking_id: bookingId, site: company.name, service: serviceType, count });
 });
 
 // Capture one person → employee + link to the booking
@@ -265,6 +267,49 @@ router.post('/scan/capture', (req, res) => {
     console.error('[admin] scan capture failed:', e.message);
     res.status(500).json({ ok: false, error: 'Could not save this person. Please try again.' });
   }
+});
+
+// ── Manage Patients — every scanned-in person, filterable by site & date ────────
+function patientsData() {
+  return db.prepare(`
+    SELECT be.id AS scan_id,
+           e.first_name, e.last_name, e.id_number, e.passport_number,
+           e.gender, e.date_of_birth, e.job_title,
+           COALESCE(co.name, '—') AS site,
+           b.service_type,
+           date(COALESCE(b.scheduled_at, b.created_at)) AS scan_date
+    FROM   booking_employees be
+    JOIN   bookings  b  ON be.booking_id  = b.id
+    JOIN   employees e  ON be.employee_id = e.id
+    LEFT JOIN companies co ON e.company_id = co.id
+    ORDER  BY be.id DESC
+  `).all();
+}
+
+router.get('/patients', (req, res) => {
+  const rows = patientsData();
+  const sites    = [...new Set(rows.map(r => r.site).filter(s => s && s !== '—'))].sort();
+  const services = [...new Set(rows.map(r => r.service_type).filter(Boolean))].sort();
+  res.render('admin/patients', {
+    title      : 'Manage Patients | Workmedix Admin',
+    description : 'Every scanned-in patient across all sites.',
+    page       : 'patients',
+    rows, sites, services,
+  });
+});
+
+router.get('/patients/export.csv', (req, res) => {
+  const rows = patientsData();
+  const esc = v => { let s = String(v == null ? '' : v); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return `"${s.replace(/"/g, '""')}"`; };
+  const lines = [['Patient', 'ID / Passport', 'Sex', 'Date of Birth', 'Job Title', 'Site', 'Service', 'Scanned'].map(esc).join(',')];
+  rows.forEach(r => lines.push([
+    `${r.first_name || ''} ${r.last_name || ''}`.trim(),
+    r.id_number || r.passport_number || '', r.gender || '', r.date_of_birth || '',
+    r.job_title || '', r.site, r.service_type || '', r.scan_date || '',
+  ].map(esc).join(',')));
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="workmedix-patients-${new Date().toISOString().slice(0, 10)}.csv"`);
+  res.send('﻿' + lines.join('\r\n'));
 });
 
 // ── Bookings ──────────────────────────────────────────────────────────────────

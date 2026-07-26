@@ -39,13 +39,10 @@
       <section id="sessionSetup" class="card scan-card">
         <div class="card-header"><h3>Start a screening session</h3></div>
         <div class="scan-card-body">
-          <p class="scan-hint">Pick who you're screening today. Everyone you scan is added to this company &amp; site.</p>
+          <p class="scan-hint">Enter the site you're screening at today. Everyone you scan is filed under this site.</p>
 
-          <label class="scan-label" for="companySel">Company <span class="req">*</span></label>
-          <select id="companySel" class="form-control"><option value="">Select company…</option></select>
-
-          <label class="scan-label" for="siteSel">Site / location</label>
-          <select id="siteSel" class="form-control" disabled><option value="">— (optional) —</option></select>
+          <label class="scan-label" for="siteName">Site name <span class="req">*</span></label>
+          <input id="siteName" class="form-control" placeholder="e.g. 7400 - Riverstone" maxlength="120" autocomplete="off">
 
           <label class="scan-label" for="serviceSel">Service</label>
           <select id="serviceSel" class="form-control"><option value="">On-site Screening</option></select>
