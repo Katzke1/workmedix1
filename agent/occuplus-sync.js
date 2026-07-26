@@ -225,17 +225,18 @@ async function runOnce() {
   const employees = (roster.body && roster.body.employees) || [];
   log(`Roster: ${employees.length} employee(s)`);
 
-  const stats = { imported: 0, skipped: 0, other: 0, errors: 0 };
+  // Upload-only: register each person in OccuPlus. We no longer pull results back.
+  const stats = { registered: 0, errors: 0 };
   for (const emp of employees) {
     try {
       await ensurePatient(emp);
-      await pullResults(emp, stats);
+      stats.registered++;
     } catch (e) {
       stats.errors++;
       log(`  error for ${emp.IdNumber || emp.PassportNumber}: ${e.message}`);
     }
   }
-  log(`Sync done — imported ${stats.imported}, skipped ${stats.skipped}, other ${stats.other}, errors ${stats.errors}`);
+  log(`Backlog sync done — registered ${stats.registered}, errors ${stats.errors}`);
 }
 
 (async function main() {
