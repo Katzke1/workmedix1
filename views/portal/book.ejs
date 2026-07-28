@@ -204,9 +204,15 @@
             <div class="emp-card">
               <div class="emp-card-head">
                 <span class="emp-card-num">Employee</span>
-                <button type="button" class="emp-remove" aria-label="Remove this employee" title="Remove">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
+                <div style="display:flex;gap:.5rem;align-items:center;">
+                  <button type="button" class="btn btn-outline-dark btn-sm emp-scan">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="vertical-align:-2px;margin-right:.25rem;"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
+                    Scan ID
+                  </button>
+                  <button type="button" class="emp-remove" aria-label="Remove this employee" title="Remove">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </div>
               </div>
               <div class="emp-card-grid">
                 <div class="form-group">
@@ -622,6 +628,7 @@
 }
 </style>
 
+<script src="/js/id-scanner.js?v=<%= locals.assetVersion %>"></script>
 <script>
 (function () {
 
@@ -811,10 +818,33 @@
     if (gEl && !gEl.value) gEl.value = v.gender;
   }
 
+  /* Scan an employee's ID card / booklet straight into this card */
+  function scanIntoCard(card) {
+    if (!window.IdScanner) { alert('Scanner not available on this device — please type the details in.'); return; }
+    window.IdScanner.open(function (scan) {
+      var csrf = (document.querySelector('input[name="_csrf"]') || {}).value || '';
+      fetch('/portal/scan/decode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, 'Accept': 'application/json' },
+        body: JSON.stringify({ text: scan.text, bytes_base64: scan.bytesBase64 }),
+      }).then(function (r) { return r.json(); }).then(function (r) {
+        if (!r.ok) { alert(r.error || 'Could not read that ID. Please type it in.'); return; }
+        var idEl = card.querySelector('.emp-id');
+        if (r.idNumber && idEl) { idEl.value = r.idNumber; handleIdInput(card); }
+        var fn = card.querySelector('[name="emp_first_name[]"]'); if (r.firstName && fn && !fn.value) fn.value = r.firstName;
+        var ln = card.querySelector('[name="emp_last_name[]"]');  if (r.lastName && ln && !ln.value) ln.value = r.lastName;
+        var gEl = card.querySelector('.emp-gender'); if (r.gender && gEl && !gEl.value) gEl.value = r.gender;
+        var dEl = card.querySelector('.emp-dob');    if (r.dob && dEl && !dEl.value) dEl.value = r.dob;
+      }).catch(function () { alert('Network error reading the scan.'); });
+    });
+  }
+
   if (cardsWrap) {
     cardsWrap.addEventListener('click', function (e) {
       var rm = e.target.closest('.emp-remove');
-      if (rm) removeCard(rm.closest('.emp-card'));
+      if (rm) { removeCard(rm.closest('.emp-card')); return; }
+      var sc = e.target.closest('.emp-scan');
+      if (sc) scanIntoCard(sc.closest('.emp-card'));
     });
     cardsWrap.addEventListener('input', function (e) {
       if (e.target.classList.contains('emp-id')) handleIdInput(e.target.closest('.emp-card'));

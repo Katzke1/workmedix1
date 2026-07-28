@@ -9,6 +9,7 @@ const { requireAuth, requireClientAdmin } = require('../middleware/auth');
 const { validateEmployee, validateBooking } = require('../lib/schemas/booking');
 const { validate, sanitiseString } = require('../lib/validate');
 const { validateSaId } = require('../lib/za-id');
+const { decodeScan } = require('../lib/za-dl');
 const { createBookingWithEmployees } = require('../db/repos/bookings');
 const { sendNewBookingNotification } = require('../lib/mailer');
 
@@ -493,6 +494,26 @@ router.post('/profile/password', (req, res) => {
     .run(bcrypt.hashSync(new_password, 12), user.id);
 
   render(null, 'Password updated successfully.');
+});
+
+// ── Scan decode (booking form) — turn a scanned barcode into name/ID fields.
+// No record is created; the client fills the employee card with the result.
+router.post('/scan/decode', (req, res) => {
+  const text        = typeof req.body.text === 'string' ? req.body.text.slice(0, 4000) : null;
+  const bytesBase64 = typeof req.body.bytes_base64 === 'string' ? req.body.bytes_base64.slice(0, 20000) : null;
+  if (!text && !bytesBase64) return res.status(400).json({ ok: false, error: 'No scan data.' });
+
+  const d = decodeScan({ text, bytesBase64 });
+  if (!d || !d.idNumber) return res.json({ ok: false, error: 'Could not read an ID from that barcode.' });
+
+  res.json({
+    ok: true,
+    idNumber : d.idNumber,
+    firstName: d.firstName || '',
+    lastName : d.lastName || '',
+    gender   : d.gender || '',
+    dob      : d.dob || '',
+  });
 });
 
 // ── My Employees ──────────────────────────────────────────────────────────────
