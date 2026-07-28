@@ -17,8 +17,7 @@
   <div class="app-content">
     <div class="scan-page"
          data-dl="<%= dlAvailable ? '1' : '0' %>"
-         data-companies='<%- JSON.stringify(companies) %>'
-         data-services='<%- JSON.stringify(services) %>'>
+         data-services='<%= JSON.stringify(services) %>'>
 
       <div id="msg" class="alert" style="display:none;" role="status" aria-live="polite"></div>
 

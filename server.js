@@ -131,7 +131,10 @@ app.use('/css',    express.static(path.join(__dirname, 'public/css'),    { maxAg
 app.use('/js',     express.static(path.join(__dirname, 'public/js'),     { maxAge: '1y', immutable: true }));
 app.use('/images', express.static(path.join(__dirname, 'public/images'), { maxAge: '30d' }));
 app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
-app.use('/uploads', express.static(UPLOADS_DIR, { maxAge: '1h' }));
+// NOTE: uploaded files (medical results + certificates) are POPIA "special personal
+// information" and MUST NOT be served statically. They are delivered only through
+// the authenticated, company-scoped download routes (res.download) in routes/portal.js
+// and routes/admin.js. Do not re-add a public express.static for UPLOADS_DIR.
 
 // ── Session ─────────────────────────────────────────────────────────────────────
 // Persist sessions in SQLite (the same DB file, so they live on the same Railway

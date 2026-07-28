@@ -9,7 +9,6 @@
   if (!page) return;
 
   var CSRF = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
-  var companies = JSON.parse(page.dataset.companies || '[]');
   var services  = JSON.parse(page.dataset.services  || '[]');
   var dlOn       = page.dataset.dl === '1';
 
