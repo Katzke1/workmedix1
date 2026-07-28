@@ -495,6 +495,60 @@ router.post('/profile/password', (req, res) => {
   render(null, 'Password updated successfully.');
 });
 
-// Employee roster removed — employees are managed by Workmedix admin, not clients.
+// ── My Employees ──────────────────────────────────────────────────────────────
+function ensureUserCompany(req) {
+  let cid = req.session.user.company_id || null;
+  if (!cid) {
+    const cname = (req.session.user.company_name || req.session.user.name || 'My Company').trim();
+    const existing = db.prepare('SELECT id FROM companies WHERE name=?').get(cname);
+    cid = existing ? existing.id : db.prepare('INSERT INTO companies (name, active) VALUES (?,1)').run(cname).lastInsertRowid;
+    db.prepare('UPDATE users SET company_id=? WHERE id=?').run(cid, req.session.user.id);
+    req.session.user.company_id = cid;
+  }
+  return cid;
+}
+
+router.get('/employees', (req, res) => {
+  const cid = req.session.user.company_id || null;
+  const employees = cid
+    ? db.prepare(`SELECT * FROM employees WHERE company_id=? ORDER BY active DESC, last_name, first_name`).all(cid)
+    : [];
+  res.render('portal/employees', {
+    title      : 'Our Employees | Workmedix',
+    description : 'Manage your employee roster.',
+    page       : 'employees',
+    employees,
+    success : req.query.saved ? 'Employee added.' : req.query.archived ? 'Employee archived.' : null,
+    error   : req.query.err ? decodeURIComponent(req.query.err) : null,
+  });
+});
+
+router.post('/employees', (req, res) => {
+  const cid = ensureUserCompany(req);
+  const s = v => sanitiseString((v == null || Array.isArray(v)) ? '' : v);
+  const first_name = s(req.body.first_name), last_name = s(req.body.last_name);
+  const id_number  = s(req.body.id_number).replace(/\s/g, ''), email = s(req.body.email);
+  const phone = s(req.body.phone), job_title = s(req.body.job_title), dob = s(req.body.date_of_birth);
+
+  if (!first_name || !last_name)
+    return res.redirect('/portal/employees?err=' + encodeURIComponent('First name and surname are required.'));
+
+  let gender = null, dobVal = dob || null;
+  if (id_number) {
+    const v = validateSaId(id_number);
+    if (!v.valid) return res.redirect('/portal/employees?err=' + encodeURIComponent('That SA ID number is not valid.'));
+    gender = v.gender; if (!dobVal) dobVal = v.dob;
+  }
+  db.prepare(`INSERT INTO employees (company_id, first_name, last_name, id_number, email, phone, job_title, date_of_birth, gender, active)
+              VALUES (?,?,?,?,?,?,?,?,?,1)`)
+    .run(cid, first_name, last_name, id_number || null, email || null, phone || null, job_title || null, dobVal, gender);
+  res.redirect('/portal/employees?saved=1');
+});
+
+router.post('/employees/:id/archive', (req, res) => {
+  const cid = req.session.user.company_id || null;
+  if (cid) db.prepare(`UPDATE employees SET active=0 WHERE id=? AND company_id=?`).run(req.params.id, cid);
+  res.redirect('/portal/employees?archived=1');
+});
 
 module.exports = router;
