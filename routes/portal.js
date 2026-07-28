@@ -85,6 +85,9 @@ router.post('/book', (req, res) => {
   const loc_province   = s(req.body.loc_province);
   const loc_contact    = s(req.body.loc_contact);
 
+  if (!req.body.popia_consent)
+    return render('Please confirm you are authorised and have each employee’s consent (POPIA) before submitting.', null);
+
   if (!/^\d{1,9}$/.test(service_id) || !preferred_date)
     return render('Please select a service and preferred date.', null);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(preferred_date) || Number.isNaN(new Date(preferred_date).getTime()))

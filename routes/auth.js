@@ -124,9 +124,11 @@ router.post('/register', (req, res) => {
     email           : { type: 'email',  required: true, max: 254, label: 'Email' },
     password        : { type: 'string', required: true, min: 8, max: 200, label: 'Password' },
     confirm_password: { type: 'string', required: true, min: 1, max: 200, label: 'Confirm password' },
+    accept_terms    : { type: 'bool', label: 'Terms' },
   }, req.body);
   if (!ok) return render(vErr);
   const { name, company_name, email, password, confirm_password } = value;
+  if (!value.accept_terms) return render('Please accept the Terms of Service and Privacy Policy to continue.');
   if (password !== confirm_password) return render('Passwords do not match.');
 
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email.toLowerCase().trim());
@@ -408,6 +410,16 @@ router.get('/privacy', (req, res) => {
     description  : 'Workmedix Privacy Policy — how we collect, use, and protect your personal information in compliance with POPIA.',
     canonicalPath: '/privacy',
     page         : 'privacy'
+  });
+});
+
+// ── GET /terms ────────────────────────────────────────────────────────────────
+router.get('/terms', (req, res) => {
+  res.render('terms', {
+    title        : 'Terms of Service | Workmedix',
+    description  : 'Workmedix Terms of Service, including our occupational-health disclaimer and limitation of liability.',
+    canonicalPath: '/terms',
+    page         : 'terms'
   });
 });
 
