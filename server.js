@@ -82,6 +82,9 @@ app.use(helmet({
       connectSrc   : ["'self'", 'https://www.google-analytics.com', 'https://*.google-analytics.com', 'https://*.analytics.google.com', 'https://www.googletagmanager.com'],
       frameSrc     : ["'self'", 'https://www.google.com', 'https://maps.google.com'],   // Google Maps embed
       objectSrc    : ["'none'"],
+      baseUri      : ["'self'"],           // block <base> tag injection
+      formAction   : ["'self'"],           // forms may only post back to us
+      frameAncestors: ["'none'"],          // anti-clickjacking (nobody may iframe us)
       upgradeInsecureRequests: isProd ? [] : null,
     },
   },
