@@ -496,6 +496,7 @@ router.get('/certificates/:id/download', (req, res) => {
 // ── Profile ───────────────────────────────────────────────────────────────────
 router.get('/profile', (req, res) => {
   const user = db.prepare('SELECT * FROM users WHERE id=?').get(req.session.user.id);
+  if (!user) return req.session.destroy(() => res.redirect('/login'));
   res.render('portal/profile', {
     title       : 'My Profile | Workmedix',
     description : 'Manage your Workmedix account settings.',
@@ -508,6 +509,7 @@ router.get('/profile', (req, res) => {
 
 router.post('/profile/password', (req, res) => {
   const user = db.prepare('SELECT * FROM users WHERE id=?').get(req.session.user.id);
+  if (!user) return req.session.destroy(() => res.redirect('/login'));
 
   const render = (error, success) => res.render('portal/profile', {
     title       : 'My Profile | Workmedix',
