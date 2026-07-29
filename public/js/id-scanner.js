@@ -9,7 +9,18 @@
 
   var stream = null, scanning = false, detector = null, track = null, imageCapture = null;
   var scanCanvas = document.createElement('canvas'), scanCtx = scanCanvas.getContext('2d');
-  var overlay = null, cb = null, audioCtx = null;
+  var overlay = null, cb = null, audioCtx = null, mode = 'pdf417';
+
+  // 'pdf417' = smart ID card (ignore the linear Code 39 strip); 'linear' = ID book.
+  function setMode(m) {
+    mode = m;
+    if (!overlay) return;
+    overlay.querySelectorAll('.idscan-tab').forEach(function (t) { t.classList.toggle('active', t.dataset.mode === m); });
+    var hint = overlay.querySelector('.idscan-hint');
+    if (hint) hint.textContent = m === 'pdf417'
+      ? 'Scan the BIG square barcode on the smart ID card'
+      : 'Scan the barcode strip on the green ID book';
+  }
 
   function css() {
     if (document.getElementById('idscan-css')) return;
@@ -27,7 +38,10 @@
       '.idscan-ret .br{bottom:-2px;right:-2px;border-left:none;border-top:none;border-bottom-right-radius:16px;}',
       '.idscan-ret.ok{animation:idscanOk .5s ease;}',
       '@keyframes idscanOk{0%,100%{box-shadow:0 0 0 100vmax rgba(0,0,0,.5)}40%{box-shadow:0 0 0 100vmax rgba(16,140,90,.55)}}',
-      '.idscan-hint{position:absolute;left:0;right:0;bottom:calc(1.4rem + env(safe-area-inset-bottom));text-align:center;color:#fff;font-size:.9rem;text-shadow:0 1px 5px rgba(0,0,0,.85);}',
+      '.idscan-hint{position:absolute;left:0;right:0;bottom:calc(1.4rem + env(safe-area-inset-bottom));text-align:center;color:#fff;font-size:.9rem;text-shadow:0 1px 5px rgba(0,0,0,.85);padding:0 1rem;}',
+      '.idscan-tabs{position:absolute;top:calc(.7rem + env(safe-area-inset-top));left:50%;transform:translateX(-50%);display:flex;gap:.35rem;background:rgba(0,0,0,.5);border-radius:999px;padding:.28rem;z-index:2;}',
+      '.idscan-tab{border:none;background:transparent;color:rgba(255,255,255,.7);font-size:.82rem;font-weight:600;padding:.5rem 1.05rem;border-radius:999px;cursor:pointer;white-space:nowrap;}',
+      '.idscan-tab.active{background:#2326F2;color:#fff;}',
       '.idscan-close{position:absolute;top:calc(.7rem + env(safe-area-inset-top));right:.9rem;width:46px;height:46px;border:none;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;font-size:1.15rem;cursor:pointer;}'
     ].join('');
     document.head.appendChild(s);
@@ -39,11 +53,16 @@
     el.className = 'idscan';
     el.innerHTML =
       '<video playsinline muted autoplay></video>' +
+      '<div class="idscan-tabs">' +
+        '<button type="button" class="idscan-tab" data-mode="pdf417">Smart ID card</button>' +
+        '<button type="button" class="idscan-tab" data-mode="linear">ID book</button>' +
+      '</div>' +
       '<div class="idscan-mask"><div class="idscan-ret"><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></div></div>' +
-      '<p class="idscan-hint">Hold the ID barcode inside the box</p>' +
+      '<p class="idscan-hint"></p>' +
       '<button type="button" class="idscan-close" aria-label="Close">✕</button>';
     el.querySelector('.idscan-close').addEventListener('click', close);
     el.querySelector('video').addEventListener('click', applyFocus);
+    el.querySelectorAll('.idscan-tab').forEach(function (t) { t.addEventListener('click', function () { setMode(t.dataset.mode); }); });
     document.body.appendChild(el);
     return el;
   }
@@ -85,6 +104,7 @@
     cb = callback;
     beep(); // unlock audio within the click gesture
     overlay = build();
+    setMode('pdf417'); // default: smart ID card (PDF417 only, ignore the Code 39 strip)
     if (overlay.requestFullscreen) overlay.requestFullscreen().catch(function () {});
     BarcodeDetector.getSupportedFormats().then(function (fmts) {
       var want = ['pdf417', 'code_39', 'code_128', 'itf'].filter(function (f) { return fmts.indexOf(f) >= 0; });
@@ -122,9 +142,12 @@
     scanCtx.drawImage(v, sx, sy, cw, ch, 0, 0, scanCanvas.width, scanCanvas.height);
     detector.detect(scanCanvas).then(function (codes) {
       if (codes && codes.length) {
-        var best = null;
-        for (var i = 0; i < codes.length; i++) { if (codes[i].format === 'pdf417') { best = codes[i]; break; } }
-        return onDetect(best || codes[0]);
+        var pick = null;
+        for (var i = 0; i < codes.length; i++) {
+          var isPdf = codes[i].format === 'pdf417';
+          if ((mode === 'pdf417') === isPdf) { pick = codes[i]; break; }   // only the selected format
+        }
+        if (pick) return onDetect(pick);
       }
       setTimeout(loop, 250);
     }).catch(function () { setTimeout(loop, 300); });
