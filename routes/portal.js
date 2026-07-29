@@ -10,7 +10,7 @@ const { validateEmployee, validateBooking } = require('../lib/schemas/booking');
 const { validate, sanitiseString } = require('../lib/validate');
 const { validateSaId } = require('../lib/za-id');
 const { decodeScan } = require('../lib/za-dl');
-const { createBookingWithEmployees } = require('../db/repos/bookings');
+const { createBookingWithEmployees, upsertEmployee } = require('../db/repos/bookings');
 const { sendNewBookingNotification } = require('../lib/mailer');
 
 router.use(requireAuth);
@@ -256,7 +256,45 @@ router.get('/bookings/:id', (req, res) => {
     description : 'Your Workmedix booking details.',
     page       : 'bookings',
     booking, employees,
+    success    : req.query.added ? 'Employees added to this booking.' : null,
   });
+});
+
+// ── Add more employees to an existing booking ─────────────────────────────────
+router.post('/bookings/:id/employees', (req, res) => {
+  const uid = req.session.user.id;
+  const cid = req.session.user.company_id || null;
+  const booking = db.prepare('SELECT id, user_id, company_id, status FROM bookings WHERE id=?').get(req.params.id);
+  if (!booking || !(booking.user_id === uid || (cid != null && booking.company_id === cid)))
+    return res.redirect('/portal/bookings');
+  if (!['pending', 'confirmed', 'in_progress'].includes(booking.status))
+    return res.redirect('/portal/bookings/' + booking.id);
+
+  const companyId = booking.company_id || ensureUserCompany(req);
+  const s     = v => sanitiseString((v == null || Array.isArray(v)) ? '' : v);
+  const toArr = v => Array.isArray(v) ? v : (v == null ? [] : [v]);
+  const fn = toArr(req.body.emp_first_name), ln = toArr(req.body.emp_last_name), idn = toArr(req.body.emp_id_number),
+        pp = toArr(req.body.emp_passport), gn = toArr(req.body.emp_gender), dob = toArr(req.body.emp_dob), jt = toArr(req.body.emp_job_title);
+  const rowsN = Math.max(fn.length, ln.length, idn.length, pp.length, gn.length, dob.length, jt.length);
+
+  const roster = [];
+  for (let i = 0; i < rowsN; i++) {
+    const f = s(fn[i]), l = s(ln[i]), id = s(idn[i]).replace(/\s/g, ''), p = s(pp[i]), g = s(gn[i]), d = s(dob[i]), j = s(jt[i]);
+    if (!f && !l && !id && !p) continue;      // blank row
+    if (!f || !l) continue;                   // needs both names
+    let gender = g || null, dobVal = d || null;
+    if (id) { const v = validateSaId(id); if (!v.valid) continue; if (!gender) gender = v.gender; if (!dobVal) dobVal = v.dob; }
+    roster.push({ firstName: f, lastName: l, idNumber: id || null, passportNumber: p || null, gender, dateOfBirth: dobVal, jobTitle: j || null });
+  }
+  if (!roster.length) return res.redirect('/portal/bookings/' + booking.id);
+
+  const link = db.prepare(`INSERT OR IGNORE INTO booking_employees (booking_id, employee_id, attendance_status) VALUES (?,?,'scheduled')`);
+  db.transaction(() => {
+    roster.forEach(e => link.run(booking.id, upsertEmployee(companyId, e)));
+    const count = db.prepare('SELECT COUNT(*) c FROM booking_employees WHERE booking_id=?').get(booking.id).c;
+    db.prepare('UPDATE bookings SET num_people=? WHERE id=?').run(count, booking.id);
+  })();
+  res.redirect('/portal/bookings/' + booking.id + '?added=1');
 });
 
 // ── Patient (employee) detail — full info + complete report history ───────────

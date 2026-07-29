@@ -948,6 +948,7 @@ body.has-hero .navbar:not(.scrolled) .btn-login:hover {
 /* ── 18. Auth pages ──────────────────────────────────────── */
 .auth-page {
   min-height: 100vh;
+  min-height: 100dvh;   /* dynamic viewport — avoids iOS chrome clipping the bottom */
   display: flex;
   align-items: stretch;
 }
@@ -1335,6 +1336,9 @@ tbody tr:hover td { background: rgba(35,38,242,.04); }
   .serve-grid   { grid-template-columns: 1fr; }
   .why-grid     { grid-template-columns: 1fr 1fr; }
   .auth-left    { display: none; }
+  /* Don't vertically-centre the card on mobile — that clipped the bottom links
+     (Forgot password / Register) so you couldn't scroll to them. Flow from top. */
+  .auth-right   { align-items: flex-start; justify-content: flex-start; padding-top: 1.75rem; padding-bottom: 1.75rem; }
   .form-row     { grid-template-columns: 1fr; }
 }
 @media (max-width: 960px) {
@@ -1431,6 +1435,7 @@ tbody tr:hover td { background: rgba(35,38,242,.04); }
   .app-main      { margin-left: 0; }
   .stats-grid    { grid-template-columns: 1fr 1fr; }
   .app-content   { padding: 1.25rem; }
+  .app-topbar-title p { display: none; }   /* drop the subtitle line on mobile (incl. the booking status badge that broke the layout) */
 }
 @media (max-width: 480px) {
   .hero-stats        { gap: .9rem; }

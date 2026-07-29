@@ -14,6 +14,7 @@
   </div>
 
   <div class="app-content">
+    <% if (locals.success) { %><div class="alert alert-success" data-autodismiss><%= success %></div><% } %>
     <%
       const fmtDate = iso => iso
         ? new Date(iso).toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -27,6 +28,7 @@
         <div class="card-header"><h3>Appointment Details</h3></div>
         <div class="card-body">
           <dl class="detail-list">
+            <dt>Status</dt><dd><span class="badge badge-<%= booking.status %>"><%= booking.status.replace(/_/g,' ') %></span></dd>
             <dt>Service</dt><dd><%= booking.service_type %></dd>
             <dt>Date</dt><dd><%= booking.scheduled_at ? fmtDate(booking.scheduled_at.split('T')[0]) : fmtDate(booking.preferred_date) %></dd>
             <% if (booking.scheduled_at) { %>
@@ -71,10 +73,99 @@
         </div>
       </div>
 
+      <% if (['pending','confirmed','in_progress'].includes(booking.status)) { %>
+      <!-- Add more employees -->
+      <div class="card">
+        <details>
+          <summary style="cursor:pointer;padding:1.1rem 1.15rem;font-weight:600;color:var(--primary);">+ Add more employees to this booking</summary>
+          <div class="card-body" style="padding-top:0;">
+            <form method="POST" action="/portal/bookings/<%= booking.id %>/employees">
+              <%- include('../partials/csrf') %>
+              <div id="ab-cards"></div>
+              <button type="button" class="btn btn-ghost btn-sm" id="ab-add" style="margin-top:.5rem;">+ Add another</button>
+              <div style="margin-top:1rem;">
+                <button type="submit" class="btn btn-primary btn-sm">Add to booking →</button>
+              </div>
+            </form>
+          </div>
+        </details>
+      </div>
+      <% } %>
+
     </div>
   </div>
 </main>
 </div>
+
+<% if (['pending','confirmed','in_progress'].includes(booking.status)) { %>
+<template id="ab-card-tpl">
+  <div class="ab-card" style="border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:.85rem;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;">
+      <span style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--primary);">Employee</span>
+      <div style="display:flex;gap:.5rem;">
+        <button type="button" class="btn btn-outline-dark btn-sm ab-scan">📷 Scan ID</button>
+        <button type="button" class="btn btn-sm btn-danger ab-remove" aria-label="Remove">✕</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+      <div class="form-group"><label class="form-label">First Name *</label><input type="text" name="emp_first_name[]" class="form-control" autocomplete="off"></div>
+      <div class="form-group"><label class="form-label">Surname *</label><input type="text" name="emp_last_name[]" class="form-control" autocomplete="off"></div>
+      <div class="form-group"><label class="form-label">SA ID Number</label><input type="text" name="emp_id_number[]" class="form-control ab-id" inputmode="numeric" maxlength="13" placeholder="13 digits" autocomplete="off"></div>
+      <div class="form-group"><label class="form-label">Passport</label><input type="text" name="emp_passport[]" class="form-control" placeholder="if no SA ID" autocomplete="off"></div>
+      <div class="form-group"><label class="form-label">Gender *</label><select name="emp_gender[]" class="form-control ab-gender"><option value="">— Select —</option><option>Male</option><option>Female</option></select></div>
+      <div class="form-group"><label class="form-label">Date of Birth</label><input type="date" name="emp_dob[]" class="form-control ab-dob"></div>
+      <div class="form-group" style="grid-column:1/-1;"><label class="form-label">Job Title</label><input type="text" name="emp_job_title[]" class="form-control" placeholder="Optional" autocomplete="off"></div>
+    </div>
+  </div>
+</template>
+<script src="/js/id-scanner.js?v=<%= locals.assetVersion %>"></script>
+<script>
+(function () {
+  var wrap = document.getElementById('ab-cards'), tpl = document.getElementById('ab-card-tpl'), add = document.getElementById('ab-add');
+  if (!wrap || !tpl) return;
+  function parseSaId(id) {
+    if (!/^\d{13}$/.test(id)) return null;
+    var yy = +id.slice(0,2), mm = +id.slice(2,4), dd = +id.slice(4,6); if (mm<1||mm>12) return null;
+    var c = yy<=(new Date().getFullYear()%100)?2000:1900, fy = c+yy, d = new Date(fy, mm-1, dd);
+    if (d.getFullYear()!==fy||d.getMonth()!==mm-1||d.getDate()!==dd) return null;
+    var s = 0, a = false; for (var i=12;i>=0;i--){ var n=+id[i]; if(a){n*=2;if(n>9)n-=9;} s+=n; a=!a; } if (s%10) return null;
+    return { dob: fy+'-'+String(mm).padStart(2,'0')+'-'+String(dd).padStart(2,'0'), gender: (+id.slice(6,10)<5000)?'Female':'Male' };
+  }
+  function fillId(card) {
+    var el = card.querySelector('.ab-id'); if (!el) return;
+    var v = el.value.replace(/\D/g,'').slice(0,13); el.value = v; if (v.length!==13) return;
+    var p = parseSaId(v); if (!p) return;
+    var g = card.querySelector('.ab-gender'); if (g && !g.value) g.value = p.gender;
+    var d = card.querySelector('.ab-dob'); if (d && !d.value) d.value = p.dob;
+  }
+  function addCard() { wrap.appendChild(tpl.content.firstElementChild.cloneNode(true)); }
+  wrap.addEventListener('click', function (e) {
+    var rm = e.target.closest('.ab-remove');
+    if (rm) { if (wrap.querySelectorAll('.ab-card').length > 1) rm.closest('.ab-card').remove(); return; }
+    var sc = e.target.closest('.ab-scan');
+    if (sc) scanInto(sc.closest('.ab-card'));
+  });
+  wrap.addEventListener('input', function (e) { if (e.target.classList.contains('ab-id')) fillId(e.target.closest('.ab-card')); });
+  add.addEventListener('click', addCard);
+  function scanInto(card) {
+    if (!window.IdScanner) { alert('Scanner not available on this device — type the details in.'); return; }
+    window.IdScanner.open(function (res) {
+      var csrf = (document.querySelector('input[name="_csrf"]') || {}).value || '';
+      fetch('/portal/scan/decode', { method:'POST', headers:{ 'Content-Type':'application/json', 'X-CSRF-Token':csrf, 'Accept':'application/json' }, body: JSON.stringify({ text: res.text, bytes_base64: res.bytesBase64 }) })
+        .then(function (r) { return r.json(); }).then(function (r) {
+          if (!r.ok) { alert(r.error || 'Could not read that ID. Type it in.'); return; }
+          var id = card.querySelector('.ab-id'); if (r.idNumber && id) { id.value = r.idNumber; fillId(card); }
+          var fn = card.querySelector('[name="emp_first_name[]"]'); if (r.firstName && fn && !fn.value) fn.value = r.firstName;
+          var ln = card.querySelector('[name="emp_last_name[]"]'); if (r.lastName && ln && !ln.value) ln.value = r.lastName;
+          var g = card.querySelector('.ab-gender'); if (r.gender && g && !g.value) g.value = r.gender;
+          var d = card.querySelector('.ab-dob'); if (r.dob && d && !d.value) d.value = r.dob;
+        }).catch(function () { alert('Network error reading the scan.'); });
+    });
+  }
+  addCard();
+})();
+</script>
+<% } %>
 <script src="/js/main.js?v=<%= locals.assetVersion %>"></script>
 </body>
 </html>
