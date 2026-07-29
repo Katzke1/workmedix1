@@ -10,6 +10,16 @@
   const canvas = document.getElementById('hero-canvas');
   if (!canvas) return;
 
+  // Skip the WebGL animation where it costs the most and matters least — phones,
+  // reduced-motion, and data-saver — so it never inflates mobile TBT/battery.
+  // The CSS gradient fallback on .hero shows instead.
+  const _mq = window.matchMedia;
+  if ((_mq && (_mq('(max-width: 820px)').matches || _mq('(prefers-reduced-motion: reduce)').matches)) ||
+      (navigator.connection && navigator.connection.saveData)) {
+    canvas.style.display = 'none';
+    return;
+  }
+
   const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
   if (!gl) { canvas.style.display = 'none'; return; }
 
@@ -193,6 +203,12 @@
     }
   });
 
-  draw();
+  // Start only once the page has loaded and the main thread is idle, so the
+  // animation stays out of the initial (Lighthouse-measured) loading window.
+  function begin() {
+    (window.requestIdleCallback || function (cb) { setTimeout(cb, 250); })(function () { draw(); });
+  }
+  if (document.readyState === 'complete') begin();
+  else window.addEventListener('load', begin, { once: true });
 
 })();
