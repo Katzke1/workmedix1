@@ -1465,6 +1465,13 @@ tbody tr:hover td { background: rgba(35,38,242,.04); }
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  /* background-clip:text crops the paint box to the line box, so italic
+     ascenders/descenders (e.g. the tails on "healthy", tops of "trusted")
+     fell outside it and lost their fill — reading as cut-off text. Give the
+     box room and cancel it with a matching negative margin so nothing shifts. */
+  line-height: 1.2;
+  padding: 0.12em 0.16em;
+  margin: -0.12em -0.16em;
 }
 
 /* ── Hero: WebGL shader supplies the background ──────────── */
@@ -3186,7 +3193,7 @@ tbody tr:last-child td { border-bottom: none !important; }
 }
 .wa-float-btn {
   position: relative;
-  width: 58px; height: 58px;
+  width: 64px; height: 64px;
   border-radius: 50%;
   display: grid; place-items: center;
   color: #fff;
@@ -3197,7 +3204,7 @@ tbody tr:last-child td { border-bottom: none !important; }
     inset 0 1px 0 rgba(255,255,255,.28);
   transition: transform .3s cubic-bezier(.34,1.56,.64,1), box-shadow .3s ease;
 }
-.wa-float-btn svg { width: 30px; height: 30px; display: block; }
+.wa-float-btn svg { width: 33px; height: 33px; display: block; }
 /* gentle pulsing halo — draws the eye without shouting */
 .wa-float-btn::before {
   content: '';
@@ -3243,8 +3250,8 @@ tbody tr:last-child td { border-bottom: none !important; }
 .wa-float:focus-visible .wa-float-label { opacity: 1; transform: translateX(0); }
 @media (max-width: 768px) {
   .wa-float      { right: 1rem; bottom: 1rem; }
-  .wa-float-btn  { width: 52px; height: 52px; }
-  .wa-float-btn svg { width: 27px; height: 27px; }
+  .wa-float-btn  { width: 58px; height: 58px; }
+  .wa-float-btn svg { width: 30px; height: 30px; }
   .wa-float-label { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
