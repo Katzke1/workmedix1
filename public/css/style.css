@@ -439,8 +439,9 @@ body.has-hero .navbar:not(.scrolled) .btn-login:hover {
 
 /* ── 10. Hero ────────────────────────────────────────────── */
 .hero {
-  height: 100vh;
-  min-height: 600px;
+  min-height: 100vh;
+  min-height: 100dvh;   /* grow to fit content instead of a hard 100vh cap that
+                           clipped the stats/CTA on short & landscape viewports */
   padding-top: calc(var(--nav-h) + 56px);
   display: flex;
   align-items: center;
@@ -3170,6 +3171,86 @@ tbody tr:last-child td { border-bottom: none !important; }
 .page-skeleton .skel-titlebar { height: 1.6rem; width: 240px; border-radius: 7px; }
 @media (max-width: 900px) { .page-skeleton-stats { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 560px) { .page-skeleton-stats { grid-template-columns: 1fr; } }
+
+/* ── Floating WhatsApp chat button ──────────────────────────────────────────
+   Fixed bottom-right on every public page; taps straight to our number.      */
+.wa-float {
+  position: fixed;
+  right: 1.4rem;
+  bottom: 1.4rem;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  text-decoration: none;
+}
+.wa-float-btn {
+  position: relative;
+  width: 58px; height: 58px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  color: #fff;
+  background: radial-gradient(120% 120% at 30% 22%, #37d97b 0%, #25d366 45%, #12a06f 100%);
+  box-shadow:
+    0 10px 24px -6px rgba(18,140,110,.55),
+    0 4px 10px -2px rgba(37,211,102,.45),
+    inset 0 1px 0 rgba(255,255,255,.28);
+  transition: transform .3s cubic-bezier(.34,1.56,.64,1), box-shadow .3s ease;
+}
+.wa-float-btn svg { width: 30px; height: 30px; display: block; }
+/* gentle pulsing halo — draws the eye without shouting */
+.wa-float-btn::before {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  background: #25d366;
+  z-index: -1;
+  animation: wa-ping 2.6s cubic-bezier(0,0,.2,1) infinite;
+}
+@keyframes wa-ping {
+  0%   { transform: scale(1);   opacity: .5; }
+  70%  { transform: scale(1.75); opacity: 0; }
+  100% { transform: scale(1.75); opacity: 0; }
+}
+.wa-float:hover .wa-float-btn {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow:
+    0 16px 32px -8px rgba(18,140,110,.6),
+    0 6px 14px -3px rgba(37,211,102,.5),
+    inset 0 1px 0 rgba(255,255,255,.32);
+}
+.wa-float:active .wa-float-btn { transform: translateY(-1px) scale(1.01); }
+.wa-float:focus-visible { outline: none; }
+.wa-float:focus-visible .wa-float-btn {
+  box-shadow: 0 0 0 4px rgba(37,211,102,.45), 0 10px 24px -6px rgba(18,140,110,.55);
+}
+/* label — slides out on hover / focus (desktop only) */
+.wa-float-label {
+  background: #fff;
+  color: #0b3d34;
+  font-weight: 700;
+  font-size: .85rem;
+  padding: .55rem .9rem;
+  border-radius: 999px;
+  box-shadow: 0 8px 20px -8px rgba(0,0,0,.28);
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(10px);
+  transition: opacity .3s ease, transform .3s ease;
+  pointer-events: none;
+}
+.wa-float:hover .wa-float-label,
+.wa-float:focus-visible .wa-float-label { opacity: 1; transform: translateX(0); }
+@media (max-width: 768px) {
+  .wa-float      { right: 1rem; bottom: 1rem; }
+  .wa-float-btn  { width: 52px; height: 52px; }
+  .wa-float-btn svg { width: 27px; height: 27px; }
+  .wa-float-label { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wa-float-btn::before { animation: none; }
+  .wa-float-btn, .wa-float-label { transition: none; }
+}
 
 /* ── Async <select> loading state ─────────────────────────────────────────
    Applied to a .form-control while its options are being fetched. Native
