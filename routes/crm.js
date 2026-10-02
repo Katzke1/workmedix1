@@ -11,6 +11,11 @@ router.use(requireAdmin);
 const fmt = n => `R ${Number(n || 0).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const pct = (a, b) => b ? ((a / b) * 100).toFixed(1) : '0.0';
 
+// Serialize a value for safe embedding inside an inline <script>: escape '<'
+// so a client-controlled value (e.g. a company name containing "</script>")
+// can't break out of the block (stored XSS).
+const sj = (v) => JSON.stringify(v).replace(/</g, '\\u003c');
+
 function monthLabel(ym) {
   if (!ym) return '';
   const [y, m] = ym.split('-');
@@ -101,15 +106,15 @@ router.get('/', (req, res) => {
     title: 'CRM Dashboard | Workmedix', page: 'crm-dashboard', user: req.session.user,
     kpi, monthly, byStatus, byService, recentJobs, topClients,
     fmt, pct, monthLabel, STATUS_LABELS,
-    chartMonths:  JSON.stringify(monthly.map(m => m.label)),
-    chartRev:     JSON.stringify(monthly.map(m => +m.revenue.toFixed(2))),
-    chartCost:    JSON.stringify(monthly.map(m => +m.cost.toFixed(2))),
-    chartProfit:  JSON.stringify(monthly.map(m => +m.profit.toFixed(2))),
-    chartSvcLabels: JSON.stringify(byService.map(s => s.service_type)),
-    chartSvcRev:    JSON.stringify(byService.map(s => +s.rev.toFixed(2))),
-    chartSvcCost:   JSON.stringify(byService.map(s => +s.cost.toFixed(2))),
-    chartStatusLabels: JSON.stringify(byStatus.map(s => STATUS_LABELS[s.status] || s.status)),
-    chartStatusData:   JSON.stringify(byStatus.map(s => s.cnt)),
+    chartMonths:  sj(monthly.map(m => m.label)),
+    chartRev:     sj(monthly.map(m => +m.revenue.toFixed(2))),
+    chartCost:    sj(monthly.map(m => +m.cost.toFixed(2))),
+    chartProfit:  sj(monthly.map(m => +m.profit.toFixed(2))),
+    chartSvcLabels: sj(byService.map(s => s.service_type)),
+    chartSvcRev:    sj(byService.map(s => +s.rev.toFixed(2))),
+    chartSvcCost:   sj(byService.map(s => +s.cost.toFixed(2))),
+    chartStatusLabels: sj(byStatus.map(s => STATUS_LABELS[s.status] || s.status)),
+    chartStatusData:   sj(byStatus.map(s => s.cnt)),
   });
 });
 
@@ -206,8 +211,8 @@ router.get('/clients/:id', (req, res) => {
     client, jobs, stats, monthly, fmt, pct, STATUS_LABELS,
     editing: req.query.edit === '1',
     error: null, success: null,
-    chartLabels: JSON.stringify(monthly.map(m=>m.label)),
-    chartData:   JSON.stringify(monthly.map(m=>+m.revenue.toFixed(2))),
+    chartLabels: sj(monthly.map(m=>m.label)),
+    chartData:   sj(monthly.map(m=>+m.revenue.toFixed(2))),
     portalUsers, portalBookings,
   });
 });
@@ -405,15 +410,15 @@ router.get('/finance', (req, res) => {
   res.render('admin/crm/finance', {
     title: 'CRM Finance | Workmedix', page: 'crm-finance', user: req.session.user,
     monthly, totals, outstanding, byService, topClients, year, availYears, fmt, pct,
-    chartMonths:   JSON.stringify(monthly.map(m=>m.label)),
-    chartRev:      JSON.stringify(monthly.map(m=>+m.rev.toFixed(2))),
-    chartCost:     JSON.stringify(monthly.map(m=>+m.cost.toFixed(2))),
-    chartProfit:   JSON.stringify(monthly.map(m=>+m.profit.toFixed(2))),
-    chartSvcLabels:JSON.stringify(byService.map(s=>s.service_type)),
-    chartSvcRev:   JSON.stringify(byService.map(s=>+s.rev.toFixed(2))),
-    chartSvcCost:  JSON.stringify(byService.map(s=>+s.cost.toFixed(2))),
-    chartClientLabels: JSON.stringify(topClients.map(c=>c.company_name)),
-    chartClientRev:    JSON.stringify(topClients.map(c=>+c.rev.toFixed(2))),
+    chartMonths:   sj(monthly.map(m=>m.label)),
+    chartRev:      sj(monthly.map(m=>+m.rev.toFixed(2))),
+    chartCost:     sj(monthly.map(m=>+m.cost.toFixed(2))),
+    chartProfit:   sj(monthly.map(m=>+m.profit.toFixed(2))),
+    chartSvcLabels:sj(byService.map(s=>s.service_type)),
+    chartSvcRev:   sj(byService.map(s=>+s.rev.toFixed(2))),
+    chartSvcCost:  sj(byService.map(s=>+s.cost.toFixed(2))),
+    chartClientLabels: sj(topClients.map(c=>c.company_name)),
+    chartClientRev:    sj(topClients.map(c=>+c.rev.toFixed(2))),
   });
 });
 
